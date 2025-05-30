@@ -2,7 +2,7 @@ name: Haber Botu Sayfasını Oluştur ve Yayınla
 
 on:
   schedule:
-    # Betiği her saat başı çalıştırır (UTC zaman dilimine göre)
+    # Betiği her 10 dakikada bir çalıştırır (UTC zaman dilimine göre)
     - cron: '*/10 * * * *'
   push:
     branches:
@@ -41,7 +41,7 @@ jobs:
           echo "ACCESS_SECRET=${{ secrets.ACCESS_SECRET }}" >> .env
           echo "BEARER_TOKEN=${{ secrets.BEARER_TOKEN }}" >> .env
           echo "OPENWEATHER_API_KEY=${{ secrets.OPENWEATHER_API_KEY }}" >> .env
-          echo "GITHUB_USERNAME=${{ secrets.GITHUB_USERNAME }}" >> .env
+          # echo "GITHUB_USERNAME=${{ secrets.GITHUB_USERNAME }}" >> .env
           # GITHUB_TOKEN genellikle ${{ secrets.GITHUB_TOKEN }} olarak doğrudan kullanılır, .env'e yazmak gerekmeyebilir.
           # Eğer betiğinizin .env'den okuması gerekiyorsa ekleyebilirsiniz:
           # echo "GITHUB_TOKEN=${{ secrets.ACTION_SPECIFIC_GITHUB_TOKEN }}" >> .env # Özel bir token ise
