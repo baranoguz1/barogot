@@ -1,0 +1,32 @@
+# Python Sanal Ortamları
+.venv/
+venv/
+env/
+ENV/
+*.pyenv
+
+# Python Cache Dosyaları
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Hassas Bilgiler
+.env 
+
+# GitHub Actions tarafından üretilen çıktı klasörü
+# Bu klasörün ana şubenizde olmasını istemiyoruz.
+output/
+
+# Diğer geçici dosyalar veya loglar
+*.log
+debug_*.html 
+*.csv
+*.xlsx
+
+# Editör/IDE Konfigürasyon Dosyaları (isteğe bağlı)
+.vscode/
+.idea/
+
+# İşletim Sistemi Dosyaları
+.DS_Store
+Thumbs.db

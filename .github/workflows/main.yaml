@@ -1,0 +1,77 @@
+name: Haber Botu Sayfasını Oluştur ve Yayınla
+
+on:
+  schedule:
+    # Betiği her saat başı çalıştırır (UTC zaman dilimine göre)
+    - cron: '*/10 * * * *'
+  push:
+    branches:
+      - main  # Veya varsayılan şubenizin adı (örn: master)
+  workflow_dispatch: # GitHub Actions sekmesinden manuel olarak çalıştırmayı sağlar
+
+permissions: # <- BU SATIRI EKLEYİN
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # İş akışının çalışacağı sanal ortam
+
+    steps:
+      - name: Depoyu Kopyala 🛎️
+        uses: actions/checkout@v4 # Kodunuzu sanal ortama çeker
+
+      - name: Python Kurulumu 🐍
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13' # Betiğinizin uyumlu olduğu Python sürümünü belirtin
+
+      - name: Bağımlılıkları Yükle ⚙️
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # Selenium ve Chrome için gerekli sistem paketleri (Ubuntu için)
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable chromium-chromedriver libglib2.0-0 libnss3 libfontconfig1
+
+      - name: GitHub Secrets'tan .env Dosyası Oluştur 🤫
+        run: |
+          echo "API_KEY=${{ secrets.API_KEY }}" > .env
+          echo "API_SECRET=${{ secrets.API_SECRET }}" >> .env
+          echo "ACCESS_TOKEN=${{ secrets.ACCESS_TOKEN }}" >> .env
+          echo "ACCESS_SECRET=${{ secrets.ACCESS_SECRET }}" >> .env
+          echo "BEARER_TOKEN=${{ secrets.BEARER_TOKEN }}" >> .env
+          echo "OPENWEATHER_API_KEY=${{ secrets.OPENWEATHER_API_KEY }}" >> .env
+          echo "GITHUB_USERNAME=${{ secrets.GITHUB_USERNAME }}" >> .env
+          # GITHUB_TOKEN genellikle ${{ secrets.GITHUB_TOKEN }} olarak doğrudan kullanılır, .env'e yazmak gerekmeyebilir.
+          # Eğer betiğinizin .env'den okuması gerekiyorsa ekleyebilirsiniz:
+          # echo "GITHUB_TOKEN=${{ secrets.ACTION_SPECIFIC_GITHUB_TOKEN }}" >> .env # Özel bir token ise
+          echo "GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}" >> .env # Betiğinizin beklediği değişken adı ile eşleşmeli
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "SPOTIFY_CLIENT_ID=${{ secrets.SPOTIFY_CLIENT_ID }}" >> .env
+          echo "SPOTIFY_CLIENT_SECRET=${{ secrets.SPOTIFY_CLIENT_SECRET }}" >> .env
+          echo "SPOTIFY_REFRESH_TOKEN=${{ secrets.SPOTIFY_REFRESH_TOKEN }}" >> .env
+          echo "SPOTIFY_USER_ID=${{ secrets.SPOTIFY_USER_ID }}" >> .env
+          echo "SPOTIFY_TARGET_PLAYLIST_ID=${{ secrets.SPOTIFY_TARGET_PLAYLIST_ID }}" >> .env
+          echo "TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}" >> .env
+          echo "✅ .env dosyası GitHub Secrets kullanılarak oluşturuldu."
+
+      - name: Dosya Yollarını Listele (Hata Ayıklama İçin)
+        run: |
+          pwd
+          ls -R
+          # ls -R $GITHUB_WORKSPACE # GITHUB_WORKSPACE içini de listeleyebilirsiniz
+
+      - name: Haber Botu Betiğini Çalıştır 🤖
+        working-directory: ./ 
+        run: python haber_botu.py # Betiğinizin adı buysa
+
+      - name: GitHub Pages'e Dağıt 🚀
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }} # GitHub tarafından otomatik sağlanır
+          publish_dir: ./output  # haberler.html dosyasının oluşturulduğu klasör
+          # publish_branch: gh-pages # Varsayılan olarak 'gh-pages' şubesine yayınlar
+          # user_name: 'github-actions[bot]' # Commit yapan kullanıcı adı (isteğe bağlı)
+          # user_email: 'github-actions[bot]@users.noreply.github.com' # Commit yapan e-posta (isteğe bağlı)
+          # commit_message: 'Oluşturulan HTML sayfasını yayınla' # Commit mesajı (isteğe bağlı)
+          # cname: ozelalanadiniz.com # Eğer özel bir alan adınız varsa
