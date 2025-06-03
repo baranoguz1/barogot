@@ -7,7 +7,7 @@ import time
 import email.utils
 import re
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service as ChromeService # Yeniden adlandırma çakışmayı önler
@@ -44,6 +44,7 @@ OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 CITY = "Istanbul"
 UNITS = "metric"
 LANG = "tr"
+TIME_OFFSET_HOURS = 3 # MODIFIED: Türkiye saati için UTC+3
 
 # ✅ TMDB API bilgileri
 TMDB_API_KEY = os.getenv("TMDB_API_KEY") # .env dosyasından TMDB API anahtarını yükle
@@ -150,22 +151,83 @@ def get_flashscore_fixtures(driver, flashscore_path_segment, league_name):
         matches = driver.find_elements(By.CSS_SELECTOR, "div[class^='event__match']")
 
         fixtures = []
+        current_date_utc = datetime.now(timezone.utc) # MODIFIED: Mevcut tarihi UTC olarak al
+
         for match_element in matches:
             try:
-                time_val = match_element.find_element(By.CLASS_NAME, "event__time").text.strip()
+                time_str_raw = match_element.find_element(By.CLASS_NAME, "event__time").text.strip()
                 home_team = match_element.find_element(By.CLASS_NAME, "event__homeParticipant").text.strip()
                 away_team = match_element.find_element(By.CLASS_NAME, "event__awayParticipant").text.strip()
+
+                parsed_dt_utc = None
+                time_val_display = time_str_raw 
+
+                # MODIFIED: Zaman ayrıştırma ve UTC+3'e dönüştürme mantığı
+                match_date_time = re.match(r"(\d{2})\.(\d{2})\.\s(\d{2}):(\d{2})", time_str_raw)
+                if match_date_time:
+                    day, month, hour, minute = map(int, match_date_time.groups())
+                    year = current_date_utc.year
+                    # Yılbaşı geçişlerini basitçe kontrol et
+                    if month < current_date_utc.month or \
+                       (month == current_date_utc.month and day < current_date_utc.day) :
+                        year += 1 
+                    try:
+                        parsed_dt_utc = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
+                    except ValueError:
+                        print(f"⚠️ Flashscore'da geçersiz tarih formatı: {time_str_raw}")
+                        pass
+
+                if not parsed_dt_utc:
+                    match_yarin_time = re.match(r"YARIN\s(\d{2}):(\d{2})", time_str_raw, re.IGNORECASE)
+                    if match_yarin_time:
+                        hour, minute = map(int, match_yarin_time.groups())
+                        tomorrow_utc = current_date_utc + timedelta(days=1)
+                        parsed_dt_utc = datetime(tomorrow_utc.year, tomorrow_utc.month, tomorrow_utc.day, hour, minute, tzinfo=timezone.utc)
                 
-                # Bazen boş katılımcı isimleri gelebilir, bunları kontrol et
+                if not parsed_dt_utc:
+                    match_time_only = re.match(r"(\d{2}):(\d{2})", time_str_raw)
+                    if match_time_only:
+                        hour, minute = map(int, match_time_only.groups())
+                        # Güncel UTC gününü kullan, çünkü FlashScore genellikle güncel günün maçlarını sadece saat olarak listeler
+                        # Daha karmaşık senaryolar için sayfa yapısını analiz etmek gerekebilir (tarih başlıkları vb.)
+                        parsed_dt_utc = datetime(current_date_utc.year, current_date_utc.month, current_date_utc.day, hour, minute, tzinfo=timezone.utc)
+
+                if parsed_dt_utc:
+                    local_dt = parsed_dt_utc + timedelta(hours=TIME_OFFSET_HOURS)
+                    
+                    # Görüntüleme formatını ayarla
+                    local_now_for_comparison = datetime.now(timezone.utc) + timedelta(hours=TIME_OFFSET_HOURS)
+
+                    if match_date_time:
+                        time_val_display = local_dt.strftime("%d.%m. %H:%M")
+                    elif match_yarin_time:
+                        if local_dt.date() == (local_now_for_comparison + timedelta(days=1)).date():
+                            time_val_display = f"YARIN {local_dt.strftime('%H:%M')}"
+                        elif local_dt.date() == local_now_for_comparison.date():
+                             time_val_display = f"BUGÜN {local_dt.strftime('%H:%M')}"
+                        else:
+                            time_val_display = local_dt.strftime("%d.%m. %H:%M")
+                    elif match_time_only:
+                         # Eğer sadece saat varsa ve yerel saatte gün değiştiyse tarihi de ekle
+                        if local_dt.date() != local_now_for_comparison.date():
+                            time_val_display = local_dt.strftime("%d.%m. %H:%M")
+                        else:
+                            time_val_display = local_dt.strftime("%H:%M")
+                    else: # Ayrıştırıldı ama belirli bir kalıba uymadı (beklenmedik)
+                         time_val_display = local_dt.strftime("%H:%M") # Varsayılan format
+                else: # Ayrıştırma başarısız oldu, ham değeri kullan
+                    time_val_display = time_str_raw
+                # END MODIFIED
+
                 if home_team and away_team:
-                    fixtures.append(f"{time_val}: {home_team} - {away_team}")
-                if len(fixtures) >= 10: # En fazla 10 maç al
+                    fixtures.append(f"{time_val_display}: {home_team} - {away_team}")
+                if len(fixtures) >= 10:
                     break
-            except Exception: # NoSuchElementException vb.
-                # Belirli bir maç öğesi ayrıştırılamazsa devam et
+            except Exception as e_match_item:
+                print(f"⚠️ {league_name} liginde bir maç işlenirken hata: {e_match_item} (Zaman: {time_str_raw if 'time_str_raw' in locals() else 'N/A'})")
                 continue
         
-        print(f"✅ {league_name}: {len(fixtures)} maç bulundu.")
+        print(f"✅ {league_name}: {len(fixtures)} maç bulundu (saatler ayarlandı).")
         return league_name, fixtures
 
     except Exception as e:
@@ -246,7 +308,7 @@ def get_new_turkish_rap_tracks_embed(limit=10):
         print("⚠️ Spotify API yanıt formatı beklenmedik.")
         return []
 
-
+# TWITTER TRENDLERİ
 def get_trending_topics_trends24(city_slug="turkey/istanbul", limit=10):
     """
     trends24.in sitesinden belirtilen şehir için trend olan Twitter başlıklarını çeker.
@@ -511,28 +573,36 @@ def get_hourly_weather(city, api_key, units="metric", lang="tr", limit=8):
             return []
 
         hourly_forecast = []
-        for forecast in data["list"][:limit]: 
+        # MODIFIED: Mevcut yerel saati al (karşılaştırma ve filtreleme için opsiyonel)
+        # current_local_dt = datetime.now(timezone.utc) + timedelta(hours=TIME_OFFSET_HOURS)
+
+        for forecast_item in data["list"]: # Limiti daha sonra uygula, önce işle
             try:
-                time_str = datetime.fromtimestamp(forecast["dt"]).strftime("%H:%M")
-                temp = forecast["main"]["temp"]
-                description = forecast["weather"][0]["description"].capitalize()
-                icon_code = forecast["weather"][0].get("icon", None)
+                # MODIFIED: UTC zaman damgasını alıp UTC+3'e çevir
+                utc_dt = datetime.fromtimestamp(forecast_item["dt"], tz=timezone.utc)
+                local_dt = utc_dt + timedelta(hours=TIME_OFFSET_HOURS)
+                time_str = local_dt.strftime("%H:%M")
+                # END MODIFIED
                 
-                icon_data_uri = "https://via.placeholder.com/50" 
+                # İsteğe bağlı: Sadece gelecek tahminleri göster
+                # if local_dt < current_local_dt.replace(minute=0, second=0, microsecond=0) and len(hourly_forecast) == 0:
+                # continue # Eğer ilk tahmin geçmişteyse ve henüz hiç tahmin eklenmediyse atla
+                # if local_dt < current_local_dt and len(hourly_forecast) > 0 : # Zaten tahmin eklendiyse ve bu da geçmişteyse dur.
+                # break
+
+                temp = forecast_item["main"]["temp"]
+                description = forecast_item["weather"][0]["description"].capitalize()
+                icon_code = forecast_item["weather"][0].get("icon")
+                icon_data_uri = "https://via.placeholder.com/50"
                 if icon_code:
                     icon_url = f"https://openweathermap.org/img/wn/{icon_code}@2x.png"
-                    headers = {
-                        "Referer": "https://openweathermap.org/",
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-                    }
                     try:
-                        icon_response = requests.get(icon_url, headers=headers, timeout=5)
+                        icon_response = requests.get(icon_url, headers={"Referer": "https://openweathermap.org/"}, timeout=5)
                         if icon_response.status_code == 200:
                             encoded_icon = base64.b64encode(icon_response.content).decode('utf-8')
-                            content_type = icon_response.headers.get("Content-Type", "image/png")
-                            icon_data_uri = f"data:{content_type};base64,{encoded_icon}"
+                            icon_data_uri = f"data:{icon_response.headers.get('Content-Type', 'image/png')};base64,{encoded_icon}"
                     except requests.exceptions.RequestException:
-                        print(f"⚠️ Hava durumu ikonu ({icon_url}) çekilemedi.")
+                         print(f"⚠️ Hava durumu ikonu ({icon_url}) çekilemedi.")
                 
                 weather_class = "default-weather"
                 desc_lower = description.lower()
@@ -542,11 +612,12 @@ def get_hourly_weather(city, api_key, units="metric", lang="tr", limit=8):
                 elif any(s in desc_lower for s in ["bulut", "kapalı", "cloud"]): weather_class = "cloudy"
                 
                 hourly_forecast.append((time_str, temp, description, icon_data_uri, weather_class))
+                if len(hourly_forecast) >= limit: # Limite ulaşıldıysa döngüden çık
+                    break
             except (KeyError, IndexError) as e_item:
-                print(f"⚠️ Hava durumu tahmini öğesi ayrıştırılamadı: {e_item} - {forecast}")
-                continue 
-
-        print(f"✅ {city} için {len(hourly_forecast)} saatlik hava durumu tahmini çekildi.")
+                print(f"⚠️ Hava durumu tahmini öğesi ayrıştırılamadı: {e_item} - {forecast_item}")
+                continue
+        print(f"✅ {city} için {len(hourly_forecast)} saatlik hava durumu tahmini çekildi (saatler ayarlandı).")
         return hourly_forecast
     except requests.exceptions.RequestException as e:
         print(f"⚠️ OpenWeatherMap API Hatası: {e}")
@@ -597,6 +668,7 @@ def fetch_rss_feed(url, timeout=15):
 
 def generate_html():
     """Tüm verileri toplayıp HTML dosyasını oluşturur."""
+    
     try:
         service = ChromeService(executable_path=ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
@@ -657,7 +729,12 @@ def generate_html():
             except Exception as e_quit:
                 print(f"⚠️ Chrome WebDriver kapatılırken hata: {e_quit}")
 
-    last_update = datetime.now().strftime("%d %B %Y, %H:%M:%S") 
+
+    # MODIFIED: Son güncelleme saatini UTC+3 olarak ayarla
+    utc_now = datetime.now(timezone.utc)
+    local_now = utc_now + timedelta(hours=TIME_OFFSET_HOURS)
+    last_update = local_now.strftime("%d %B %Y, %H:%M:%S")
+    # END MODIFIED
     html_content = []
     
     html_content.append(f"""
