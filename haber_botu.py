@@ -27,6 +27,9 @@ import subprocess
 # from email import encoders
 import sys
 import contextlib
+import traceback # Hata ayıklama için
+from selenium.webdriver.common.keys import Keys # Sayfa kaydırma için
+import re # Tarih ayrıştırma için
 
 # 📌 .env Dosyasını Yükle (Proje kök dizininden)
 # Betiğin bulunduğu dizindeki .env dosyasını yüklemeye çalışır.
@@ -122,59 +125,361 @@ def suppress_stderr():
         os.close(null_fd)
         os.close(save_stderr)
 
-# FUTBOL FİKSTÜR
-def get_flashscore_fixtures(driver, flashscore_path_segment, league_name):
-    """Verilen lig için Flashscore'dan fikstür bilgilerini çeker."""
+# ZORLU PSM EVENT
+# --- CSS SEÇİCİLERİ ---
+# KULLANICI TARAFINDAN SAĞLANAN EKRAN GÖRÜNTÜLERİNE GÖRE GÜNCELLENMİŞ SEÇİCİLER:
+
+# Her bir etkinlik kartını/öğesini içeren ana HTML elementinin CSS seçicisi.
+CSS_SELECTOR_FOR_EVENT_CARD = "div.event-list-card-wrapper-link" # KULLANICI EKRAN GÖRÜNTÜSÜNDEN ALINAN YENİ SEÇİCİ
+
+# Etkinlik kartı içinde başlığı içeren ve linki barındıran <a> elementi.
+CSS_SELECTOR_FOR_TITLE_LINK = "a.event-list-card-item-detail-text" # EKRAN GÖRÜNTÜSÜNDEN (11:48:15)
+
+# Etkinlik kartı içinde afiş resmini içeren <img> elementinin seçicisi.
+CSS_SELECTOR_FOR_IMAGE = "div.event-list-card-content > a > img" # EKRAN GÖRÜNTÜSÜNDEN (11:48:01)
+
+# Etkinlik kartı içinde tarihi (örn: "04 HAZİRAN") içeren element.
+CSS_SELECTOR_FOR_FULL_DATE_TEXT = "div.location.col-location p.date" # EKRAN GÖRÜNTÜSÜNDEN (11:48:34)
+
+# Etkinlik kartı içinde saati (örn: "19:00") içeren element.
+CSS_SELECTOR_FOR_TIME = "div.location.col-location b.hour" # EKRAN GÖRÜNTÜSÜNDEN (11:48:34)
+
+# Etkinlik kartı içinde Zorlu PSM içindeki mekanı (örn: "VESTEL AMFİ") gösteren element.
+CSS_SELECTOR_FOR_VENUE = "div.location.place p" # EKRAN GÖRÜNTÜSÜNDEN (11:48:48)
+
+# Etkinlik kartı içinde kategoriyi (örn: Konser, Parti) gösteren element.
+CSS_SELECTOR_FOR_CATEGORY_TEXT = "div.event-list-card-item-header" # GENEL BİR ALAN, İÇİNDEN METİN ÇIKARILACAK - *** GEREKİRSE GÜNCELLEYİN ***
+# --- CSS SEÇİCİLERİ SONU ---
+
+
+def parse_date_from_text(date_text):
+    """
+    "04 HAZİRAN" gibi bir metinden gün ve ayı ayıklar.
+    """
+    if not date_text:
+        return None, None
+    match = re.match(r"(\d{2})\s*([A-ZĞÜŞİÖÇ]+)", date_text.strip(), re.IGNORECASE)
+    if match:
+        day = match.group(1)
+        month = match.group(2).capitalize() 
+        return day, month
+    return None, None
+
+
+def fetch_istanbul_events(driver):
+    """
+    Zorlu PSM web sitesinden etkinlikleri çeker.
+    CSS seçicilerinin güncel olması kritik öneme sahiptir.
+    """
+    events = []
+    url = "https://www.zorlupsm.com/etkinlikler"
+    print(f"ℹ️ Zorlu PSM etkinlikler sayfasına gidiliyor: {url}")
+
     try:
-        url = f"https://www.flashscore.com.tr/futbol/{flashscore_path_segment}/fikstur/"
+        driver.get(url)
+        print(f"✅ Sayfa başarıyla yüklendi: {driver.title}")
+
+        try:
+            possible_cookie_selectors = [
+                "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",
+                "button[onclick*='cookieAccept']",
+                "//button[contains(text(), 'Kabul Et') or contains(text(), 'Allow All') or contains(text(), 'Accept All')]"
+            ]
+            cookie_accepted = False
+            for sel_idx, sel in enumerate(possible_cookie_selectors):
+                try:
+                    wait_time = 5 if sel_idx == 0 else 2
+                    cookie_button = WebDriverWait(driver, wait_time).until(
+                        EC.element_to_be_clickable((By.XPATH if sel.startswith("//") else By.CSS_SELECTOR, sel))
+                    )
+                    cookie_button.click()
+                    print(f"🍪 Zorlu PSM çerezleri kabul edildi (denenen seçici: {sel}).")
+                    cookie_accepted = True
+                    time.sleep(1.5)
+                    break
+                except Exception:
+                    pass
+            if not cookie_accepted:
+                print("ℹ️ Zorlu PSM çerez popup'ı görünmedi veya otomatik tıklanamadı.")
+        except Exception as e_cookie:
+            print(f"⚠️ Çerezleri kabul etme sırasında bir hata oluştu: {e_cookie}")
+
+        print("ℹ️ Sayfa aşağı kaydırılıyor (1)...")
+        try:
+            body = driver.find_element(By.TAG_NAME, "body")
+            body.send_keys(Keys.PAGE_DOWN)
+            time.sleep(0.7)
+            print("ℹ️ Sayfa aşağı kaydırılıyor (2)...")
+            body.send_keys(Keys.PAGE_DOWN)
+            time.sleep(1.2)
+        except Exception as e_scroll:
+            print(f"⚠️ Sayfa kaydırma sırasında hata: {e_scroll}")
+
+        print(f"⏳ Etkinlik kartlarının ('{CSS_SELECTOR_FOR_EVENT_CARD}') yüklenmesi ve görünür olması bekleniyor...")
+        WebDriverWait(driver, 30).until(
+            EC.visibility_of_all_elements_located((By.CSS_SELECTOR, CSS_SELECTOR_FOR_EVENT_CARD))
+        )
+        print(f"✅ Etkinlik kartları ('{CSS_SELECTOR_FOR_EVENT_CARD}') DOM'da mevcut ve görünür.")
+        time.sleep(3)
+
+        page_source = driver.page_source
+        soup = BeautifulSoup(page_source, "html.parser")
+        event_elements = soup.select(CSS_SELECTOR_FOR_EVENT_CARD)
+
+        if not event_elements:
+            print(f"❌ KRİTİK HATA: Zorlu PSM sayfasında '{CSS_SELECTOR_FOR_EVENT_CARD}' CSS seçicisi ile eşleşen hiçbir etkinlik elementi bulunamadı.")
+            return []
+
+        print(f"✅ Zorlu PSM: {len(event_elements)} potansiyel etkinlik elementi bulundu ('{CSS_SELECTOR_FOR_EVENT_CARD}' ile). Şimdi iç detaylar çekilecek.")
+
+        for i, event_element in enumerate(event_elements):
+            print(f"\n--- Etkinlik {i+1} ('{CSS_SELECTOR_FOR_EVENT_CARD}' içinden) işleniyor ---")
+            try:
+                title, date_str, time_str, venue, link_detail, image_url, category_text = None, None, None, None, None, None, None
+
+                # --- BAŞLIK ve LİNK ---
+                title_link_element = event_element.select_one(CSS_SELECTOR_FOR_TITLE_LINK)
+                if title_link_element:
+                    title = title_link_element.get_text(strip=True) # Doğrudan linkin tüm metnini al
+                    link_detail = title_link_element.get('href')
+                    
+                    if not title: # Eğer get_text ile başlık hala boşsa, HTML özelliklerini dene
+                        title_attr = title_link_element.get('title')
+                        aria_label_attr = title_link_element.get('aria-label')
+                        if title_attr:
+                            title = title_attr.strip()
+                            print(f"  Başlık (title attribute'dan): {title}")
+                        elif aria_label_attr:
+                            title = aria_label_attr.strip()
+                            print(f"  Başlık (aria-label attribute'dan): {title}")
+                        else:
+                             # Geliştirici araçlarında bu linkin içeriğini kontrol edin.
+                             # Bazen başlık bir child span içinde olabilir. Örn: title_link_element.select_one('span.actual-title-class')
+                            print(f"  ⚠️ Başlık metni boş geldi ve title/aria-label attribute'ları da yok/boş. HTML yapısı incelenmeli: {title_link_element}")
+
+
+                    print(f"  Başlık: {title}")
+                    print(f"  Ham Link: {link_detail}")
+                else:
+                    print(f"  ⚠️ Başlık/Link elementi ('{CSS_SELECTOR_FOR_TITLE_LINK}') '{CSS_SELECTOR_FOR_EVENT_CARD}' içinde bulunamadı. Bu kart atlanıyor.")
+                    continue
+
+                # --- AFİŞ RESMİ ---
+                image_el = event_element.select_one(CSS_SELECTOR_FOR_IMAGE)
+                image_src_found = False
+                if image_el:
+                    if image_el.has_attr('src') and image_el['src'].strip() and not image_el['src'].startswith('data:image'): 
+                        image_url_relative = image_el['src']
+                        image_src_found = True
+                    elif image_el.has_attr('data-src') and image_el['data-src'].strip() and not image_el['data-src'].startswith('data:image'):
+                        image_url_relative = image_el['data-src']
+                        image_src_found = True
+
+                    if image_src_found:
+                        if image_url_relative.startswith("http"):
+                            image_url = image_url_relative
+                        else:
+                            image_url = f"https://www.zorlupsm.com{image_url_relative if image_url_relative.startswith('/') else '/' + image_url_relative}"
+                        print(f"  Afiş URL: {image_url}")
+                    else:
+                        print(f"  ⚠️ Afiş resmi <img> elementi ('{CSS_SELECTOR_FOR_IMAGE}') 'src' veya 'data-src' attribute'u içermiyor, boş veya data URI.")
+                else:
+                    print(f"  ⚠️ Afiş resmi <img> elementi ('{CSS_SELECTOR_FOR_IMAGE}') bulunamadı.")
+
+
+                # --- TARİH ---
+                full_date_el = event_element.select_one(CSS_SELECTOR_FOR_FULL_DATE_TEXT)
+                day_val, month_val = None, None
+                if full_date_el:
+                    full_date_text_content = full_date_el.text.strip()
+                    day_val, month_val = parse_date_from_text(full_date_text_content)
+                    if day_val and month_val:
+                        date_str = f"{day_val} {month_val}"
+                        print(f"  Tarih: {date_str} (Metin: '{full_date_text_content}')")
+                    else:
+                        print(f"  ⚠️ Tarih metni ('{CSS_SELECTOR_FOR_FULL_DATE_TEXT}') anlaşılamadı: '{full_date_text_content}'")
+                else:
+                    print(f"  ⚠️ Tam tarih metni elementi ('{CSS_SELECTOR_FOR_FULL_DATE_TEXT}') bulunamadı.")
+
+
+                # --- SAAT ---
+                time_el = event_element.select_one(CSS_SELECTOR_FOR_TIME)
+                if time_el:
+                    time_str = time_el.text.strip()
+                    print(f"  Saat: {time_str}")
+                else:
+                    print(f"  ⚠️ Saat elementi ('{CSS_SELECTOR_FOR_TIME}') bulunamadı.")
+
+                # --- MEKAN ---
+                venue_el = event_element.select_one(CSS_SELECTOR_FOR_VENUE)
+                if venue_el:
+                    venue = venue_el.text.strip()
+                    print(f"  Mekan: {venue}")
+                else:
+                    venue = "Zorlu PSM (Genel)"
+                    print(f"  ⚠️ Mekan elementi ('{CSS_SELECTOR_FOR_VENUE}') bulunamadı, varsayılan kullanılıyor.")
+
+                # --- KATEGORİ ---
+                category_el = event_element.select_one(CSS_SELECTOR_FOR_CATEGORY_TEXT)
+                if category_el:
+                    # DeprecationWarning düzeltmesi: find(text=...) -> find(string=...)
+                    category_tag = category_el.find(lambda tag: tag.name in ['span', 'div', 'p', 'a'] and tag.get_text(strip=True) and len(tag.get_text(strip=True)) < 30 and not tag.find(string=re.compile(r"\d{2}:\d{2}"))) 
+                    if category_tag:
+                        category_text = category_tag.get_text(strip=True)
+                        print(f"  Kategori: {category_text} (Element: {category_tag.name})")
+                    else: 
+                        raw_header_text = category_el.get_text(strip=True)
+                        possible_categories = [word for word in raw_header_text.split() if len(word) > 2 and len(word) < 15 and word.isalpha()]
+                        if possible_categories:
+                             category_text = possible_categories[0] 
+                             print(f"  Kategori (tahmini): {category_text} (Ham metin: {raw_header_text})")
+                        else:
+                             print(f"  ⚠️ Kategori metni ('{CSS_SELECTOR_FOR_CATEGORY_TEXT}' içinde) bulunamadı veya anlaşılamadı.")
+                else:
+                    print(f"  ⚠️ Kategori başlık elementi ('{CSS_SELECTOR_FOR_CATEGORY_TEXT}') bulunamadı.")
+
+
+                # --- LİNK (Nihai) ---
+                final_link = None
+                if link_detail:
+                    if link_detail.startswith("http"):
+                        final_link = link_detail
+                    elif link_detail.strip():
+                        final_link = f"https://www.zorlupsm.com{link_detail if link_detail.startswith('/') else '/' + link_detail}"
+
+                # Başlık boş değilse ve link varsa etkinliği ekle
+                if title and title.strip() and final_link: # title'ın boş olmadığını kontrol et
+                    event_data = {
+                        "title": title,
+                        "date_str": date_str if date_str else "Belirtilmemiş",
+                        "time_str": time_str if time_str else "Belirtilmemiş",
+                        "venue": venue,
+                        "link": final_link,
+                        "image_url": image_url,
+                        "category": category_text if category_text else "Genel",
+                        "source": "Zorlu PSM"
+                    }
+                    events.append(event_data)
+                    print(f"  ✅ Etkinlik başarıyla eklendi: {title}")
+                else:
+                    print(f"  ❌ Etkinlik atlandı: Temel bilgiler (başlık veya link) eksik veya başlık boş. Başlık: '{title}', Link: '{final_link}'")
+
+            except Exception as e_item:
+                element_snippet = str(event_element)[:250]
+                print(f"⚠️ Zorlu PSM'de bir etkinlik detayı işlenirken HATA OLUŞTU: {e_item}")
+                print(f"   Hata Oluşan Element (Başlangıcı): {element_snippet}...")
+                print(traceback.format_exc())
+                continue
+
+        if events:
+            print(f"\n🎉 Toplam {len(events)} etkinlik Zorlu PSM'den başarıyla çekildi.")
+        else:
+            print(f"\n⚠️ Zorlu PSM'den hiçbir etkinlik çekilemedi. '{CSS_SELECTOR_FOR_EVENT_CARD}' ile kartlar bulunsa bile iç detaylar çekilememiş olabilir. Lütfen KART İÇİ seçicileri ve sayfa yapısını dikkatlice kontrol edin.")
+
+    except Exception as e:
+        print(f"❌ Zorlu PSM etkinlikleri çekilirken genel bir HATA OLUŞTU: {e}")
+        print(traceback.format_exc())
+
+    return events
+
+# FUTBOL FİKSTÜR
+def get_flashscore_sport_fixtures(driver, combined_path, league_name, max_fixtures=7):
+    """
+    Verilen birleşik yol ve lig için Flashscore'dan fikstür bilgilerini çeker.
+    combined_path: 'futbol/turkiye/super-lig' veya 'basketbol/abd/nba' gibi Flashscore URL'sindeki spor ve lig yolu.
+    league_name: HTML'de gösterilecek lig adı.
+    max_fixtures: Her lig için çekilecek maksimum maç sayısı.
+    """
+    try:
+        path_parts = combined_path.split('/', 1)
+        if len(path_parts) < 2:
+            print(f"❌ {league_name}: Geçersiz combined_path formatı: '{combined_path}'. 'spor_turu/lig_yolu' formatında olmalı.")
+            return league_name, []
+        sport_path = path_parts[0].lower() 
+        flashscore_league_path_segment = path_parts[1]
+
+        url = f"https://www.flashscore.com.tr/{sport_path}/{flashscore_league_path_segment}/fikstur/"
+        print(f"ℹ️ {league_name} ({sport_path} - {flashscore_league_path_segment}) fikstürü çekiliyor: {url}")
         driver.get(url)
 
-        # Çerez popup'ı (varsa)
         try:
-            WebDriverWait(driver, 5).until(
+            WebDriverWait(driver, 7).until( 
                 EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
             ).click()
-            print("🍪 Flashscore çerezleri kabul edildi.")
-        except Exception: # TimeoutException, NoSuchElementException vb.
-            print("ℹ️ Flashscore çerez popup'ı görünmedi veya tıklanamadı.")
+            print(f"🍪 Flashscore çerezleri kabul edildi ({league_name}).")
+            time.sleep(0.5) 
+        except Exception: 
+            print(f"ℹ️ Flashscore çerez popup'ı görünmedi veya tıklanamadı ({league_name}).")
 
-        # Maçların yüklenmesini bekle
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div[class*='event__match']"))
-        )
+        # Spor türüne göre iç element seçicilerini belirle
+        if sport_path == "futbol":
+            time_class = "event__time"
+            home_participant_class = "event__homeParticipant" # Futbol için
+            away_participant_class = "event__awayParticipant" # Futbol için
+            print(f"⚽ {league_name}: Futbol seçicileri kullanılıyor.")
+        elif sport_path == "basketbol":
+            # Ekran görüntüsüne göre güncellenmiş class adları
+            time_class = "event__time" # Bu genellikle aynı kalır, kontrol edilmeli
+            home_participant_class = "event__participant--home" # BASKETBOL İÇİN GÜNCELLENDİ
+            away_participant_class = "event__participant--away" # BASKETBOL İÇİN GÜNCELLENDİ
+            print(f"🏀 {league_name}: Basketbol seçicileri kullanılıyor: Zaman='{time_class}', Ev Sahibi='{home_participant_class}', Deplasman='{away_participant_class}'")
+        else:
+            print(f"⚠️ {league_name}: Desteklenmeyen spor türü '{sport_path}'. Varsayılan (futbol) seçicileri kullanılacak.")
+            time_class = "event__time"
+            home_participant_class = "event__homeParticipant"
+            away_participant_class = "event__awayParticipant"
 
-        # Sayfa kaynağını debug için kaydet (isteğe bağlı)
-        with open(debug_flashscore_path, "w", encoding="utf-8") as debug_file:
-            debug_file.write(driver.page_source)
-
-        # with suppress_stderr(): # Hata ayıklama sırasında stderr'i görmek faydalı olabilir
-        matches = driver.find_elements(By.CSS_SELECTOR, "div[class^='event__match']")
-
+        match_element_css_selector = "div[class*='event__match']" 
+        print(f"⏳ {league_name}: Maç elementleri ('{match_element_css_selector}') bekleniyor...")
+        
+        try:
+            WebDriverWait(driver, 20).until( 
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, match_element_css_selector))
+            )
+            print(f"✅ {league_name}: Maç elementleri DOM'da bulundu.")
+        except Exception as e_wait:
+            print(f"⚠️ {league_name}: Maç elementleri beklenirken zaman aşımı veya hata: {e_wait}. Sayfada fikstür olmayabilir.")
+            return league_name, [] 
+        
+        matches = driver.find_elements(By.CSS_SELECTOR, match_element_css_selector)
+        print(f"ℹ️ {league_name}: {len(matches)} adet potansiyel maç elementi bulundu.")
+        
         fixtures = []
-        current_date_utc = datetime.now(timezone.utc) # MODIFIED: Mevcut tarihi UTC olarak al
+        current_date_utc = datetime.now(timezone.utc) 
 
-        for match_element in matches:
+        if not matches:
+            print(f"⚠️ {league_name}: Hiç maç elementi bulunamadı (WebDriverWait sonrası).")
+            return league_name, []
+
+        for match_idx, match_element in enumerate(matches):
+            if len(fixtures) >= max_fixtures: 
+                print(f"ℹ️ {league_name}: Maksimum fikstür sayısına ({max_fixtures}) ulaşıldı.")
+                break
             try:
-                time_str_raw = match_element.find_element(By.CLASS_NAME, "event__time").text.strip()
-                home_team = match_element.find_element(By.CLASS_NAME, "event__homeParticipant").text.strip()
-                away_team = match_element.find_element(By.CLASS_NAME, "event__awayParticipant").text.strip()
+                time_str_raw = match_element.find_element(By.CLASS_NAME, time_class).text.strip()
+                home_team_el = match_element.find_element(By.CLASS_NAME, home_participant_class)
+                away_team_el = match_element.find_element(By.CLASS_NAME, away_participant_class)
+                
+                home_team = home_team_el.text.strip()
+                away_team = away_team_el.text.strip()
 
+                if not home_team or not away_team: 
+                    print(f"  ⚠️ {league_name} - Maç {match_idx+1}: Takım adı eksik (Ev: '{home_team}', Dep: '{away_team}'). Kullanılan seçiciler: Ev='{home_participant_class}', Dep='{away_participant_class}'. Bu maç atlanıyor.")
+                    continue
+                
                 parsed_dt_utc = None
                 time_val_display = time_str_raw 
 
-                # MODIFIED: Zaman ayrıştırma ve UTC+3'e dönüştürme mantığı
                 match_date_time = re.match(r"(\d{2})\.(\d{2})\.\s(\d{2}):(\d{2})", time_str_raw)
                 if match_date_time:
                     day, month, hour, minute = map(int, match_date_time.groups())
                     year = current_date_utc.year
-                    # Yılbaşı geçişlerini basitçe kontrol et
                     if month < current_date_utc.month or \
                        (month == current_date_utc.month and day < current_date_utc.day) :
                         year += 1 
                     try:
                         parsed_dt_utc = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
                     except ValueError:
-                        print(f"⚠️ Flashscore'da geçersiz tarih formatı: {time_str_raw}")
                         pass
 
                 if not parsed_dt_utc:
@@ -186,52 +491,48 @@ def get_flashscore_fixtures(driver, flashscore_path_segment, league_name):
                 
                 if not parsed_dt_utc:
                     match_time_only = re.match(r"(\d{2}):(\d{2})", time_str_raw)
-                    if match_time_only:
+                    if match_time_only: 
                         hour, minute = map(int, match_time_only.groups())
-                        # Güncel UTC gününü kullan, çünkü FlashScore genellikle güncel günün maçlarını sadece saat olarak listeler
-                        # Daha karmaşık senaryolar için sayfa yapısını analiz etmek gerekebilir (tarih başlıkları vb.)
                         parsed_dt_utc = datetime(current_date_utc.year, current_date_utc.month, current_date_utc.day, hour, minute, tzinfo=timezone.utc)
 
                 if parsed_dt_utc:
-                    local_dt = parsed_dt_utc + timedelta(hours=TIME_OFFSET_HOURS)
-                    
-                    # Görüntüleme formatını ayarla
+                    local_dt = parsed_dt_utc + timedelta(hours=TIME_OFFSET_HOURS) 
                     local_now_for_comparison = datetime.now(timezone.utc) + timedelta(hours=TIME_OFFSET_HOURS)
 
-                    if match_date_time:
+                    if match_date_time: 
                         time_val_display = local_dt.strftime("%d.%m. %H:%M")
-                    elif match_yarin_time:
+                    elif match_yarin_time: 
                         if local_dt.date() == (local_now_for_comparison + timedelta(days=1)).date():
                             time_val_display = f"YARIN {local_dt.strftime('%H:%M')}"
-                        elif local_dt.date() == local_now_for_comparison.date():
+                        elif local_dt.date() == local_now_for_comparison.date(): 
                              time_val_display = f"BUGÜN {local_dt.strftime('%H:%M')}"
-                        else:
+                        else: 
                             time_val_display = local_dt.strftime("%d.%m. %H:%M")
-                    elif match_time_only:
-                         # Eğer sadece saat varsa ve yerel saatte gün değiştiyse tarihi de ekle
-                        if local_dt.date() != local_now_for_comparison.date():
+                    elif match_time_only: 
+                        if local_dt.date() != local_now_for_comparison.date(): 
                             time_val_display = local_dt.strftime("%d.%m. %H:%M")
                         else:
                             time_val_display = local_dt.strftime("%H:%M")
-                    else: # Ayrıştırıldı ama belirli bir kalıba uymadı (beklenmedik)
-                         time_val_display = local_dt.strftime("%H:%M") # Varsayılan format
-                else: # Ayrıştırma başarısız oldu, ham değeri kullan
-                    time_val_display = time_str_raw
-                # END MODIFIED
-
-                if home_team and away_team:
-                    fixtures.append(f"{time_val_display}: {home_team} - {away_team}")
-                if len(fixtures) >= 10:
-                    break
+                    else: 
+                         time_val_display = local_dt.strftime("%H:%M") 
+                else: 
+                    time_val_display = time_str_raw 
+                
+                fixtures.append(f"{time_val_display}: {home_team} vs {away_team}")
+                
             except Exception as e_match_item:
-                print(f"⚠️ {league_name} liginde bir maç işlenirken hata: {e_match_item} (Zaman: {time_str_raw if 'time_str_raw' in locals() else 'N/A'})")
+                print(f"⚠️ {league_name} liginde bir maç ({match_idx+1}) işlenirken hata: {e_match_item} (Zaman: {time_str_raw if 'time_str_raw' in locals() else 'N/A'})")
+                print(f"   Kullanılan seçiciler - Saat: '{time_class}', Ev Sahibi: '{home_participant_class}', Deplasman: '{away_participant_class}'")
                 continue
         
-        print(f"✅ {league_name}: {len(fixtures)} maç bulundu (saatler ayarlandı).")
+        if matches and not fixtures: 
+            print(f"⚠️ {league_name}: Maç elementleri bulundu ({len(matches)} adet) ancak hiçbiri geçerli fikstür olarak işlenemedi. Tarih/saat formatları veya takım adı çekme (özellikle '{home_participant_class}' ve '{away_participant_class}' seçicileri) kontrol edilmeli.")
+
+        print(f"✅ {league_name}: {len(fixtures)} maç bulundu ve işlendi (saatler ayarlandı).")
         return league_name, fixtures
 
     except Exception as e:
-        print(f"❌ {league_name} Flashscore verisi alınamadı: {e}")
+        print(f"❌ {league_name} ({combined_path}) Flashscore verisi alınamadı: {e}")
         return league_name, []
 
 
@@ -687,17 +988,23 @@ def generate_html():
         movies = fetch_movies()
         twitter_trends = get_trending_topics_trends24()
         spotify_tracks = get_new_turkish_rap_tracks_embed()
+        istanbul_etkinlikleri = fetch_istanbul_events(driver) # WebDriver'ı paslayın
 
-        leagues_config = [
-            ("ingiltere/premier-league", "Premier League"),
-            ("ispanya/laliga", "La Liga"),
-            ("turkiye/super-lig", "Süper Lig"), 
-            ("avrupa/sampiyonlar-ligi", "Şampiyonlar Ligi")
+        sport_leagues_config = [
+            ("futbol/ingiltere/premier-league", "Premier League"),
+            ("futbol/ispanya/laliga", "La Liga"),
+            ("futbol/turkiye/super-lig", "Süper Lig"), 
+            ("futbol/avrupa/sampiyonlar-ligi", "Şampiyonlar Ligi"),
+            ("basketbol/turkiye/super-lig", "Süper Lig (Basketbol)") 
         ]
+        
         fixtures_all = {}
-        for path_segment, name in leagues_config:
-            league_name_key, fixture_values = get_flashscore_fixtures(driver, path_segment, name)
-            fixtures_all[league_name_key] = fixture_values
+        max_fixtures_per_league = 7 
+        print("\n--- Spor Fikstürleri Çekiliyor ---")
+        for combined_path_cfg, league_display_name_cfg in sport_leagues_config:
+            # Güncellenmiş get_flashscore_sport_fixtures fonksiyonu çağrılıyor
+            _, fixture_values = get_flashscore_sport_fixtures(driver, combined_path_cfg, league_display_name_cfg, max_fixtures_per_league)
+            fixtures_all[league_display_name_cfg] = fixture_values
         
         news_results = {category: [] for category in RSS_FEEDS}
         with ThreadPoolExecutor(max_workers=10) as executor: 
@@ -829,6 +1136,26 @@ def generate_html():
     body.dark-mode .route-controls button:hover {{ background-color: #3fa1e6; }}
     #route-info {{ margin-top:10px; font-weight:500; color: var(--primary-color);}}
     body.dark-mode #route-info {{ color: var(--accent-color);}}
+    .event-card-title {{font-size: 1.1em; /* Başlık font boyutu */font-weight: 600;margin-top: 5px;margin-bottom: 8px;white-space: nowrap; /* Başlığın tek satırda kalmasını sağlar */overflow: hidden; /* Taşan kısmı gizler */text-overflow: ellipsis; /* Taşan kısmın sonuna "..." ekler */display: block; /* text-overflow için block veya inline-block olmalı */color: var(--text-color); /* Ana metin rengi */}}
+    .event-card-details p {{font-size: 0.9em;margin-bottom: 4px; /* Detaylar arası boşluk */white-space: nowrap;overflow: hidden;text-overflow: ellipsis;display: block;color: var(--text-color); /* Ana metin rengi */}}
+    .event-card-category {{font-size: 0.85em;color: #555; /* Normal mod için kategori rengi */margin-bottom: 5px;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;display: block;}}
+    .event-card-link-button {{display: block;text-align: center;background-color: var(--primary-color); /* Ana renk değişkeninizden */color: white; /* Buton yazı rengi genellikle beyaz kalır */padding: 8px 10px;border-radius: 5px;text-decoration: none;font-size: 0.9em;margin-top: 10px; /* Buton ile üstündeki içerik arası boşluk */}}
+    .event-card-link-button:hover {{background-color: var(--primary-hover); /* Hover renk değişkeninizden */}}
+    /* Genel kart stiliniz (mevcut .card veya .film-card stilinize benzer olabilir) */
+    .custom-event-card {{background: var(--card-color); /* Kart renk değişkeninizden */max-width: 320px; /* Kart genişliği */width: 100%; /* Mobil için tam genişlik */box-sizing: border-box;border-radius: 12px; /* Köşe yuvarlaklığı */box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Gölge */text-align: left;border: 1px solid var(--border-color); /* Kenarlık değişkeninizden */display: flex;flex-direction: column;justify-content: space-between; /* İçeriği dikeyde yaymak için */margin-bottom: 20px; /* Kartlar arası boşluk */overflow: hidden; /* İçerik taşmasını engellemek için */}}
+    .custom-event-card a {{ /* Kart içindeki linklerin altını çizmemek için */text-decoration:none; color:inherit; /* Yazı rengini parent elementten alır */}}
+    .custom-event-card-image-link {{display: block; /* Resmin linkin tamamını kaplaması için */}}
+    .custom-event-card-image {{width: 100%;height: 180px; /* Resim yüksekliği, isteğe bağlı */object-fit: cover; /* Resmin orantılı şekilde alanı kaplaması */border-radius: 8px 8px 0 0; /* Sadece üst köşeleri yuvarlat */}}
+    .custom-event-card-content {{padding: 12px; /* Kart içi boşluk */flex-grow: 1; /* İçeriğin kalan alanı doldurması için */}}
+    .custom-event-card-actions {{padding: 0 12px 12px; /* Buton alanı için padding */}}
+    /* Gece Modu için Etkinlik Kartı Yazı Renkleri */
+    body.dark-mode .custom-event-card {{background: var(--dark-card); /* Gece modu kart arkaplanı */border-color: var(--dark-border-color); /* Gece modu kenarlık rengi */}}
+    body.dark-mode .event-card-title {{color: var(--accent-color); /* Gece modunda başlık rengi (vurgu rengi) */}}
+    body.dark-mode .event-card-details p {{color: var(--dark-text); /* Gece modunda detay metin rengi */}}
+    body.dark-mode .event-card-details p strong {{ /* Kalın yazılmış kısımlar için de renk */color: var(--dark-text); }}
+    body.dark-mode .event-card-category {{color: #bbb; /* Gece modunda kategori rengi (film kartlarındaki gibi) */}}
+    /* Buton renkleri genellikle tema değişiminden etkilenmez ama istenirse o da ayarlanabilir */
+    /* body.dark-mode .event-card-link-button {{ ... }} */
     @media (max-width: 768px) {{
         .page-wrapper {{ padding-top: 100px; }}
         .sticky-nav {{ padding: 8px 0; gap: 5px 8px; }}
@@ -848,6 +1175,7 @@ def generate_html():
         <a href="#hava">🌤️ Hava</a>
         <a href="#trafik">🚦 Trafik</a>
         <a href="#doviz">💱 Döviz</a>
+        <a href="#etkinlikler">📅 Etkinlikler</a> 
         <a href="#fikstur">⚽ Fikstür</a>
         <a href="#reyting">📺 Reyting</a>
         <a href="#twitter">🔥 Gündem</a>
@@ -977,8 +1305,53 @@ def generate_html():
         html_content.append('<p>⚠️ Döviz kuru verisi alınamadı.</p>')
     html_content.append('</div>')
 
-    # Futbol Fikstürü
-    html_content.append('<h2 id="fikstur" class="section-title">⚽ Haftalık Fikstür</h2><div class="container">')
+    # ZORLU PSM EVENT
+    html_content.append('<h2 id="etkinlikler" class="section-title">📅 İstanbul Etkinlikleri (Zorlu PSM)</h2>')
+    html_content.append('<div class="container">') # Veya .film-container gibi bir class
+
+    if 'istanbul_etkinlikleri' in locals() and istanbul_etkinlikleri:
+         for event in istanbul_etkinlikleri:
+             image_html = ""
+             if event.get('image_url'):
+                 image_html = f'<img src="{event["image_url"]}" alt="{event["title"]}" loading="lazy" class="custom-event-card-image">'
+             else:
+                 # İsteğe bağlı yer tutucu resim
+                 # image_html = f'<img src="https://placehold.co/320x180/eee/333?text={requests.utils.quote(event["title"][:20])}" alt="{event["title"]}" loading="lazy" class="custom-event-card-image">'
+                 pass # Veya boş bırakabilirsiniz
+
+             # Etkinlik başlığını kısaltma (Python tarafında, CSS'e ek olarak)
+             # Bu, özellikle çok uzun başlıkların HTML'i bozmasını engeller.
+             display_title = event["title"]
+             # if len(display_title) > 70: # Örnek bir karakter limiti
+             #    display_title = display_title[:67] + "..."
+
+             html_content.append(f'''
+             <div class="custom-event-card">
+                 <a href="{event["link"]}" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     {image_html if image_html else ""}
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="{event["link"]}" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="{event["title"]}">{display_title}</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: {event["date_str"]} {event["time_str"]}"><strong>Tarih:</strong> {event["date_str"]} {event["time_str"]}</p>
+                         <p title="Mekan: {event["venue"]}"><strong>Mekan:</strong> {event["venue"]}</p>
+                         <p class="event-card-category" title="Kategori: {event["category"]}">Kategori: {event["category"]}</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="{event["link"]}" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             ''')
+    else:
+         html_content.append('<p>⚠️ İstanbul etkinlik verisi (Zorlu PSM) şu an için alınamadı veya bulunamadı.</p>')
+    html_content.append('</div>') # .container sonu
+    
+
+    # SPOR FİKSTÜR
+    html_content.append('<h2 id="fikstur" class="section-title"> Haftalık Fikstür</h2><div class="container">')
     if fixtures_all:
         for league, matches in fixtures_all.items():
             html_content.append(f"<div class='card'><h3>{league}</h3>")
@@ -1016,6 +1389,7 @@ def generate_html():
     else:
         html_content.append('<p>⚠️ Twitter gündem verisi alınamadı.</p>')
     html_content.append('</div>')
+    
 
     # Spotify Müzik
     html_content.append('<h2 id="muzik" class="section-title">🎧 Yeni Çıkan Müzikler (Spotify)</h2><div class="card"><div class="spotify-container">')
