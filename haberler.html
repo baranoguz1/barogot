@@ -90,6 +90,26 @@
     body.dark-mode .route-controls button:hover { background-color: #3fa1e6; }
     #route-info { margin-top:10px; font-weight:500; color: var(--primary-color);}
     body.dark-mode #route-info { color: var(--accent-color);}
+    .event-card-title {font-size: 1.1em; /* Başlık font boyutu */font-weight: 600;margin-top: 5px;margin-bottom: 8px;white-space: nowrap; /* Başlığın tek satırda kalmasını sağlar */overflow: hidden; /* Taşan kısmı gizler */text-overflow: ellipsis; /* Taşan kısmın sonuna "..." ekler */display: block; /* text-overflow için block veya inline-block olmalı */color: var(--text-color); /* Ana metin rengi */}
+    .event-card-details p {font-size: 0.9em;margin-bottom: 4px; /* Detaylar arası boşluk */white-space: nowrap;overflow: hidden;text-overflow: ellipsis;display: block;color: var(--text-color); /* Ana metin rengi */}
+    .event-card-category {font-size: 0.85em;color: #555; /* Normal mod için kategori rengi */margin-bottom: 5px;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;display: block;}
+    .event-card-link-button {display: block;text-align: center;background-color: var(--primary-color); /* Ana renk değişkeninizden */color: white; /* Buton yazı rengi genellikle beyaz kalır */padding: 8px 10px;border-radius: 5px;text-decoration: none;font-size: 0.9em;margin-top: 10px; /* Buton ile üstündeki içerik arası boşluk */}
+    .event-card-link-button:hover {background-color: var(--primary-hover); /* Hover renk değişkeninizden */}
+    /* Genel kart stiliniz (mevcut .card veya .film-card stilinize benzer olabilir) */
+    .custom-event-card {background: var(--card-color); /* Kart renk değişkeninizden */max-width: 320px; /* Kart genişliği */width: 100%; /* Mobil için tam genişlik */box-sizing: border-box;border-radius: 12px; /* Köşe yuvarlaklığı */box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Gölge */text-align: left;border: 1px solid var(--border-color); /* Kenarlık değişkeninizden */display: flex;flex-direction: column;justify-content: space-between; /* İçeriği dikeyde yaymak için */margin-bottom: 20px; /* Kartlar arası boşluk */overflow: hidden; /* İçerik taşmasını engellemek için */}
+    .custom-event-card a { /* Kart içindeki linklerin altını çizmemek için */text-decoration:none; color:inherit; /* Yazı rengini parent elementten alır */}
+    .custom-event-card-image-link {display: block; /* Resmin linkin tamamını kaplaması için */}
+    .custom-event-card-image {width: 100%;height: 180px; /* Resim yüksekliği, isteğe bağlı */object-fit: cover; /* Resmin orantılı şekilde alanı kaplaması */border-radius: 8px 8px 0 0; /* Sadece üst köşeleri yuvarlat */}
+    .custom-event-card-content {padding: 12px; /* Kart içi boşluk */flex-grow: 1; /* İçeriğin kalan alanı doldurması için */}
+    .custom-event-card-actions {padding: 0 12px 12px; /* Buton alanı için padding */}
+    /* Gece Modu için Etkinlik Kartı Yazı Renkleri */
+    body.dark-mode .custom-event-card {background: var(--dark-card); /* Gece modu kart arkaplanı */border-color: var(--dark-border-color); /* Gece modu kenarlık rengi */}
+    body.dark-mode .event-card-title {color: var(--accent-color); /* Gece modunda başlık rengi (vurgu rengi) */}
+    body.dark-mode .event-card-details p {color: var(--dark-text); /* Gece modunda detay metin rengi */}
+    body.dark-mode .event-card-details p strong { /* Kalın yazılmış kısımlar için de renk */color: var(--dark-text); }
+    body.dark-mode .event-card-category {color: #bbb; /* Gece modunda kategori rengi (film kartlarındaki gibi) */}
+    /* Buton renkleri genellikle tema değişiminden etkilenmez ama istenirse o da ayarlanabilir */
+    /* body.dark-mode .event-card-link-button { ... } */
     @media (max-width: 768px) {
         .page-wrapper { padding-top: 100px; }
         .sticky-nav { padding: 8px 0; gap: 5px 8px; }
@@ -109,6 +129,7 @@
         <a href="#hava">🌤️ Hava</a>
         <a href="#trafik">🚦 Trafik</a>
         <a href="#doviz">💱 Döviz</a>
+        <a href="#etkinlikler">📅 Etkinlikler</a> 
         <a href="#fikstur">⚽ Fikstür</a>
         <a href="#reyting">📺 Reyting</a>
         <a href="#twitter">🔥 Gündem</a>
@@ -118,7 +139,7 @@
     </nav>
     <button class="toggle-button" aria-label="Gece Modu Değiştir">🌙</button>
     <div class="page-wrapper">
-        <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:20px;">Son Güncelleme: 04 June 2025, 14:21:24</p>
+        <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:20px;">Son Güncelleme: 04 June 2025, 14:28:28</p>
 <h2 id="hava" class="section-title">📍 İstanbul Saatlik Hava Durumu</h2><div class="weather-container">
             <div class="weather-card sunny">
                 <p><strong>15:00</strong></p>
@@ -247,7 +268,235 @@
             }
         </script>
         <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCMbTGAz9AGlSXzfROx94Mg1UcmuxIguBU&callback=initMap&libraries=places&language=tr&region=TR"></script>
-        <h2 id="doviz" class="section-title">💱 Döviz Kurları</h2><div class="exchange-container"><div class="exchange-card"><strong>USDTRY:</strong> 39.15 TRY</div><div class="exchange-card"><strong>EURTRY:</strong> 44.59 TRY</div><div class="exchange-card"><strong>GBPTRY:</strong> 52.98 TRY</div></div><h2 id="fikstur" class="section-title">⚽ Haftalık Fikstür</h2><div class="container"><div class='card'><h3>Premier League</h3><p>Bu lig için fikstür verisi bulunamadı.</p></div><div class='card'><h3>La Liga</h3><p>Bu lig için fikstür verisi bulunamadı.</p></div><div class='card'><h3>Süper Lig</h3><p>Bu lig için fikstür verisi bulunamadı.</p></div><div class='card'><h3>Şampiyonlar Ligi</h3><p>Bu lig için fikstür verisi bulunamadı.</p></div></div><h2 id="reyting" class="section-title">📺 Günlük Reytingler</h2><p>⚠️ Günlük reyting verisi alınamadı.</p><h2 id="twitter" class="section-title">🔥 Türkiye Gündemi (Twitter)</h2><div class="container">
+        <h2 id="doviz" class="section-title">💱 Döviz Kurları</h2><div class="exchange-container"><div class="exchange-card"><strong>USDTRY:</strong> 39.15 TRY</div><div class="exchange-card"><strong>EURTRY:</strong> 44.59 TRY</div><div class="exchange-card"><strong>GBPTRY:</strong> 52.98 TRY</div></div><h2 id="etkinlikler" class="section-title">📅 İstanbul Etkinlikleri (Zorlu PSM)</h2><div class="container">
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/karnaval-radio-presents-cengiz-unsal?p=48d8b30b-e640-4a96-8086-e76babff1d7a" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/ee7f451f-85b9-492a-a314-dfcbc97b8a7f" alt="KARNAVAL PRESENTS: CENGİZ ÜNSALVESTEL AMFİ’DE BU YAZ ÇOK YENİ, ÇOK İYİ!4 Haziran'da Karnaval Presents: Cengiz Ünsal, Vestel Amfi’de." loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/karnaval-radio-presents-cengiz-unsal?p=48d8b30b-e640-4a96-8086-e76babff1d7a" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="KARNAVAL PRESENTS: CENGİZ ÜNSALVESTEL AMFİ’DE BU YAZ ÇOK YENİ, ÇOK İYİ!4 Haziran'da Karnaval Presents: Cengiz Ünsal, Vestel Amfi’de.">KARNAVAL PRESENTS: CENGİZ ÜNSALVESTEL AMFİ’DE BU YAZ ÇOK YENİ, ÇOK İYİ!4 Haziran'da Karnaval Presents: Cengiz Ünsal, Vestel Amfi’de.</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 04 Hazi̇ran 19:00"><strong>Tarih:</strong> 04 Hazi̇ran 19:00</p>
+                         <p title="Mekan: VESTEL AMFİ"><strong>Mekan:</strong> VESTEL AMFİ</p>
+                         <p class="event-card-category" title="Kategori: PARTİÜCRETSİZ">Kategori: PARTİÜCRETSİZ</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/karnaval-radio-presents-cengiz-unsal?p=48d8b30b-e640-4a96-8086-e76babff1d7a" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/unforgettables-by-cemil-45-likler?p=8470cf68-7f04-409f-ab8f-6726b684666c" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/754eaffc-d41c-4ac1-96c5-59e4315857e5" alt="UNFORGETTABLES BY CEMİL "45'LİKLER"“Unforgettables by Cemil” yepyeni temasıyla touché by N Kolay’da!Touché by N Kolay’daki konserlerinde birbirinden değişik içerikleriyle çok başarılı konserler veren usta yorumcu Cemil, bu konserde de Türkiye Yüzyılı'nda iz bırakan yerli 45’liklere ve ülkemizde çok sevilen yabancı 45'liklere yer verecek. Bu fırsatı kaçırmayın." loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/unforgettables-by-cemil-45-likler?p=8470cf68-7f04-409f-ab8f-6726b684666c" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="UNFORGETTABLES BY CEMİL "45'LİKLER"“Unforgettables by Cemil” yepyeni temasıyla touché by N Kolay’da!Touché by N Kolay’daki konserlerinde birbirinden değişik içerikleriyle çok başarılı konserler veren usta yorumcu Cemil, bu konserde de Türkiye Yüzyılı'nda iz bırakan yerli 45’liklere ve ülkemizde çok sevilen yabancı 45'liklere yer verecek. Bu fırsatı kaçırmayın.">UNFORGETTABLES BY CEMİL "45'LİKLER"“Unforgettables by Cemil” yepyeni temasıyla touché by N Kolay’da!Touché by N Kolay’daki konserlerinde birbirinden değişik içerikleriyle çok başarılı konserler veren usta yorumcu Cemil, bu konserde de Türkiye Yüzyılı'nda iz bırakan yerli 45’liklere ve ülkemizde çok sevilen yabancı 45'liklere yer verecek. Bu fırsatı kaçırmayın.</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 04 Hazi̇ran 21:00"><strong>Tarih:</strong> 04 Hazi̇ran 21:00</p>
+                         <p title="Mekan: TOUCHÉ BY N KOLAY"><strong>Mekan:</strong> TOUCHÉ BY N KOLAY</p>
+                         <p class="event-card-category" title="Kategori: KONSER">Kategori: KONSER</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/unforgettables-by-cemil-45-likler?p=8470cf68-7f04-409f-ab8f-6726b684666c" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/2025-fivb-voleybol-milletler-ligi-turkiye-tayland?p=4982aae8-7951-43ac-a568-d8bc3f32de53" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/e52b2b71-f85a-4c36-8888-15460c49e3b1" alt="2025 FIVB VOLEYBOL MİLLETLER LİGİ: TÜRKİYE - TAYLAND2025 FIVB Voleybol Milletler Ligi: Türkiye - Tayland, 6 Haziran'da Zorlu PSM'nin sevilen açık hava mekanı Vestel Amfi'de!" loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/2025-fivb-voleybol-milletler-ligi-turkiye-tayland?p=4982aae8-7951-43ac-a568-d8bc3f32de53" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="2025 FIVB VOLEYBOL MİLLETLER LİGİ: TÜRKİYE - TAYLAND2025 FIVB Voleybol Milletler Ligi: Türkiye - Tayland, 6 Haziran'da Zorlu PSM'nin sevilen açık hava mekanı Vestel Amfi'de!">2025 FIVB VOLEYBOL MİLLETLER LİGİ: TÜRKİYE - TAYLAND2025 FIVB Voleybol Milletler Ligi: Türkiye - Tayland, 6 Haziran'da Zorlu PSM'nin sevilen açık hava mekanı Vestel Amfi'de!</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 06 Hazi̇ran 14:30"><strong>Tarih:</strong> 06 Hazi̇ran 14:30</p>
+                         <p title="Mekan: VESTEL AMFİ"><strong>Mekan:</strong> VESTEL AMFİ</p>
+                         <p class="event-card-category" title="Kategori: GÖSTERİMÜCRETSİZ">Kategori: GÖSTERİMÜCRETSİZ</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/2025-fivb-voleybol-milletler-ligi-turkiye-tayland?p=4982aae8-7951-43ac-a568-d8bc3f32de53" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/2025-fivb-voleybol-milletler-ligi-turkiye-polonya?p=7866c5eb-6b58-4086-852e-58523010574e" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/ad64d234-e61b-4925-a774-bd37ab27c09a" alt="2025 FIVB VOLEYBOL MİLLETLER LİGİ: TÜRKİYE - POLONYA2025 FIVB Voleybol Milletler Ligi: Türkiye - Polonya, 7 Haziran'da Zorlu PSM'nin sevilen açık hava mekanı Vestel Amfi'de!" loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/2025-fivb-voleybol-milletler-ligi-turkiye-polonya?p=7866c5eb-6b58-4086-852e-58523010574e" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="2025 FIVB VOLEYBOL MİLLETLER LİGİ: TÜRKİYE - POLONYA2025 FIVB Voleybol Milletler Ligi: Türkiye - Polonya, 7 Haziran'da Zorlu PSM'nin sevilen açık hava mekanı Vestel Amfi'de!">2025 FIVB VOLEYBOL MİLLETLER LİGİ: TÜRKİYE - POLONYA2025 FIVB Voleybol Milletler Ligi: Türkiye - Polonya, 7 Haziran'da Zorlu PSM'nin sevilen açık hava mekanı Vestel Amfi'de!</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 07 Hazi̇ran 10:00"><strong>Tarih:</strong> 07 Hazi̇ran 10:00</p>
+                         <p title="Mekan: VESTEL AMFİ"><strong>Mekan:</strong> VESTEL AMFİ</p>
+                         <p class="event-card-category" title="Kategori: GÖSTERİMÜCRETSİZ">Kategori: GÖSTERİMÜCRETSİZ</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/2025-fivb-voleybol-milletler-ligi-turkiye-polonya?p=7866c5eb-6b58-4086-852e-58523010574e" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/2025-fivb-voleybol-milletler-ligi-cin-turkiye?p=362347c4-ffbb-4661-b910-759622f79224" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/27dc7990-0cca-4b5b-a05d-278628b09b0a" alt="2025 FIVB VOLEYBOL MİLLETLER LİGİ: ÇİN - TÜRKİYE2025 FIVB Voleybol Milletler Ligi: Çin - Türkiye, 8 Haziran'da Zorlu PSM'nin sevilen açık hava mekanı Vestel Amfi'de!" loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/2025-fivb-voleybol-milletler-ligi-cin-turkiye?p=362347c4-ffbb-4661-b910-759622f79224" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="2025 FIVB VOLEYBOL MİLLETLER LİGİ: ÇİN - TÜRKİYE2025 FIVB Voleybol Milletler Ligi: Çin - Türkiye, 8 Haziran'da Zorlu PSM'nin sevilen açık hava mekanı Vestel Amfi'de!">2025 FIVB VOLEYBOL MİLLETLER LİGİ: ÇİN - TÜRKİYE2025 FIVB Voleybol Milletler Ligi: Çin - Türkiye, 8 Haziran'da Zorlu PSM'nin sevilen açık hava mekanı Vestel Amfi'de!</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 08 Hazi̇ran 14:30"><strong>Tarih:</strong> 08 Hazi̇ran 14:30</p>
+                         <p title="Mekan: VESTEL AMFİ"><strong>Mekan:</strong> VESTEL AMFİ</p>
+                         <p class="event-card-category" title="Kategori: GÖSTERİMÜCRETSİZ">Kategori: GÖSTERİMÜCRETSİZ</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/2025-fivb-voleybol-milletler-ligi-cin-turkiye?p=362347c4-ffbb-4661-b910-759622f79224" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/psm-loves-summer-by-100-muzik-anohni-the-johnsons?p=c43d4a51-9354-4553-aa0d-38e3ffa6512e" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/48d3a62b-bc97-4342-bf5e-c6005df7c95d" alt="PSM LOVES SUMMER BY %100 MÜZİK: ANOHNI & THE JOHNSONSPSM Loves Summer by %100 Müzik: Anohni & The Johnsons 10 Haziran’da Turkcell Sahnesi’nde!1998'de grubunu kurarak müzikte animist ve ekofeminist temalara odaklanarak kendine özgü bir yol izleyen Anohni, Zorlu PSM Turkcell Sahnesi'nde dinleyicileriyle buluşuyor.Anohni'nin müzik yolculuğu, elektronik deneysel müzikten avant-garde klasik, dans ve soul gibi türlere kadar uzanıyor. Anohni, 2005'teki I Am a Bird Now albümüyle büyük bir çıkış yaparak UK Mercury Müzik Ödülü'nü kazandıktan sonra The Crying Light, Swanlights ve konser albümleri Cut The World ve Turning ile önemli çıkışlar yakalıyor.2016'da, Hudson Mohawke ve Daniel Lopatin tarafından üretilen, politik açıdan keskin ve deneysel elektronik albümü Hopelessness'ı çıkaran Anohni'nin altıncı stüdyo albümü My Back Was A Bridge For You To Cross; manevi, toplumsal yapılar ve biyosferle olan ilişkilerimiz hakkında düşünme biçimlerimizi dönüştürmeyi modellemeye ve teşvik etmeye devam ediyor.Anohni, eşsiz performansıyla 10 Haziran’da sahnede olacak!" loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/psm-loves-summer-by-100-muzik-anohni-the-johnsons?p=c43d4a51-9354-4553-aa0d-38e3ffa6512e" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="PSM LOVES SUMMER BY %100 MÜZİK: ANOHNI & THE JOHNSONSPSM Loves Summer by %100 Müzik: Anohni & The Johnsons 10 Haziran’da Turkcell Sahnesi’nde!1998'de grubunu kurarak müzikte animist ve ekofeminist temalara odaklanarak kendine özgü bir yol izleyen Anohni, Zorlu PSM Turkcell Sahnesi'nde dinleyicileriyle buluşuyor.Anohni'nin müzik yolculuğu, elektronik deneysel müzikten avant-garde klasik, dans ve soul gibi türlere kadar uzanıyor. Anohni, 2005'teki I Am a Bird Now albümüyle büyük bir çıkış yaparak UK Mercury Müzik Ödülü'nü kazandıktan sonra The Crying Light, Swanlights ve konser albümleri Cut The World ve Turning ile önemli çıkışlar yakalıyor.2016'da, Hudson Mohawke ve Daniel Lopatin tarafından üretilen, politik açıdan keskin ve deneysel elektronik albümü Hopelessness'ı çıkaran Anohni'nin altıncı stüdyo albümü My Back Was A Bridge For You To Cross; manevi, toplumsal yapılar ve biyosferle olan ilişkilerimiz hakkında düşünme biçimlerimizi dönüştürmeyi modellemeye ve teşvik etmeye devam ediyor.Anohni, eşsiz performansıyla 10 Haziran’da sahnede olacak!">PSM LOVES SUMMER BY %100 MÜZİK: ANOHNI & THE JOHNSONSPSM Loves Summer by %100 Müzik: Anohni & The Johnsons 10 Haziran’da Turkcell Sahnesi’nde!1998'de grubunu kurarak müzikte animist ve ekofeminist temalara odaklanarak kendine özgü bir yol izleyen Anohni, Zorlu PSM Turkcell Sahnesi'nde dinleyicileriyle buluşuyor.Anohni'nin müzik yolculuğu, elektronik deneysel müzikten avant-garde klasik, dans ve soul gibi türlere kadar uzanıyor. Anohni, 2005'teki I Am a Bird Now albümüyle büyük bir çıkış yaparak UK Mercury Müzik Ödülü'nü kazandıktan sonra The Crying Light, Swanlights ve konser albümleri Cut The World ve Turning ile önemli çıkışlar yakalıyor.2016'da, Hudson Mohawke ve Daniel Lopatin tarafından üretilen, politik açıdan keskin ve deneysel elektronik albümü Hopelessness'ı çıkaran Anohni'nin altıncı stüdyo albümü My Back Was A Bridge For You To Cross; manevi, toplumsal yapılar ve biyosferle olan ilişkilerimiz hakkında düşünme biçimlerimizi dönüştürmeyi modellemeye ve teşvik etmeye devam ediyor.Anohni, eşsiz performansıyla 10 Haziran’da sahnede olacak!</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 10 Hazi̇ran 21:30"><strong>Tarih:</strong> 10 Hazi̇ran 21:30</p>
+                         <p title="Mekan: TURKCELL SAHNESİ"><strong>Mekan:</strong> TURKCELL SAHNESİ</p>
+                         <p class="event-card-category" title="Kategori: KONSER">Kategori: KONSER</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/psm-loves-summer-by-100-muzik-anohni-the-johnsons?p=c43d4a51-9354-4553-aa0d-38e3ffa6512e" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/aydinlikevler?p=e8bff5b6-8308-4c84-a9e3-de4c3bb30991" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/c600d67d-fe22-48dd-8b80-f0a6991e1db4" alt="AYDINLIKEVLERAydınlıkevler, 11 Haziran'da Zorlu PSM Turkcell Sahnesi'nde!Yaşamak, zemheriye ve yokluğa direnmek ve Amerika’yla baş etmek üzerine dar gelirli ama zengin bir öykü… Burası Aydınlıkevler ve babaannem Amerika’ya karşı!!!" loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/aydinlikevler?p=e8bff5b6-8308-4c84-a9e3-de4c3bb30991" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="AYDINLIKEVLERAydınlıkevler, 11 Haziran'da Zorlu PSM Turkcell Sahnesi'nde!Yaşamak, zemheriye ve yokluğa direnmek ve Amerika’yla baş etmek üzerine dar gelirli ama zengin bir öykü… Burası Aydınlıkevler ve babaannem Amerika’ya karşı!!!">AYDINLIKEVLERAydınlıkevler, 11 Haziran'da Zorlu PSM Turkcell Sahnesi'nde!Yaşamak, zemheriye ve yokluğa direnmek ve Amerika’yla baş etmek üzerine dar gelirli ama zengin bir öykü… Burası Aydınlıkevler ve babaannem Amerika’ya karşı!!!</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 11 Hazi̇ran 20:30"><strong>Tarih:</strong> 11 Hazi̇ran 20:30</p>
+                         <p title="Mekan: TURKCELL SAHNESİ"><strong>Mekan:</strong> TURKCELL SAHNESİ</p>
+                         <p class="event-card-category" title="Kategori: TİYATROHEDİYE KART">Kategori: TİYATROHEDİYE KART</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/aydinlikevler?p=e8bff5b6-8308-4c84-a9e3-de4c3bb30991" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/afterwork-party-samet-gunal-esin?p=fa71bf34-fc39-4359-a9ef-a2480ebca42f" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/27ce4f3e-e3ab-4a34-924e-2c45c7dfd6f4" alt="AFTERWORK PARTY: SAMET GUNAL - ESİNVESTEL AMFİ’DE BU YAZ ÇOK YENİ, ÇOK İYİ!2010 yılından bu yana DJ’lik kariyerini aktif olarak sürdüren Samet, yerli ve uluslararası alanda tanınan sanatçılarla aynı sahneyi paylaşarak önemli deneyimler kazanmaya devam ediyor.Dans pistlerinde uzun zaman geçirdikten sonra stüdyoya girme kararı alan Esin, ruhuna hitap eden müzikler üretmeyi sürdürüyor.12 Haziran'da Afterwork Party: Samet Gunal & Esin, Vestel Amfi’de.Yeni sesler, taze bir atmosfer ve müziğin en iyileri için yerini şimdiden ayır!" loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/afterwork-party-samet-gunal-esin?p=fa71bf34-fc39-4359-a9ef-a2480ebca42f" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="AFTERWORK PARTY: SAMET GUNAL - ESİNVESTEL AMFİ’DE BU YAZ ÇOK YENİ, ÇOK İYİ!2010 yılından bu yana DJ’lik kariyerini aktif olarak sürdüren Samet, yerli ve uluslararası alanda tanınan sanatçılarla aynı sahneyi paylaşarak önemli deneyimler kazanmaya devam ediyor.Dans pistlerinde uzun zaman geçirdikten sonra stüdyoya girme kararı alan Esin, ruhuna hitap eden müzikler üretmeyi sürdürüyor.12 Haziran'da Afterwork Party: Samet Gunal & Esin, Vestel Amfi’de.Yeni sesler, taze bir atmosfer ve müziğin en iyileri için yerini şimdiden ayır!">AFTERWORK PARTY: SAMET GUNAL - ESİNVESTEL AMFİ’DE BU YAZ ÇOK YENİ, ÇOK İYİ!2010 yılından bu yana DJ’lik kariyerini aktif olarak sürdüren Samet, yerli ve uluslararası alanda tanınan sanatçılarla aynı sahneyi paylaşarak önemli deneyimler kazanmaya devam ediyor.Dans pistlerinde uzun zaman geçirdikten sonra stüdyoya girme kararı alan Esin, ruhuna hitap eden müzikler üretmeyi sürdürüyor.12 Haziran'da Afterwork Party: Samet Gunal & Esin, Vestel Amfi’de.Yeni sesler, taze bir atmosfer ve müziğin en iyileri için yerini şimdiden ayır!</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 12 Hazi̇ran 19:00"><strong>Tarih:</strong> 12 Hazi̇ran 19:00</p>
+                         <p title="Mekan: VESTEL AMFİ"><strong>Mekan:</strong> VESTEL AMFİ</p>
+                         <p class="event-card-category" title="Kategori: ÜCRETSİZ">Kategori: ÜCRETSİZ</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/afterwork-party-samet-gunal-esin?p=fa71bf34-fc39-4359-a9ef-a2480ebca42f" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/city-sounds-groove4lovers?p=ec6c1f87-e8b1-43e0-bcc9-09dee84452b8" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/4aa2f4f9-cb19-4635-99b7-e585f1377b98" alt="CITY SOUNDS: GROOVE4LOVERSVESTEL AMFİ’DE BU YAZ ÇOK YENİ, ÇOK İYİ!House müziğin farklı türlerinde yaptıkları seçkilerle dans pistlerinin nabzını tutan Groove4Lovers, 13 Haziran'da Vestel Amfi’de.Yeni sesler, taze bir atmosfer ve müziğin en iyileri için yerini şimdiden ayır!" loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/city-sounds-groove4lovers?p=ec6c1f87-e8b1-43e0-bcc9-09dee84452b8" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="CITY SOUNDS: GROOVE4LOVERSVESTEL AMFİ’DE BU YAZ ÇOK YENİ, ÇOK İYİ!House müziğin farklı türlerinde yaptıkları seçkilerle dans pistlerinin nabzını tutan Groove4Lovers, 13 Haziran'da Vestel Amfi’de.Yeni sesler, taze bir atmosfer ve müziğin en iyileri için yerini şimdiden ayır!">CITY SOUNDS: GROOVE4LOVERSVESTEL AMFİ’DE BU YAZ ÇOK YENİ, ÇOK İYİ!House müziğin farklı türlerinde yaptıkları seçkilerle dans pistlerinin nabzını tutan Groove4Lovers, 13 Haziran'da Vestel Amfi’de.Yeni sesler, taze bir atmosfer ve müziğin en iyileri için yerini şimdiden ayır!</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 13 Hazi̇ran 19:00"><strong>Tarih:</strong> 13 Hazi̇ran 19:00</p>
+                         <p title="Mekan: VESTEL AMFİ"><strong>Mekan:</strong> VESTEL AMFİ</p>
+                         <p class="event-card-category" title="Kategori: PARTİÜCRETSİZ">Kategori: PARTİÜCRETSİZ</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/city-sounds-groove4lovers?p=ec6c1f87-e8b1-43e0-bcc9-09dee84452b8" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/danstan-tablolar?p=1dd0de83-75ab-4499-a533-1d59730b8acd" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/b3035f41-fae1-416c-9f54-3fd970d158cf" alt="53. İSTANBUL MÜZİK FESTİVALİ: DANSTAN TABLOLARBreak dansta dünya şampiyonu ve koreograf Yaman Okur, doğaçlama yeteneğiyle övgü toplayan piyanist Alexander Gadjiev ile festivalde buluşuyor.Madonna’dan Katia ve Marielle Labèque’e, Cirque du Soleil’den Mathieu Kassovitz’e çok geniş yelpazede işbirlikleri gerçekleştiren, Yaz Davos Forumu’ndan Sadler’s Wells’e farklı platformlarda izleyicilerle buluşan Türk asıllı Fransız koreograf ve dansçı Yaman Okur çarpıcı bir projeyle ilk kez festivalde.Break dansta Fransa ve Dünya Şampiyonluğu sahibi Yaman Okur, benzersiz ritmik becerisi, mutlak bedensel hâkimiyeti ve geliştirdiği özgün stiliyle 1997’den bu yana dansçı, son 15 yıldır da aynı zamanda koreograf olarak sıradışı bir kariyer sürdürüyor. Ülkemizde daha ziyade Madonna ile çalışmasıyla manşetlere taşınan Okur, dünya dans sahnesinde hip-hop kültürünün perspektifini değiştiren isimler arasında yer alıyor. 2024’te kült film La Haine’den (Protesto) bizzat yönetmeninin sahneye uyarladığı müzikalin koreografisini yapan Okur’un ayrıca Paris’te büyük ses getiren müzikaller On Emir, Güneş Kral, Üç Silahşörler ve Robin Hood’da imzası bulunuyor. Paris Filarmoni’de piyano ikilisi Labéque kardeşler için düzenlenmiş Batı Yakasının Hikâyesi ile Cirque de Soleil’in övgüler alan Kurios prodüksiyonunun koreografileri de ona ait. Son yıllarda fotoğrafçı kimliğiyle de öne çıkan Okur, dans gösterilerinde kendi çektiği fotoğrafları da kullanarak çok katmanlı, zengin bir görsel dünya yaratıyor.2019-2021 BBC Yeni Nesil Sanatçısı, 2021 Uluslararası Chopin Yarışması ikincisi ve Sidney Yarışması birincisi Alexander Gadjiev, 2023’te Slovenya’da sanatçılara verilen en üst düzey ödül olan Prešeren Ödülü’nü aldı ve 2025 Gorizia-Nova Gorica Avrupa Sınırsız Kültür Başkenti için kültür elçisi seçildi. Geçtiğimiz yıllarda konuk olduğu Zubin Mehta yönetimindeki Maggio Musicale Fiorentino’ya bu sezon tekrar dönen Gadjiev ünlü şef ile Mumbai Senfoni Orkestrası’nda da bir araya geliyor. Ayrıca sezon boyunca İtalya’da bir resital turnesine çıkıyor; Bergisch Senfoni, SWR Senfoni ile Almanya’da ve resitalleri de kapsayan Japonya turnesinde New Japan Filarmoni ile konserler veriyor.Gramophone dergisinin doğaçlama içgüdüsünü ve analitik gücünü özellikle övdüğü Alexander Gadjiev, sınırların ötesine geçen bu özel projede Bir Sergiden Tablolar’ı doğaçlamalarıyla süsleyerek tam bir müzik ziyafeti sunarken Yaman Okur, müziği danstan tablolara dönüştürecek." loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/danstan-tablolar?p=1dd0de83-75ab-4499-a533-1d59730b8acd" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="53. İSTANBUL MÜZİK FESTİVALİ: DANSTAN TABLOLARBreak dansta dünya şampiyonu ve koreograf Yaman Okur, doğaçlama yeteneğiyle övgü toplayan piyanist Alexander Gadjiev ile festivalde buluşuyor.Madonna’dan Katia ve Marielle Labèque’e, Cirque du Soleil’den Mathieu Kassovitz’e çok geniş yelpazede işbirlikleri gerçekleştiren, Yaz Davos Forumu’ndan Sadler’s Wells’e farklı platformlarda izleyicilerle buluşan Türk asıllı Fransız koreograf ve dansçı Yaman Okur çarpıcı bir projeyle ilk kez festivalde.Break dansta Fransa ve Dünya Şampiyonluğu sahibi Yaman Okur, benzersiz ritmik becerisi, mutlak bedensel hâkimiyeti ve geliştirdiği özgün stiliyle 1997’den bu yana dansçı, son 15 yıldır da aynı zamanda koreograf olarak sıradışı bir kariyer sürdürüyor. Ülkemizde daha ziyade Madonna ile çalışmasıyla manşetlere taşınan Okur, dünya dans sahnesinde hip-hop kültürünün perspektifini değiştiren isimler arasında yer alıyor. 2024’te kült film La Haine’den (Protesto) bizzat yönetmeninin sahneye uyarladığı müzikalin koreografisini yapan Okur’un ayrıca Paris’te büyük ses getiren müzikaller On Emir, Güneş Kral, Üç Silahşörler ve Robin Hood’da imzası bulunuyor. Paris Filarmoni’de piyano ikilisi Labéque kardeşler için düzenlenmiş Batı Yakasının Hikâyesi ile Cirque de Soleil’in övgüler alan Kurios prodüksiyonunun koreografileri de ona ait. Son yıllarda fotoğrafçı kimliğiyle de öne çıkan Okur, dans gösterilerinde kendi çektiği fotoğrafları da kullanarak çok katmanlı, zengin bir görsel dünya yaratıyor.2019-2021 BBC Yeni Nesil Sanatçısı, 2021 Uluslararası Chopin Yarışması ikincisi ve Sidney Yarışması birincisi Alexander Gadjiev, 2023’te Slovenya’da sanatçılara verilen en üst düzey ödül olan Prešeren Ödülü’nü aldı ve 2025 Gorizia-Nova Gorica Avrupa Sınırsız Kültür Başkenti için kültür elçisi seçildi. Geçtiğimiz yıllarda konuk olduğu Zubin Mehta yönetimindeki Maggio Musicale Fiorentino’ya bu sezon tekrar dönen Gadjiev ünlü şef ile Mumbai Senfoni Orkestrası’nda da bir araya geliyor. Ayrıca sezon boyunca İtalya’da bir resital turnesine çıkıyor; Bergisch Senfoni, SWR Senfoni ile Almanya’da ve resitalleri de kapsayan Japonya turnesinde New Japan Filarmoni ile konserler veriyor.Gramophone dergisinin doğaçlama içgüdüsünü ve analitik gücünü özellikle övdüğü Alexander Gadjiev, sınırların ötesine geçen bu özel projede Bir Sergiden Tablolar’ı doğaçlamalarıyla süsleyerek tam bir müzik ziyafeti sunarken Yaman Okur, müziği danstan tablolara dönüştürecek.">53. İSTANBUL MÜZİK FESTİVALİ: DANSTAN TABLOLARBreak dansta dünya şampiyonu ve koreograf Yaman Okur, doğaçlama yeteneğiyle övgü toplayan piyanist Alexander Gadjiev ile festivalde buluşuyor.Madonna’dan Katia ve Marielle Labèque’e, Cirque du Soleil’den Mathieu Kassovitz’e çok geniş yelpazede işbirlikleri gerçekleştiren, Yaz Davos Forumu’ndan Sadler’s Wells’e farklı platformlarda izleyicilerle buluşan Türk asıllı Fransız koreograf ve dansçı Yaman Okur çarpıcı bir projeyle ilk kez festivalde.Break dansta Fransa ve Dünya Şampiyonluğu sahibi Yaman Okur, benzersiz ritmik becerisi, mutlak bedensel hâkimiyeti ve geliştirdiği özgün stiliyle 1997’den bu yana dansçı, son 15 yıldır da aynı zamanda koreograf olarak sıradışı bir kariyer sürdürüyor. Ülkemizde daha ziyade Madonna ile çalışmasıyla manşetlere taşınan Okur, dünya dans sahnesinde hip-hop kültürünün perspektifini değiştiren isimler arasında yer alıyor. 2024’te kült film La Haine’den (Protesto) bizzat yönetmeninin sahneye uyarladığı müzikalin koreografisini yapan Okur’un ayrıca Paris’te büyük ses getiren müzikaller On Emir, Güneş Kral, Üç Silahşörler ve Robin Hood’da imzası bulunuyor. Paris Filarmoni’de piyano ikilisi Labéque kardeşler için düzenlenmiş Batı Yakasının Hikâyesi ile Cirque de Soleil’in övgüler alan Kurios prodüksiyonunun koreografileri de ona ait. Son yıllarda fotoğrafçı kimliğiyle de öne çıkan Okur, dans gösterilerinde kendi çektiği fotoğrafları da kullanarak çok katmanlı, zengin bir görsel dünya yaratıyor.2019-2021 BBC Yeni Nesil Sanatçısı, 2021 Uluslararası Chopin Yarışması ikincisi ve Sidney Yarışması birincisi Alexander Gadjiev, 2023’te Slovenya’da sanatçılara verilen en üst düzey ödül olan Prešeren Ödülü’nü aldı ve 2025 Gorizia-Nova Gorica Avrupa Sınırsız Kültür Başkenti için kültür elçisi seçildi. Geçtiğimiz yıllarda konuk olduğu Zubin Mehta yönetimindeki Maggio Musicale Fiorentino’ya bu sezon tekrar dönen Gadjiev ünlü şef ile Mumbai Senfoni Orkestrası’nda da bir araya geliyor. Ayrıca sezon boyunca İtalya’da bir resital turnesine çıkıyor; Bergisch Senfoni, SWR Senfoni ile Almanya’da ve resitalleri de kapsayan Japonya turnesinde New Japan Filarmoni ile konserler veriyor.Gramophone dergisinin doğaçlama içgüdüsünü ve analitik gücünü özellikle övdüğü Alexander Gadjiev, sınırların ötesine geçen bu özel projede Bir Sergiden Tablolar’ı doğaçlamalarıyla süsleyerek tam bir müzik ziyafeti sunarken Yaman Okur, müziği danstan tablolara dönüştürecek.</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 13 Hazi̇ran 20:00"><strong>Tarih:</strong> 13 Hazi̇ran 20:00</p>
+                         <p title="Mekan: TURKCELL PLATINUM SAHNESİ"><strong>Mekan:</strong> TURKCELL PLATINUM SAHNESİ</p>
+                         <p class="event-card-category" title="Kategori: KONSER">Kategori: KONSER</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/danstan-tablolar?p=1dd0de83-75ab-4499-a533-1d59730b8acd" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/eyuboglu-koleji-muzik-ve-dans-gecesi?p=522270e6-163f-4519-86e9-ef4ddd5930bb" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/46205b39-6e76-4c94-9470-a72cef224f1b" alt="EYÜBOĞLU KOLEJİ MÜZİK VE DANS GECESİ" loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/eyuboglu-koleji-muzik-ve-dans-gecesi?p=522270e6-163f-4519-86e9-ef4ddd5930bb" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="EYÜBOĞLU KOLEJİ MÜZİK VE DANS GECESİ">EYÜBOĞLU KOLEJİ MÜZİK VE DANS GECESİ</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 13 Hazi̇ran 20:00"><strong>Tarih:</strong> 13 Hazi̇ran 20:00</p>
+                         <p title="Mekan: TURKCELL SAHNESİ"><strong>Mekan:</strong> TURKCELL SAHNESİ</p>
+                         <p class="event-card-category" title="Kategori: DİĞER">Kategori: DİĞER</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/eyuboglu-koleji-muzik-ve-dans-gecesi?p=522270e6-163f-4519-86e9-ef4ddd5930bb" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             
+             <div class="custom-event-card">
+                 <a href="https://www.zorlupsm.com/etkinlikler/unseen-kids-tour?p=5f5d7227-708a-4fda-802c-cacf0528fbb1" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                     <img src="https://www.zorlupsm.com/medium/Activity/Image/ac1ae5f9-18e4-43f4-9f6f-23c69d0172bd" alt="UNSEEN KIDS TOURUNSEEN KIDS, Zorlu PSM’in sahne arkasındaki büyülü dünyasını çocuklara açıyor! 8-12 yaş arasındaki katılımcılar, bu özel tur sırasında kendilerini gizemli bir bulmacanın içinde buluyor. Tur boyunca, kulaklarına fısıldayan esrarengiz bir sesin yönlendirmesiyle, adım adım Zorlu PSM’in perde arkasındaki sırlarını keşfetmeye başlıyorlar. Bulmacaları çözerken, bir gösterinin sahneye çıkana dek geçtiği tüm aşamaları, bu sürecin arkasındaki görünmeyen kahramanların rollerini ve emeğini öğreniyorlar. Böylece sadece bir mekanı değil, bir hikâyeyi deneyimliyor, keşfetmenin heyecanını yaşıyorlar." loading="lazy" class="custom-event-card-image">
+                 </a>
+                 <div class="custom-event-card-content">
+                     <a href="https://www.zorlupsm.com/etkinlikler/unseen-kids-tour?p=5f5d7227-708a-4fda-802c-cacf0528fbb1" target="_blank" rel="noopener noreferrer">
+                         <h3 class="event-card-title" title="UNSEEN KIDS TOURUNSEEN KIDS, Zorlu PSM’in sahne arkasındaki büyülü dünyasını çocuklara açıyor! 8-12 yaş arasındaki katılımcılar, bu özel tur sırasında kendilerini gizemli bir bulmacanın içinde buluyor. Tur boyunca, kulaklarına fısıldayan esrarengiz bir sesin yönlendirmesiyle, adım adım Zorlu PSM’in perde arkasındaki sırlarını keşfetmeye başlıyorlar. Bulmacaları çözerken, bir gösterinin sahneye çıkana dek geçtiği tüm aşamaları, bu sürecin arkasındaki görünmeyen kahramanların rollerini ve emeğini öğreniyorlar. Böylece sadece bir mekanı değil, bir hikâyeyi deneyimliyor, keşfetmenin heyecanını yaşıyorlar.">UNSEEN KIDS TOURUNSEEN KIDS, Zorlu PSM’in sahne arkasındaki büyülü dünyasını çocuklara açıyor! 8-12 yaş arasındaki katılımcılar, bu özel tur sırasında kendilerini gizemli bir bulmacanın içinde buluyor. Tur boyunca, kulaklarına fısıldayan esrarengiz bir sesin yönlendirmesiyle, adım adım Zorlu PSM’in perde arkasındaki sırlarını keşfetmeye başlıyorlar. Bulmacaları çözerken, bir gösterinin sahneye çıkana dek geçtiği tüm aşamaları, bu sürecin arkasındaki görünmeyen kahramanların rollerini ve emeğini öğreniyorlar. Böylece sadece bir mekanı değil, bir hikâyeyi deneyimliyor, keşfetmenin heyecanını yaşıyorlar.</h3> 
+                     </a>
+                     <div class="event-card-details">
+                         <p title="Tarih: 14 Hazi̇ran 12:30"><strong>Tarih:</strong> 14 Hazi̇ran 12:30</p>
+                         <p title="Mekan: ZORLU PSM"><strong>Mekan:</strong> ZORLU PSM</p>
+                         <p class="event-card-category" title="Kategori: AİLE EĞLENCESİ">Kategori: AİLE EĞLENCESİ</p>
+                     </div>
+                 </div>
+                 <div class="custom-event-card-actions">
+                      <a href="https://www.zorlupsm.com/etkinlikler/unseen-kids-tour?p=5f5d7227-708a-4fda-802c-cacf0528fbb1" target="_blank" rel="noopener noreferrer" class="event-card-link-button">Detaylar / Bilet</a>
+                 </div>
+             </div>
+             </div><h2 id="fikstur" class="section-title"> Haftalık Fikstür</h2><div class="container"><div class='card'><h3>Premier League</h3><p>Bu lig için fikstür verisi bulunamadı.</p></div><div class='card'><h3>La Liga</h3><p>Bu lig için fikstür verisi bulunamadı.</p></div><div class='card'><h3>Süper Lig</h3><p>Bu lig için fikstür verisi bulunamadı.</p></div><div class='card'><h3>Şampiyonlar Ligi</h3><p>Bu lig için fikstür verisi bulunamadı.</p></div><div class='card'><h3>Süper Lig (Basketbol)</h3><p>05.06. 20:30: Fenerbahçe vs Bahçeşehir Kol.</p><p>06.06. 20:30: Beşiktaş vs Anadolu Efes</p><p>07.06. 20:30: Fenerbahçe vs Bahçeşehir Kol.</p><p>08.06. 20:30: Beşiktaş vs Anadolu Efes</p><p>09.06. 20:30: Bahçeşehir Kol. vs Fenerbahçe</p><p>10.06. 20:30: Anadolu Efes vs Beşiktaş</p></div></div><h2 id="reyting" class="section-title">📺 Günlük Reytingler</h2><div class="ratings-container"><table><thead><tr><th>Sıra</th><th>Program</th><th>Kanal</th><th>Rating %</th></tr></thead><tbody><tr><td>1</td><td>UZAK SEHIR</td><td>KANAL D</td><td>15.47</td></tr><tr><td>2</td><td>UZAK SEHIR (OZET)</td><td>KANAL D</td><td>5.41</td></tr><tr><td>3</td><td>ESRA EROL'DA</td><td>ATV</td><td>4.50</td></tr><tr><td>4</td><td>MUGE ANLI ILE TATLI SERT</td><td>ATV</td><td>4.15</td></tr><tr><td>5</td><td>SURVIVOR</td><td>TV8</td><td>3.05</td></tr><tr><td>6</td><td>SELCUK TEPELI ILE NOW ANA HABER</td><td>NOW</td><td>2.74</td></tr><tr><td>7</td><td>ATV ANA HABER</td><td>ATV</td><td>2.54</td></tr><tr><td>8</td><td>GELIN</td><td>KANAL 7</td><td>2.26</td></tr><tr><td>9</td><td>SHOW ANA HABER</td><td>SHOW TV</td><td>1.89</td></tr><tr><td>10</td><td>ESREF RUYA (TKR-GECE)</td><td>KANAL D</td><td>1.88</td></tr></tbody></table></div><h2 id="twitter" class="section-title">🔥 Türkiye Gündemi (Twitter)</h2><div class="container">
             <div class="card">
                 <a href="https://twitter.com/search?q=%23İzmir&src=typed_query" target="_blank" rel="noopener noreferrer">İzmir</a>
             </div>
@@ -800,7 +1049,7 @@
             </a></div><h2 id="haberler" class="section-title">📰 Haberler</h2><h3>Gündem</h3><div class="container">
                 <div class="card">
                     <a href="https://www.cnnturk.com/turkiye/bakan-guler-turkiye-suriyeye-askeri-egitim-ve-danismanlik-sagliyor-2294189" target="_blank" rel="noopener noreferrer">Bakan Güler: Türkiye, Suriye'ye askeri eğitim ve danışmanlık sağlıyor</a>
-                    <p class="date">04 June 2025, 14:17</p>
+                    <p class="date">04 June 2025, 14:20</p>
                 </div>
                 <div class="card">
                     <a href="https://www.cnnturk.com/turkiye/haziran-ayi-kira-artis-orani-2025-kira-zammi-tefe-ufe-ne-kadar-oldu-ev-sahipleri-ve-kiracilar-icin-kritik-tarih-2292613" target="_blank" rel="noopener noreferrer">HAZİRAN AYI KİRA ARTIŞ ORANI 2025: Kira zammı (TEFE-ÜFE) ne kadar oldu? Ev sahipleri ve kiracılar için kritik tarih!</a>
@@ -839,16 +1088,28 @@
                     <p class="date">04 June 2025, 13:13</p>
                 </div></div><h3>Yabancı Kaynak</h3><div class="container">
                 <div class="card">
-                    <a href="https://www.bbc.com/news/articles/c0j76djzgpvo" target="_blank" rel="noopener noreferrer">Musk calls Trump's tax bill a 'disgusting abomination'</a>
-                    <p class="date">04 June 2025, 11:08</p>
+                    <a href="https://www.theguardian.com/world/live/2025/jun/04/ukraine-war-nato-pete-hegseth-europe-germany-cologne-netherlands-latest-live-news" target="_blank" rel="noopener noreferrer">US remains ‘completely committed’ to Nato says secretary general ahead of Ukraine military aid meeting – Europe live</a>
+                    <p class="date">04 June 2025, 11:19</p>
                 </div>
                 <div class="card">
-                    <a href="https://www.theguardian.com/politics/live/2025/jun/04/rachel-reeves-transport-spending-police-starmer-badenoch-corbyn-uk-politics-live-news" target="_blank" rel="noopener noreferrer">PMQs live: Keir Starmer faces questions from Kemi Badenoch</a>
-                    <p class="date">04 June 2025, 11:03</p>
+                    <a href="https://www.theguardian.com/politics/live/2025/jun/04/rachel-reeves-transport-spending-police-starmer-badenoch-corbyn-uk-politics-live-news" target="_blank" rel="noopener noreferrer">PMQs live: Badenoch challenges Starmer over winter fuel payment U-turn, Chagos deal and child benefit cap</a>
+                    <p class="date">04 June 2025, 11:19</p>
+                </div>
+                <div class="card">
+                    <a href="https://www.theguardian.com/us-news/live/2025/jun/04/elon-musk-donald-trump-tariffs-us-politics-news-latest-live" target="_blank" rel="noopener noreferrer">Elon Musk attacks Trump’s ‘big beautiful’ tax bill as ‘outrageous’ and says it will cause deficit to grow by $2.5tn – US politics live</a>
+                    <p class="date">04 June 2025, 11:18</p>
+                </div>
+                <div class="card">
+                    <a href="https://www.theguardian.com/business/2025/jun/04/bm-sales-and-profits-fall-as-lower-income-consumers-miss-out-on-pay-rises" target="_blank" rel="noopener noreferrer">B&M sales and profits fall as lower-income consumers miss out on pay rises</a>
+                    <p class="date">04 June 2025, 11:15</p>
                 </div>
                 <div class="card">
                     <a href="https://www.theguardian.com/world/live/2025/jun/04/israel-gaza-war-palestinian-aid-humanitarian-hamas-benjamin-netanyahu-latest-live-news" target="_blank" rel="noopener noreferrer">Gaza aid points close for day as Israel warns against travel to distribution centres – Israel-Gaza war live</a>
-                    <p class="date">04 June 2025, 11:00</p>
+                    <p class="date">04 June 2025, 11:14</p>
+                </div>
+                <div class="card">
+                    <a href="https://www.bbc.com/news/articles/c0j76djzgpvo" target="_blank" rel="noopener noreferrer">Musk calls Trump's tax bill a 'disgusting abomination'</a>
+                    <p class="date">04 June 2025, 11:08</p>
                 </div>
                 <div class="card">
                     <a href="https://www.theguardian.com/us-news/2025/jun/04/charles-manson-follower-patricia-krenweinkel-parole" target="_blank" rel="noopener noreferrer">Reformed Manson follower eyes freedom after 56 years: ‘She’s not the same person anymore’</a>
@@ -859,24 +1120,12 @@
                     <p class="date">04 June 2025, 10:55</p>
                 </div>
                 <div class="card">
-                    <a href="https://www.theguardian.com/us-news/live/2025/jun/04/elon-musk-donald-trump-tariffs-us-politics-news-latest-live" target="_blank" rel="noopener noreferrer">Elon Musk attacks Trump’s ‘big beautiful’ tax bill as ‘outrageous’ and says it will cause deficit to grow by $2.5tn – US politics live</a>
-                    <p class="date">04 June 2025, 10:54</p>
-                </div>
-                <div class="card">
                     <a href="https://www.theguardian.com/us-news/2025/jun/04/first-thing-trump-tariffs-foreign-steel-aluminum" target="_blank" rel="noopener noreferrer">Trump’s 50% tariffs on foreign steel and aluminum take effect | First Thing</a>
                     <p class="date">04 June 2025, 10:53</p>
                 </div>
                 <div class="card">
-                    <a href="https://www.theguardian.com/world/live/2025/jun/04/ukraine-war-nato-pete-hegseth-europe-germany-cologne-netherlands-latest-live-news" target="_blank" rel="noopener noreferrer">US remains ‘completely committed’ to Nato says secretary general ahead of Ukraine military aid meeting – Europe live</a>
-                    <p class="date">04 June 2025, 10:45</p>
-                </div>
-                <div class="card">
                     <a href="https://www.theguardian.com/australia-news/2025/jun/04/lidia-thorpe-reveals-she-made-bullying-complaint-about-dorinda-cox-which-remains-unresolved-ntwnfb" target="_blank" rel="noopener noreferrer">Lidia Thorpe reveals she made bullying complaint about Dorinda Cox which remains unsre</a>
                     <p class="date">04 June 2025, 10:42</p>
-                </div>
-                <div class="card">
-                    <a href="https://www.theguardian.com/stage/2025/jun/04/student-comedy-edinburgh-fringe-nish-kumar" target="_blank" rel="noopener noreferrer">‘This could be our last year’: student comedy troupes priced out of Edinburgh fringe</a>
-                    <p class="date">04 June 2025, 10:29</p>
                 </div></div><h3>Dünya</h3><div class="container">
                 <div class="card">
                     <a href="https://www.cnnturk.com/dunya/elon-musk-yeni-donemi-duyurdu-parola-xchat-2294160" target="_blank" rel="noopener noreferrer">Elon Musk yeni dönemi duyurdu! Parola: XChat</a>
@@ -919,6 +1168,10 @@
                     <p class="date">04 June 2025, 13:15</p>
                 </div></div><h3>Ekonomi</h3><div class="container">
                 <div class="card">
+                    <a href="https://www.cnnturk.com/ekonomi/istanbul-havalimanlari-ilk-4-ayda-39-milyon-yolcuyu-agirladi-2294192" target="_blank" rel="noopener noreferrer">İstanbul Havalimanları ilk 4 ayda 39 milyon yolcuyu ağırladı</a>
+                    <p class="date">04 June 2025, 14:23</p>
+                </div>
+                <div class="card">
                     <a href="https://www.cnnturk.com/video/ekonomi/altin/rekordan-sonra-gelen-durgunluk-altinda-kararsizlik-surecek-mi-2294163" target="_blank" rel="noopener noreferrer">Rekordan sonra gelen durgunluk... Altında kararsızlık sürecek mi?</a>
                     <p class="date">04 June 2025, 13:33</p>
                 </div>
@@ -953,10 +1206,6 @@
                 <div class="card">
                     <a href="https://www.cnnturk.com/video/ekonomi/altin/bir-iniyor-bir-cikiyor-trump-bayram-oncesi-altinin-ayarini-bozdu-2293937" target="_blank" rel="noopener noreferrer">BİR İNİYOR, BİR ÇIKIYOR... Trump bayram öncesi altının ayarını bozdu!</a>
                     <p class="date">04 June 2025, 07:59</p>
-                </div>
-                <div class="card">
-                    <a href="https://www.cnnturk.com/ekonomi/tarim-ve-orman-bakani-yumakli-duyurdu-gidada-karekod-uygulamasi-tum-isletmelerde-zorunlu-olacak-2293820" target="_blank" rel="noopener noreferrer">Tarım ve Orman Bakanı Yumaklı duyurdu: Gıdada karekod uygulaması tüm işletmelerde zorunlu olacak</a>
-                    <p class="date">03 June 2025, 20:08</p>
                 </div></div><h3>Magazin</h3><div class="container">
                 <div class="card">
                     <a href="https://www.cnnturk.com/magazin/dizi/3-hazi-ran-reyti-ng-sonuclari-reyting-sonuclari-aciklandi-mi-arka-sokaklar-survivor-altina-hucum-korkusuz-korkak-bir-gece-2294087" target="_blank" rel="noopener noreferrer">3 HAZİRAN REYTİNG SONUÇLARI: Reyting sonuçları açıklandı mı? Arka Sokaklar, Survivor, Altına Hücum, Korkusuz Korkak, Bir Gece Masalı, Kral Kaybederse, Mehmed: Fetihler Sultanı gecenin birincisi kim oldu?</a>
