@@ -125,6 +125,81 @@ def suppress_stderr():
         os.close(null_fd)
         os.close(save_stderr)
 
+# haber_botu.py dosyanıza bu fonksiyonu ekleyebilirsiniz.
+
+
+
+# haber_botu.py içindeki NİHAİ ve ÇALIŞAN fonksiyon
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+
+def fetch_books(driver, limit=10):
+    """
+    İstanbul Kitapçısı'nın "Çok Satanlar" listesinden kitapları,
+    doğru seçicileri kullanarak Selenium ile çeker.
+    """
+    url = "https://www.istanbulkitapcisi.com/cok-satan-kitaplar"
+    books = []
+    print(f"ℹ️ İstanbul Kitapçısı verileri çekiliyor: {url}")
+    try:
+        driver.get(url)
+
+        wait_selector = "div.product-item"
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, wait_selector))
+        )
+        print("✅ Kitap kartları sayfada yüklendi.")
+        time.sleep(1) 
+
+        page_source = driver.page_source
+        soup = BeautifulSoup(page_source, "html.parser")
+        
+        book_elements = soup.select(wait_selector)
+
+        if not book_elements:
+            print("⚠️ Kitap elementleri bulunamadı.")
+            return []
+
+        for book_el in book_elements[:limit]:
+            # --- HATA AYIKLAMA ÇIKTISINA GÖRE GÜNCELLENMİŞ DOĞRU SEÇİCİLER ---
+            title_el = book_el.select_one("a.product-title")
+            author_el = book_el.select_one("a.model-title")
+            image_el = book_el.select_one("a.image-wrapper img")
+            
+            # Gerekli tüm bilgiler varsa listeye ekliyoruz
+            if title_el and image_el:
+                title = title_el.get_text(strip=True)
+                book_link = title_el.get('href')
+                
+                # Resim URL'si 'data-src' veya 'src' içinde olabilir, 'data-src' önceliklidir.
+                image_url = image_el.get('data-src') or image_el.get('src')
+                
+                # Yazar bilgisi her zaman olmayabilir
+                author = author_el.get_text(strip=True) if author_el else "Yazar Belirtilmemiş"
+
+                # Link tam değilse (örn: /sari-yuz), site adresiyle birleştiriyoruz.
+                if not book_link.startswith("http"):
+                    book_link = "https://www.istanbulkitapcisi.com" + book_link
+                
+                books.append({
+                    "title": title,
+                    "author": author,
+                    "image_url": image_url,
+                    "link": book_link
+                })
+        
+        print(f"✅ {len(books)} adet kitap bilgisi (İstanbul Kitapçısı) başarıyla çekildi.")
+        return books
+
+    except Exception as e:
+        print(f"⚠️ İstanbul Kitapçısı'ndan veri çekilirken bir hata oluştu: {e}")
+        return []
+    
+
+
 # ZORLU PSM EVENT
 # --- CSS SEÇİCİLERİ ---
 # KULLANICI TARAFINDAN SAĞLANAN EKRAN GÖRÜNTÜLERİNE GÖRE GÜNCELLENMİŞ SEÇİCİLER:
@@ -986,6 +1061,7 @@ def generate_html():
         exchange_rates = get_exchange_rates()
         ratings = get_daily_ratings(driver)
         movies = fetch_movies()
+        books = fetch_books(driver)
         twitter_trends = get_trending_topics_trends24()
         spotify_tracks = get_new_turkish_rap_tracks_embed()
         istanbul_etkinlikleri = fetch_istanbul_events(driver) # WebDriver'ı paslayın
@@ -1175,6 +1251,7 @@ def generate_html():
         <a href="#hava">🌤️ Hava</a>
         <a href="#trafik">🚦 Trafik</a>
         <a href="#doviz">💱 Döviz</a>
+        <a href="#kitaplar">📚 Kitaplar</a>
         <a href="#etkinlikler">📅 Etkinlikler</a> 
         <a href="#fikstur">⚽ Fikstür</a>
         <a href="#reyting">📺 Reyting</a>
@@ -1303,6 +1380,30 @@ def generate_html():
             html_content.append(f'<div class="exchange-card"><strong>{currency}:</strong> {rate} TRY</div>')
     else:
         html_content.append('<p>⚠️ Döviz kuru verisi alınamadı.</p>')
+    html_content.append('</div>')
+
+    # Kitap Önerileri
+    html_content.append('<h2 id="kitaplar" class="section-title">📚 Çok Satan Kitaplar</h2><div class="film-container">') # film-container stilini kullanabiliriz
+    if 'books' in locals() and books:
+        for book in books:
+            title = book.get("title", "Bilinmeyen Kitap")
+            author = book.get("author", "")
+            image_url = book.get("image_url", "https://via.placeholder.com/220x330.png?text=Kapak+Yok")
+            book_link = book.get("link", "#")
+
+            # Görsel için base64 dönüşümü yapmak yerine doğrudan link de kullanabilirsiniz.
+            # Bu, betiğin daha hızlı çalışmasını sağlar.
+
+            html_content.append(f"""
+            <a href="{book_link}" target="_blank" rel="noopener noreferrer" class="film-card">
+                <img src="{image_url}" alt="Kapak: {title}" loading="lazy">
+                <div class="film-card-content">
+                    <h3>{title}</h3>
+                    <p>{author}</p>
+                </div>
+            </a>""")
+    else:
+        html_content.append('<p>⚠️ Kitap öneri verisi alınamadı.</p>')
     html_content.append('</div>')
 
     # ZORLU PSM EVENT
