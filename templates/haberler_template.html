@@ -172,11 +172,15 @@
         {% for category, news_list in news.items() %}
             <h3>{{ category }}</h3>
             <div class="container">
-            {% for item in news_list|sort(attribute='pub_date', reverse=True)|list[:10] %}
-                <div class="card">
-                    <a href="{{ item.link }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
-                    <p class="date">{{ item.pub_date.strftime('%d %B %Y, %H:%M') }}</p>
-                </div>
+            {# Önce listeyi sırala, sonra döngüye başla #}
+            {% for item in news_list|sort(attribute='pub_date', reverse=True) %}
+                {# Sadece ilk 10 haberi göster #}
+                {% if loop.index <= 10 %}
+                    <div class="card">
+                        <a href="{{ item.link }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
+                        <p class="date">{{ item.pub_date.strftime('%d %B %Y, %H:%M') }}</p>
+                    </div>
+                {% endif %}
             {% else %}
                 <p>Bu kategoride haber bulunamadı.</p>
             {% endfor %}
