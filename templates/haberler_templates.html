@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Güncel Haberler Paneli</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="">
+    <nav class="sticky-nav">
+        <a href="#hava">🌤️ Hava</a>
+        <a href="#trafik">🚦 Trafik</a>
+        <a href="#doviz">💱 Döviz</a>
+        <a href="#kitaplar">📚 Kitaplar</a>
+        <a href="#etkinlikler">📅 Etkinlikler</a>
+        <a href="#fikstur">⚽ Fikstür</a>
+        <a href="#reyting">📺 Reyting</a>
+        <a href="#twitter">🔥 Gündem</a>
+        <a href="#muzik">🎧 Müzik</a>
+        <a href="#filmler">🎬 Filmler</a>
+        <a href="#haberler">📰 Haberler</a>
+    </nav>
+    <button class="toggle-button" aria-label="Gece Modu Değiştir">🌙</button>
+
+    <div class="page-wrapper">
+        <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:50px;">Son Güncelleme: {{ last_update }}</p>
+
+        <h2 id="hava" class="section-title">📍 İstanbul Saatlik Hava Durumu</h2>
+        <div class="weather-container">
+            {% for time_val, temp, description, icon_uri, weather_class in weather %}
+            <div class="weather-card {{ weather_class }}">
+                <p><strong>{{ time_val }}</strong></p>
+                <img src="{{ icon_uri }}" alt="{{ description }}">
+                <p>{{ description }}</p>
+                <p class="temp"><strong>{{ '%.1f'|format(temp) }}°C</strong></p>
+            </div>
+            {% else %}
+            <p>⚠️ Hava durumu verisi alınamadı.</p>
+            {% endfor %}
+        </div>
+
+        {% if Maps_api_key %}
+        <h2 id="trafik" class="section-title">🚦 İstanbul Trafik Durumu & Yol Tarifi</h2>
+        <div id="map_canvas"></div>
+        <div class="route-controls">
+            <input id="start_location" type="text" placeholder="Başlangıç (örn: Kadıköy)">
+            <button onclick="useCurrentLocation()" aria-label="Mevcut Konumumu Kullan">📍 Konumum</button>
+            <input id="end_location" type="text" placeholder="Varış (örn: Beşiktaş)">
+            <button onclick="calculateAndDisplayRoute()" aria-label="Yol Tarifi Göster">🧭 Tarifi Göster</button>
+        </div>
+        <div id="route-info"></div>
+        {% endif %}
+
+        <h2 id="doviz" class="section-title">💱 Döviz Kurları</h2>
+        <div class="exchange-container">
+            {% for currency, rate in exchange_rates.items() %}
+            <div class="exchange-card"><strong>{{ currency }}:</strong> {{ rate }} TRY</div>
+            {% else %}
+            <p>⚠️ Döviz kuru verisi alınamadı.</p>
+            {% endfor %}
+        </div>
+
+        <h2 id="kitaplar" class="section-title">📚 Çok Satan Kitaplar</h2>
+        <div class="film-container">
+            {% for book in books %}
+            <a href="{{ book.link }}" target="_blank" rel="noopener noreferrer" class="film-card">
+                <img src="{{ book.image_url }}" alt="Kapak: {{ book.title }}" loading="lazy">
+                <div class="film-card-content">
+                    <h3>{{ book.title }}</h3>
+                    <p>{{ book.author }}</p>
+                </div>
+            </a>
+            {% else %}
+            <p>⚠️ Kitap öneri verisi alınamadı.</p>
+            {% endfor %}
+        </div>
+
+        <h2 id="etkinlikler" class="section-title">📅 İstanbul Etkinlikleri</h2>
+        <div class="container">
+             {% for event in istanbul_events %}
+             <div class="custom-event-card">
+                <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer">
+                    {% if event.image_url %}<img src="{{ event.image_url }}" alt="{{ event.title }}" class="custom-event-card-image">{% endif %}
+                </a>
+                 <div class="custom-event-card-content">
+                    <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer"><h3 class="event-card-title">{{ event.title }}</h3></a>
+                    <p><strong>Tarih:</strong> {{ event.date_str }} {{ event.time_str }}</p>
+                    <p><strong>Mekan:</strong> {{ event.venue }}</p>
+                 </div>
+             </div>
+             {% else %}
+             <p>⚠️ İstanbul etkinlik verisi alınamadı.</p>
+             {% endfor %}
+        </div>
+        
+        <h2 id="fikstur" class="section-title">⚽ Haftalık Fikstür</h2>
+        <div class="container">
+            {% for league, matches in fixtures.items() %}
+            <div class='card'>
+                <h3>{{ league }}</h3>
+                {% for match in matches %}
+                <p>{{ match }}</p>
+                {% else %}
+                <p>Bu lig için fikstür verisi bulunamadı.</p>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>⚠️ Fikstür verisi alınamadı.</p>
+            {% endfor %}
+        </div>
+
+        <h2 id="reyting" class="section-title">📺 Günlük Reytingler</h2>
+        {% if ratings %}
+        <div class="ratings-container">
+            <table>
+                <thead><tr><th>Sıra</th><th>Program</th><th>Kanal</th><th>Rating %</th></tr></thead>
+                <tbody>
+                {% for row in ratings %}
+                    <tr><td>{{ row[0] }}</td><td>{{ row[1] }}</td><td>{{ row[2] }}</td><td>{{ row[3] }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>⚠️ Günlük reyting verisi alınamadı.</p>
+        {% endif %}
+
+        <h2 id="twitter" class="section-title">🔥 Türkiye Gündemi (Twitter)</h2>
+        <div class="container">
+            {% for trend in twitter_trends %}
+            <div class="card">
+                <a href="https://twitter.com/search?q={{ trend|urlencode }}" target="_blank" rel="noopener noreferrer">{{ trend }}</a>
+            </div>
+            {% else %}
+            <p>⚠️ Twitter gündem verisi alınamadı.</p>
+            {% endfor %}
+        </div>
+
+        <h2 id="muzik" class="section-title">🎧 Yeni Çıkan Müzikler (Spotify)</h2>
+        <div class="card"><div class="spotify-container">
+            {% for track in spotify_tracks %}
+            <div class="spotify-item">
+                <p><strong>{{ track.artist }}</strong> - {{ track.title }}</p>
+                <iframe title="{{ track.artist }} - {{ track.title }}" style="border-radius:12px"
+                    src="{{ track.embed_url }}"
+                    width="100%" height="80" frameborder="0" allowfullscreen=""
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    loading="lazy"></iframe>
+            </div>
+            {% else %}
+            <p>⚠️ Spotify parça listesi alınamadı.</p>
+            {% endfor %}
+        </div></div>
+
+        <h2 id="filmler" class="section-title">🎬 Vizyondaki Filmler</h2>
+        <div class="film-container">
+            {% for film in movies %}
+            <a href="https://www.google.com/search?q={{ film.title|urlencode }}+film" target="_blank" rel="noopener noreferrer" class="film-card">
+                <img src="https://image.tmdb.org/t/p/w500{{ film.poster_path }}" alt="Afiş: {{ film.title }}" loading="lazy">
+                <div class="film-card-content">
+                    <h3>{{ film.title }}</h3>
+                    <p>{{ film.overview }}</p>
+                </div>
+            </a>
+            {% else %}
+            <p>⚠️ Vizyondaki filmler verisi alınamadı.</p>
+            {% endfor %}
+        </div>
+
+        <h2 id="haberler" class="section-title">📰 Haberler</h2>
+        {% for category, news_list in news.items() %}
+            <h3>{{ category }}</h3>
+            <div class="container">
+            {% for item in news_list|sort(attribute='pub_date', reverse=True)|list[:10] %}
+                <div class="card">
+                    <a href="{{ item.link }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
+                    <p class="date">{{ item.pub_date.strftime('%d %B %Y, %H:%M') }}</p>
+                </div>
+            {% else %}
+                <p>Bu kategoride haber bulunamadı.</p>
+            {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if Maps_api_key %}
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ Maps_api_key }}&callback=initMap&libraries=places&language=tr&region=TR"></script>
+    {% endif %}
+    <script src="script.js"></script>
+</body>
+</html>

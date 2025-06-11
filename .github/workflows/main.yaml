@@ -71,7 +71,7 @@ jobs:
 
       - name: Haber Botu Betiğini Çalıştır 🤖
         working-directory: ./ 
-        run: python haber_botu.py # Betiğinizin adı buysa
+        run: python main.py
 
       - name: GitHub Pages'e Dağıt 🚀
         uses: peaceiris/actions-gh-pages@v3
