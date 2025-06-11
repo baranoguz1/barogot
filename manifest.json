@@ -1,0 +1,20 @@
+{
+  "name": "Güncel Haberler Paneli",
+  "short_name": "Haberler",
+  "start_url": "/haber_botu/haberler.html",
+  "display": "standalone",
+  "background_color": "#f4f4f9",
+  "theme_color": "#007bff",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
