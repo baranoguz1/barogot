@@ -33,12 +33,11 @@ SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_REFRESH_TOKEN = os.getenv("SPOTIFY_REFRESH_TOKEN")
 
 
-# --- GENEL AYARLAR ---
-CITY = "Istanbul"
-UNITS = "metric"
-LANG = "tr"
-TIME_OFFSET_HOURS = 3
-OUTPUT_DIRECTORY = Path(__file__).resolve().parent / "output"
+# --- HAVA DURUMU AYARLARI ---
+WEATHER_CITY = "Istanbul"
+WEATHER_UNITS = "metric"
+WEATHER_LANG = "tr"
+TIME_OFFSET_HOURS = 3  # Türkiye saati için UTC+3
 
 
 # --- API ve HİZMET URL'leri ---
