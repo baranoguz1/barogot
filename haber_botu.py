@@ -18,7 +18,6 @@ from dotenv import load_dotenv
 from pathlib import Path
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import base64
 import subprocess
 # E-posta kütüphaneleri yorum satırı olarak bırakıldı, ihtiyaç halinde aktif edilebilir
 # import smtplib
@@ -968,18 +967,12 @@ def get_hourly_weather(city, api_key, units="metric", lang="tr", limit=8):
 
                 temp = forecast_item["main"]["temp"]
                 description = forecast_item["weather"][0]["description"].capitalize()
+                # get_hourly_weather fonksiyonu içindeki YENİ bölüm
+
                 icon_code = forecast_item["weather"][0].get("icon")
-                icon_data_uri = "https://via.placeholder.com/50"
-                if icon_code:
-                    icon_url = f"https://openweathermap.org/img/wn/{icon_code}@2x.png"
-                    try:
-                        icon_response = requests.get(icon_url, headers={"Referer": "https://openweathermap.org/"}, timeout=5)
-                        if icon_response.status_code == 200:
-                            encoded_icon = base64.b64encode(icon_response.content).decode('utf-8')
-                            icon_data_uri = f"data:{icon_response.headers.get('Content-Type', 'image/png')};base64,{encoded_icon}"
-                    except requests.exceptions.RequestException:
-                         print(f"⚠️ Hava durumu ikonu ({icon_url}) çekilemedi.")
-                
+                # Doğrudan resmin URL'sini oluşturuyoruz. Eğer ikon kodu yoksa, yer tutucu resim kullanılıyor.
+                icon_url = f"https://openweathermap.org/img/wn/{icon_code}@2x.png" if icon_code else "https://via.placeholder.com/50"
+
                 weather_class = "default-weather"
                 desc_lower = description.lower()
                 if any(s in desc_lower for s in ["açık", "güneşli", "clear"]): weather_class = "sunny"
@@ -987,7 +980,10 @@ def get_hourly_weather(city, api_key, units="metric", lang="tr", limit=8):
                 elif any(s in desc_lower for s in ["kar", "snow"]): weather_class = "snowy"
                 elif any(s in desc_lower for s in ["bulut", "kapalı", "cloud"]): weather_class = "cloudy"
                 
-                hourly_forecast.append((time_str, temp, description, icon_data_uri, weather_class))
+                # HTML'e gönderilecek listeye icon_data_uri yerine icon_url ekliyoruz.
+                hourly_forecast.append((time_str, temp, description, icon_url, weather_class))
+                
+                
                 if len(hourly_forecast) >= limit: # Limite ulaşıldıysa döngüden çık
                     break
             except (KeyError, IndexError) as e_item:
@@ -1262,7 +1258,7 @@ def generate_html():
     </nav>
     <button class="toggle-button" aria-label="Gece Modu Değiştir">🌙</button>
     <div class="page-wrapper">
-        <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:30px;">Son Güncelleme: {last_update}</p>
+        <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:20px;">Son Güncelleme: {last_update}</p>
 """)
 
     # Hava Durumu
@@ -1391,7 +1387,7 @@ def generate_html():
             image_url = book.get("image_url", "https://via.placeholder.com/220x330.png?text=Kapak+Yok")
             book_link = book.get("link", "#")
 
-            # Görsel için base64 dönüşümü yapmak yerine doğrudan link de kullanabilirsiniz.
+            
             # Bu, betiğin daha hızlı çalışmasını sağlar.
 
             html_content.append(f"""
@@ -1511,6 +1507,9 @@ def generate_html():
     html_content.append('</div></div>')
 
     # Vizyondaki Filmler
+    # generate_html fonksiyonu içindeki VİZYONDAKİ FİLMLER bölümünün YENİ hali
+
+    # Vizyondaki Filmler
     html_content.append('<h2 id="filmler" class="section-title">🎬 Vizyondaki Filmler</h2><div class="film-container">')
     if movies:
         for film in movies:
@@ -1519,21 +1518,12 @@ def generate_html():
             poster_path = film.get("poster_path")
             film_search_url = f"https://www.google.com/search?q={requests.utils.quote(title)}+film"
 
-            poster_data_uri = "https://via.placeholder.com/220x330.png?text=Afiş+Yok" 
-            if poster_path:
-                tmdb_poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}"
-                try:
-                    img_response = requests.get(tmdb_poster_url, timeout=5, headers={"Referer": "https://www.themoviedb.org/"})
-                    if img_response.status_code == 200:
-                        encoded_img = base64.b64encode(img_response.content).decode('utf-8')
-                        content_type = img_response.headers.get("Content-Type", "image/jpeg")
-                        poster_data_uri = f"data:{content_type};base64,{encoded_img}"
-                except requests.exceptions.RequestException:
-                    print(f"⚠️ Film afişi ({tmdb_poster_url}) çekilemedi.")
+            # Doğrudan poster URL'sini oluşturuyoruz.
+            poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else "https://via.placeholder.com/220x330.png?text=Afiş+Yok"
             
             html_content.append(f"""
             <a href="{film_search_url}" target="_blank" rel="noopener noreferrer" class="film-card">
-                <img src="{poster_data_uri}" alt="Afiş: {title}" loading="lazy">
+                <img src="{poster_url}" alt="Afiş: {title}" loading="lazy">
                 <div class="film-card-content">
                     <h3>{title}</h3>
                     <p>{overview}</p>
