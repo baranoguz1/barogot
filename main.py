@@ -1,4 +1,4 @@
-# main.py (Final ve Düzeltilmiş Hali)
+# main.py (Son Düzeltme)
 import time
 import shutil
 from pathlib import Path
@@ -38,19 +38,15 @@ def generate_output_files(context):
     """Toplanan verileri ve statik dosyaları kullanarak 'output' klasörünü oluşturur."""
     print("\n--- Çıktı Dosyaları Oluşturuluyor ---")
     try:
-        # --- Gerekli Yolları Tanımla ---
         root_dir = Path(__file__).resolve().parent
         output_dir = config.OUTPUT_DIRECTORY
         
-        # 1. Çıktı klasörünü temizle ve yeniden oluştur
         if output_dir.exists():
             shutil.rmtree(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 2. Jinja2 ile HTML'i Şablondan Oluştur
         env = Environment(loader=FileSystemLoader(root_dir / 'templates/'))
         template = env.get_template('haberler_template.html')
-        # ÖNEMLİ: Çıktı adını index.html olarak değiştiriyoruz
         html_output_path = output_dir / "index.html"
         
         html_output = template.render(context)
@@ -58,7 +54,6 @@ def generate_output_files(context):
             f.write(html_output)
         print(f"✅ {html_output_path.name} dosyası başarıyla oluşturuldu.")
 
-        # 3. Gerekli statik dosyaları 'output' klasörüne kopyala
         static_files = ["style.css", "script.js", "manifest.json", "service-worker.js"]
         for file_name in static_files:
             source_path = root_dir / file_name
@@ -75,20 +70,28 @@ def main():
     """Ana iş akışını yönetir."""
     start_time = time.time()
     
-    context = {'Maps_api_key': config.Maps_API_KEY}
+    context = {'GOOGLE_MAPS_API_KEY': config.GOOGLE_MAPS_API_KEY}
     
     driver = setup_driver()
     if driver:
+        # HATA BU BLOKTAYDI. ŞİMDİ DOLDURULDU.
         try:
-            # ... (Selenium işlemleri aynı kalacak) ...
+            print("\n--- Selenium ile Veri Kazıma Başladı ---")
+            context['ratings'] = web_scrapers.get_daily_ratings(driver)
+            context['books'] = web_scrapers.fetch_books(driver)
+            context['istanbul_events'] = web_scrapers.fetch_istanbul_events(driver)
+            
+            fixtures_all = {}
+            for path, name in config.SPORT_LEAGUES_CONFIG:
+                _, fixtures = web_scrapers.get_flashscore_sport_fixtures(driver, path, name)
+                fixtures_all[name] = fixtures
+            context['fixtures'] = fixtures_all
         finally:
+            print("✅ Selenium işlemleri bitti, WebDriver kapatılıyor.")
             driver.quit()
     else:
-        print("⚠️ Selenium işlemleri atlandı.")
+        print("⚠️ Selenium işlemleri atlandı (WebDriver başlatılamadı).")
 
-    # ... (API ve RSS çekme işlemleri aynı kalacak) ...
-    
-    # ---- Bu kısmı sadeleştirelim ----
     print("\n--- API ve Diğer Veriler Çekiliyor ---")
     context['weather'] = api_fetchers.get_hourly_weather()
     context['exchange_rates'] = api_fetchers.get_exchange_rates()
@@ -98,13 +101,20 @@ def main():
 
     print("\n--- RSS Akışları Paralel Olarak Çekiliyor ---")
     news_results = {category: [] for category in config.RSS_FEEDS}
-    # ... (RSS çekme mantığı aynı kalacak) ...
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_url = {executor.submit(api_fetchers.fetch_rss_feed, url): category for category, urls in config.RSS_FEEDS.items() for url in urls}
+        for future in future_to_url:
+            category = future_to_url[future]
+            try:
+                result = future.result()
+                if result: news_results[category].extend(result)
+            except Exception as e:
+                print(f"⚠️ RSS görevi hatası: {e}")
     context['news'] = news_results
     
     local_now = datetime.now(timezone.utc) + timedelta(hours=config.TIME_OFFSET_HOURS)
     context['last_update'] = local_now.strftime("%d %B %Y, %H:%M:%S")
 
-    # Toplanan tüm verilerle çıktı dosyalarını oluştur
     generate_output_files(context)
 
     end_time = time.time()
