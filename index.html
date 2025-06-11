@@ -24,58 +24,51 @@
     <button class="toggle-button" aria-label="Gece Modu Değiştir">🌙</button>
 
     <div class="page-wrapper">
-        <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:50px;">Son Güncelleme: 11 June 2025, 14:19:42</p>
+        <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:50px;">Son Güncelleme: 11 June 2025, 15:44:27</p>
 
         <h2 id="hava" class="section-title">📍 İstanbul Saatlik Hava Durumu</h2>
         <div class="weather-container">
             
-            <div class="weather-card cloudy">
-                <p><strong>15:00</strong></p>
-                <img src="https://openweathermap.org/img/wn/02d@2x.png" alt="Az bulutlu">
-                <p>Az bulutlu</p>
-                <p class="temp"><strong>26.2°C</strong></p>
-            </div>
-            
-            <div class="weather-card cloudy">
+            <div class="weather-card sunny">
                 <p><strong>18:00</strong></p>
-                <img src="https://openweathermap.org/img/wn/02d@2x.png" alt="Az bulutlu">
-                <p>Az bulutlu</p>
-                <p class="temp"><strong>26.2°C</strong></p>
+                <img src="https://openweathermap.org/img/wn/01d@2x.png" alt="Açık">
+                <p>Açık</p>
+                <p class="temp"><strong>26.3°C</strong></p>
             </div>
             
             <div class="weather-card sunny">
                 <p><strong>21:00</strong></p>
                 <img src="https://openweathermap.org/img/wn/01n@2x.png" alt="Açık">
                 <p>Açık</p>
-                <p class="temp"><strong>23.6°C</strong></p>
+                <p class="temp"><strong>23.5°C</strong></p>
             </div>
             
             <div class="weather-card sunny">
                 <p><strong>00:00</strong></p>
                 <img src="https://openweathermap.org/img/wn/01n@2x.png" alt="Açık">
                 <p>Açık</p>
-                <p class="temp"><strong>21.3°C</strong></p>
+                <p class="temp"><strong>21.0°C</strong></p>
             </div>
             
             <div class="weather-card sunny">
                 <p><strong>03:00</strong></p>
                 <img src="https://openweathermap.org/img/wn/01n@2x.png" alt="Açık">
                 <p>Açık</p>
-                <p class="temp"><strong>21.2°C</strong></p>
+                <p class="temp"><strong>20.2°C</strong></p>
             </div>
             
             <div class="weather-card sunny">
                 <p><strong>06:00</strong></p>
                 <img src="https://openweathermap.org/img/wn/01d@2x.png" alt="Açık">
                 <p>Açık</p>
-                <p class="temp"><strong>19.8°C</strong></p>
+                <p class="temp"><strong>18.9°C</strong></p>
             </div>
             
             <div class="weather-card sunny">
                 <p><strong>09:00</strong></p>
                 <img src="https://openweathermap.org/img/wn/01d@2x.png" alt="Açık">
                 <p>Açık</p>
-                <p class="temp"><strong>23.9°C</strong></p>
+                <p class="temp"><strong>24.6°C</strong></p>
             </div>
             
             <div class="weather-card sunny">
@@ -85,8 +78,25 @@
                 <p class="temp"><strong>27.1°C</strong></p>
             </div>
             
+            <div class="weather-card sunny">
+                <p><strong>15:00</strong></p>
+                <img src="https://openweathermap.org/img/wn/01d@2x.png" alt="Açık">
+                <p>Açık</p>
+                <p class="temp"><strong>27.0°C</strong></p>
+            </div>
+            
         </div>
 
+        
+        <h2 id="trafik" class="section-title">🚦 İstanbul Trafik Durumu & Yol Tarifi</h2>
+        <div id="map_canvas"></div>
+        <div class="route-controls">
+            <input id="start_location" type="text" placeholder="Başlangıç (örn: Kadıköy)">
+            <button onclick="useCurrentLocation()" aria-label="Mevcut Konumumu Kullan">📍 Konumum</button>
+            <input id="end_location" type="text" placeholder="Varış (örn: Beşiktaş)">
+            <button onclick="calculateAndDisplayRoute()" aria-label="Yol Tarifi Göster">🧭 Tarifi Göster</button>
+        </div>
+        <div id="route-info"></div>
         
 
         <h2 id="doviz" class="section-title">💱 Döviz Kurları</h2>
@@ -371,15 +381,11 @@
         <div class="container">
             
             <div class="card">
-                <a href="https://twitter.com/search?q=Sane" target="_blank" rel="noopener noreferrer">Sane</a>
+                <a href="https://twitter.com/search?q=Fenerbah%C3%A7eyi" target="_blank" rel="noopener noreferrer">Fenerbahçeyi</a>
             </div>
             
             <div class="card">
-                <a href="https://twitter.com/search?q=%23G%C3%BCvenmiyoruz" target="_blank" rel="noopener noreferrer">#Güvenmiyoruz</a>
-            </div>
-            
-            <div class="card">
-                <a href="https://twitter.com/search?q=%23%C3%B6sym" target="_blank" rel="noopener noreferrer">#ösym</a>
+                <a href="https://twitter.com/search?q=Ya%C4%9F%C4%B1z" target="_blank" rel="noopener noreferrer">Yağız</a>
             </div>
             
             <div class="card">
@@ -387,27 +393,31 @@
             </div>
             
             <div class="card">
-                <a href="https://twitter.com/search?q=%23%C3%87ar%C5%9Famba" target="_blank" rel="noopener noreferrer">#Çarşamba</a>
+                <a href="https://twitter.com/search?q=Sane" target="_blank" rel="noopener noreferrer">Sane</a>
             </div>
             
             <div class="card">
-                <a href="https://twitter.com/search?q=Eray%20Karadeniz" target="_blank" rel="noopener noreferrer">Eray Karadeniz</a>
+                <a href="https://twitter.com/search?q=gazi%20ya%C5%9Fargil" target="_blank" rel="noopener noreferrer">gazi yaşargil</a>
             </div>
             
             <div class="card">
-                <a href="https://twitter.com/search?q=Adalet%20Bu%20Mu" target="_blank" rel="noopener noreferrer">Adalet Bu Mu</a>
+                <a href="https://twitter.com/search?q=Kaan" target="_blank" rel="noopener noreferrer">Kaan</a>
             </div>
             
             <div class="card">
-                <a href="https://twitter.com/search?q=%23yks2025" target="_blank" rel="noopener noreferrer">#yks2025</a>
+                <a href="https://twitter.com/search?q=%23yapayzekaborsarobotu" target="_blank" rel="noopener noreferrer">#yapayzekaborsarobotu</a>
             </div>
             
             <div class="card">
-                <a href="https://twitter.com/search?q=Zaha" target="_blank" rel="noopener noreferrer">Zaha</a>
+                <a href="https://twitter.com/search?q=Endonezya" target="_blank" rel="noopener noreferrer">Endonezya</a>
             </div>
             
             <div class="card">
-                <a href="https://twitter.com/search?q=%C3%87al%C4%B1m" target="_blank" rel="noopener noreferrer">Çalım</a>
+                <a href="https://twitter.com/search?q=%23%C3%B6sym" target="_blank" rel="noopener noreferrer">#ösym</a>
+            </div>
+            
+            <div class="card">
+                <a href="https://twitter.com/search?q=%23gaziosmanpa%C5%9Fa" target="_blank" rel="noopener noreferrer">#gaziosmanpaşa</a>
             </div>
             
         </div>
@@ -601,6 +611,46 @@
                 
                 
                     <div class="card">
+                        <a href="https://www.cnnturk.com/turkiye/istanbullular-dikkat-saat-verildi-sular-kesilecek-2296597" target="_blank" rel="noopener noreferrer">İstanbullular dikkat! Saat verildi: Sular kesilecek</a>
+                        <p class="date">11 June 2025, 15:29</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://www.cnnturk.com/video/turkiye/yargitaydan-asiri-kiskanclik-karari-2296847" target="_blank" rel="noopener noreferrer">Yargıtay'dan 'Aşırı kıskançlık' kararı</a>
+                        <p class="date">11 June 2025, 15:29</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://www.cnnturk.com/turkiye/umit-ozdaga-1-5-yildan-4-yila-kadar-hapis-cezasi-talebi-2296839" target="_blank" rel="noopener noreferrer">Zafer Partisi Genel Başkanı Ümit Özdağ'a 1,5 yıldan 4 yıla kadar hapis cezası talebi</a>
+                        <p class="date">11 June 2025, 15:19</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://www.cnnturk.com/turkiye/son-dakika-haberi-prof-dr-gazi-yasargil-hayatini-kaybetti-2296756" target="_blank" rel="noopener noreferrer">Son Dakika Haberi: Prof. Dr. Gazi Yaşargil hayatını kaybetti</a>
+                        <p class="date">11 June 2025, 15:18</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://www.cnnturk.com/turkiye/mattia-ahmet-minguzzinin-ailesini-tehdit-eden-2-sanik-hakim-karsisina-cikacak-2296829" target="_blank" rel="noopener noreferrer">Mattia Ahmet Minguzzi’nin ailesini tehdit eden 2 sanık hakim karşısına çıkacak</a>
+                        <p class="date">11 June 2025, 14:45</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
                         <a href="https://www.cnnturk.com/turkiye/bahari-soldurdular-katil-ilk-kez-hakim-karsisinda-her-sey-bir-anda-gelisti-2296803" target="_blank" rel="noopener noreferrer">Bahar'ı soldurdular! Katil ilk kez hakim karşısında: Her şey bir anda gelişti</a>
                         <p class="date">11 June 2025, 14:03</p>
                     </div>
@@ -635,46 +685,6 @@
                     <div class="card">
                         <a href="https://www.cnnturk.com/turkiye/adanada-kan-donduran-cinayet-bulasikci-anne-oglu-tarafindan-vahsice-olduruldu-2296683" target="_blank" rel="noopener noreferrer">Adana'da kan donduran cinayet: Bulaşıkçı anne, oğlu tarafından vahşice öldürüldü</a>
                         <p class="date">11 June 2025, 13:14</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.cnnturk.com/turkiye/sapanca-golune-dusen-ucagin-enkazi-53-yil-sonra-yeniden-goruntulendi-2296793" target="_blank" rel="noopener noreferrer">Sapanca Gölü'ne düşen uçağın enkazı 53 yıl sonra yeniden görüntülendi</a>
-                        <p class="date">11 June 2025, 13:04</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.cnnturk.com/turkiye/son-dakika-ferdi-zeyrekin-olumuyle-ilgili-bilirkisi-raporu-aciklandi-2296675" target="_blank" rel="noopener noreferrer">SON DAKİKA... Ferdi Zeyrek'in ölümüyle ilgili bilirkişi raporu açıklandı!</a>
-                        <p class="date">11 June 2025, 13:02</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.cnnturk.com/turkiye/cumhurbaskani-erdogandan-kaan-mujdesi-turkiyede-uretilerek-endonezyaya-ihrac-edilecek-2296748" target="_blank" rel="noopener noreferrer">Cumhurbaşkanı Erdoğan'dan KAAN müjdesi: 48 adet Endonezya’ya ihraç edilecek</a>
-                        <p class="date">11 June 2025, 12:55</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.cnnturk.com/turkiye/son-dakika-haberi-prof-dr-gazi-yasargil-hayatini-kaybetti-2296756" target="_blank" rel="noopener noreferrer">Son Dakika Haberi: Prof. Dr. Gazi Yaşargil hayatını kaybetti</a>
-                        <p class="date">11 June 2025, 12:51</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.cnnturk.com/video/turkiye/chpde-kaset-siyaseti-geri-mi-dondu-2296514" target="_blank" rel="noopener noreferrer">Kılıçdaroğlu'na ses kaydı komplosu mu? Kurultay gününe ait telefon kaydı yayınlandı</a>
-                        <p class="date">11 June 2025, 12:40</p>
                     </div>
                 
             
@@ -1062,40 +1072,24 @@
                 
                 
                     <div class="card">
-                        <a href="https://www.nytimes.com/2025/06/11/world/europe/austria-school-shooting-graz.html" target="_blank" rel="noopener noreferrer">Austria Mourns After a Deadly School Shooting</a>
-                        <p class="date">11 June 2025, 11:12</p>
+                        <a href="https://www.bbc.com/news/articles/c4gkmy26e2po" target="_blank" rel="noopener noreferrer">Trump says US-China deal 'is done'</a>
+                        <p class="date">11 June 2025, 12:43</p>
                     </div>
                 
             
                 
                 
                     <div class="card">
-                        <a href="https://www.theguardian.com/politics/live/2025/jun/11/rachel-reeves-investment-labour-spending-review-keir-starmer-pmqs-kemi-badenoch-conservatives-uk-politics-live-news" target="_blank" rel="noopener noreferrer">Keir Starmer faces Kemi Badenoch at PMQs ahead of government’s spending review – UK politics live</a>
-                        <p class="date">11 June 2025, 11:09</p>
+                        <a href="https://www.nytimes.com/2025/06/10/business/economy/us-china-trade-deal.html" target="_blank" rel="noopener noreferrer">U.S. and China Agree to Resume Trade Truce After Tensions Escalated</a>
+                        <p class="date">11 June 2025, 12:39</p>
                     </div>
                 
             
                 
                 
                     <div class="card">
-                        <a href="https://www.theguardian.com/technology/2025/jun/11/elon-musk-trump-regret-posts" target="_blank" rel="noopener noreferrer">‘They went too far’: Musk says he regrets some of his posts about Trump</a>
-                        <p class="date">11 June 2025, 11:03</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.theguardian.com/world/live/2025/jun/11/middle-east-crisis-israel-gaza-strip-khan-younis-benjamin-netanyahu-hamas-latest-news" target="_blank" rel="noopener noreferrer">Israeli strikes near aid site in the Gaza Strip kill 31, medics say – Middle East crisis live</a>
-                        <p class="date">11 June 2025, 11:02</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.theguardian.com/world/live/2025/jun/11/poland-donald-tusk-prime-minister-vote-confidence-parliament-europe-latest-updates-news" target="_blank" rel="noopener noreferrer">Polish prime minister Donald Tusk faces vote of confidence in parliament – Europe live</a>
-                        <p class="date">11 June 2025, 10:59</p>
+                        <a href="https://www.nytimes.com/2025/06/09/world/middleeast/gaza-aid-boat-seizure-greta-thunberg-israel.html" target="_blank" rel="noopener noreferrer">Israel Intercepts Gaza Aid Ship Carrying Greta Thunberg: What to Know</a>
+                        <p class="date">11 June 2025, 12:25</p>
                     </div>
                 
             
@@ -1103,40 +1097,62 @@
                 
                     <div class="card">
                         <a href="https://www.theguardian.com/us-news/live/2025/jun/11/la-protests-los-angeles-curfew-ice-california-governor-donald-trump-us-politics-latest-updates-news" target="_blank" rel="noopener noreferrer">LA protests: LAPD says it has made ‘mass arrests’ after mayor issued curfew for downtown – live</a>
-                        <p class="date">11 June 2025, 10:57</p>
+                        <p class="date">11 June 2025, 12:24</p>
                     </div>
                 
             
                 
                 
                     <div class="card">
-                        <a href="https://www.theguardian.com/society/2025/jun/11/labour-mps-suggest-vote-against-assisted-dying-bill" target="_blank" rel="noopener noreferrer">Two more Labour MPs suggest they could vote against assisted dying bill</a>
-                        <p class="date">11 June 2025, 10:43</p>
+                        <a href="https://www.theguardian.com/world/live/2025/jun/11/middle-east-crisis-israel-gaza-strip-khan-younis-benjamin-netanyahu-hamas-latest-news" target="_blank" rel="noopener noreferrer">Israeli strikes near aid site in the Gaza Strip kill 31, medics say – Middle East crisis live</a>
+                        <p class="date">11 June 2025, 12:24</p>
                     </div>
                 
             
                 
                 
                     <div class="card">
-                        <a href="https://www.theguardian.com/us-news/2025/jun/11/first-thing-los-angeles-protests-arrests-newsom-trump" target="_blank" rel="noopener noreferrer">LA police announce ‘mass arrests’ as Newsom intensifies criticism of Trump | First Thing</a>
-                        <p class="date">11 June 2025, 10:35</p>
+                        <a href="https://www.theguardian.com/politics/live/2025/jun/11/rachel-reeves-investment-labour-spending-review-keir-starmer-pmqs-kemi-badenoch-conservatives-uk-politics-live-news" target="_blank" rel="noopener noreferrer">Reeves says use of hotels for asylum seekers to end ‘in this parliament’ and NHS spending to rise 3% a year – UK politics live</a>
+                        <p class="date">11 June 2025, 12:23</p>
                     </div>
                 
             
                 
                 
                     <div class="card">
-                        <a href="https://www.theguardian.com/australia-news/2025/jun/11/tasmania-election-state-to-head-to-polls-again-after-governor-grants-embattled-premiers-request" target="_blank" rel="noopener noreferrer">Tasmania to hold early election after governor grants embattled premier Jeremy Rockliff’s request</a>
-                        <p class="date">11 June 2025, 10:33</p>
+                        <a href="https://www.theguardian.com/world/live/2025/jun/11/poland-donald-tusk-prime-minister-vote-confidence-parliament-europe-latest-updates-news" target="_blank" rel="noopener noreferrer">Polish prime minister Donald Tusk faces vote of confidence in parliament – Europe live</a>
+                        <p class="date">11 June 2025, 12:02</p>
                     </div>
                 
             
                 
                 
                     <div class="card">
-                        <a href="https://www.theguardian.com/environment/2025/jun/11/otter-japanese-cafe-dna-small-clawed-otters-captivity-japan-wild-trade" target="_blank" rel="noopener noreferrer">Otters posing for selfies in Japanese cafes may be linked to illegal trade, experts warn</a>
-                        <p class="date">11 June 2025, 10:30</p>
+                        <a href="https://www.theguardian.com/us-news/2025/jun/11/world-biggest-tiktok-star-khaby-lame-leaves-us-ice-agents-detain-visa" target="_blank" rel="noopener noreferrer">World’s biggest TikTok star Khaby Lame leaves US after Ice agents detain him over visa</a>
+                        <p class="date">11 June 2025, 11:55</p>
                     </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://www.theguardian.com/world/2025/jun/11/gaza-doctor-and-son-evacuated-after-husband-and-nine-children-killed-in-israeli-strike" target="_blank" rel="noopener noreferrer">Gaza doctor and son evacuated after husband and nine children killed in Israeli strike</a>
+                        <p class="date">11 June 2025, 11:54</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://www.nytimes.com/2025/06/11/world/europe/ballymena-riot-northern-ireland-disorder.html" target="_blank" rel="noopener noreferrer">Anti-Immigrant Rioting Stretches Into Second Night in Northern Ireland</a>
+                        <p class="date">11 June 2025, 11:46</p>
+                    </div>
+                
+            
+                
+                
+            
+                
                 
             
                 
@@ -1538,6 +1554,30 @@
                 
                 
                     <div class="card">
+                        <a href="https://www.cnnturk.com/dunya/son-dakika-haberi-trumptan-duyuru-geldi-cin-ile-anlasmamiz-tamamlandi-2296843" target="_blank" rel="noopener noreferrer">SON DAKİKA HABERİ... Trump'tan duyuru geldi: Çin ile anlaşmaya vardık!</a>
+                        <p class="date">11 June 2025, 15:41</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://www.cnnturk.com/video/dunya/nasa-ve-pentagonda-musk-alarmi-spacexe-alternatif-sirketler-araniyor-2296825" target="_blank" rel="noopener noreferrer">NASA ve Pentagon'da 'Musk' alarmı! ''SpaceX'e alternatif şirketler aranıyor''</a>
+                        <p class="date">11 June 2025, 14:55</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://www.cnnturk.com/dunya/rusya-karabagi-azerbaycan-topragi-olarak-taniyoruz-2296837" target="_blank" rel="noopener noreferrer">Rusya: Karabağ’ı Azerbaycan toprağı olarak tanıyoruz</a>
+                        <p class="date">11 June 2025, 14:53</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
                         <a href="https://www.cnnturk.com/video/dunya/kuzey-irlandada-sokaklar-karisti-2296797" target="_blank" rel="noopener noreferrer">Kuzey İrlanda'da sokaklar karıştı! Evler ateşe verildi, araçlar yakıldı</a>
                         <p class="date">11 June 2025, 13:43</p>
                     </div>
@@ -1562,56 +1602,32 @@
                 
                 
                     <div class="card">
+                        <a href="https://www.bbc.com/turkce/articles/cp85dx50nyeo" target="_blank" rel="noopener noreferrer">Ümit Özdağ hakim karşısında: 'Düzensiz göçe karşı çıktığı için tutuklu tek politikacı benim'</a>
+                        <p class="date">11 June 2025, 12:39</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://anlatilaninotesi.com.tr/20250611/umit-ozdag-hakkinda-savci-mutalaa-verdi-45-yil-hapis-cezasi-ve-belli-haklardan-yoksun-birakilmasini-1096949691.html" target="_blank" rel="noopener noreferrer">Ümit Özdağ hakkında savcı mütalaa verdi: 4.5 yıl hapis cezası ve belli haklardan yoksun bırakılmasını istedi</a>
+                        <p class="date">11 June 2025, 15:32</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://anlatilaninotesi.com.tr/20250611/abd-ile-cin-arasinda-tarife-arasinda-tarife-anlasmasi-saglandi-trump-oranlari-acikladi-1096949619.html" target="_blank" rel="noopener noreferrer">ABD ile Çin arasında tarife anlaşması sağlandı: Trump oranları açıkladı, Küresel ekonomi derin nefes aldı</a>
+                        <p class="date">11 June 2025, 15:31</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
                         <a href="https://www.cnnturk.com/dunya/guney-koreden-yeni-karar-kuzey-kore-sinirindaki-hoparlorler-susturuldu-2296737" target="_blank" rel="noopener noreferrer">Güney Kore'den yeni karar: Kuzey Kore sınırındaki hoparlörler susturuldu</a>
                         <p class="date">11 June 2025, 12:17</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.cnnturk.com/video/dunya/cnn-turk-aktardi-endonezyadan-kaan-atagi-2296722" target="_blank" rel="noopener noreferrer">CNN TÜRK aktardı: Endonezya'dan KAAN atağı!</a>
-                        <p class="date">11 June 2025, 11:50</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://anlatilaninotesi.com.tr/20250611/olu-deniz-parsomenleri-dusunulenden-daha-eski-tarihi-degistirebilir-1096944154.html" target="_blank" rel="noopener noreferrer">Ölü Deniz parşömenleri düşünülenden daha eski: Tarihi değiştirebilir</a>
-                        <p class="date">11 June 2025, 14:15</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://anlatilaninotesi.com.tr/20250611/trump-muskla-barisabilecegini-soyledi-1096945619.html" target="_blank" rel="noopener noreferrer">Trump, Musk’la barışabileceğini söyledi</a>
-                        <p class="date">11 June 2025, 13:51</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.bbc.com/turkce/articles/cqxevx1yd25o" target="_blank" rel="noopener noreferrer">Dünyaca ünlü beyin cerrahı Prof. Dr. Gazi Yaşargil hayatını kaybetti</a>
-                        <p class="date">11 June 2025, 10:44</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.cnnturk.com/video/dunya/uzman-isim-haziran-14e-isaret-etti-los-angelesta-protestoculara-para-veriyorlar-2296666" target="_blank" rel="noopener noreferrer">Uzman isim Haziran 14’e işaret etti | ‘LOS ANGELES’TA PROTESTOCULARA PARA VERİYORLAR’</a>
-                        <p class="date">11 June 2025, 10:37</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.bbc.com/turkce/articles/c3wd00wj2n0o" target="_blank" rel="noopener noreferrer">Japonya'daki Kürtlerin durumu neden tartışılıyor?</a>
-                        <p class="date">11 June 2025, 10:22</p>
                     </div>
                 
             
@@ -2071,8 +2087,16 @@
                 
                 
                     <div class="card">
-                        <a href="https://www.cnnturk.com/ekonomi/ekkdan-enflasyon-ve-konut-degerlendirmesi-2296819" target="_blank" rel="noopener noreferrer">EKK’dan enflasyon ve konut arzı değerlendirmesi: Dezenflasyon süreci kesintisiz devam etmekte</a>
-                        <p class="date">11 June 2025, 14:14</p>
+                        <a href="https://www.cnnturk.com/video/ekonomi/mevduat-geliri-altini-solladi-2296823" target="_blank" rel="noopener noreferrer">Küresel riskler karşısında güvenli liman: Mevduat mı, altın mı?</a>
+                        <p class="date">11 June 2025, 15:21</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://www.cnnturk.com/ekonomi/ekkdan-enflasyon-ve-konut-degerlendirmesi-2296819" target="_blank" rel="noopener noreferrer">EKK'dan kira ve konut fiyatlarına ilişkin açıklama: Atılacak adımlar değerlendirildi</a>
+                        <p class="date">11 June 2025, 14:24</p>
                     </div>
                 
             
@@ -2137,14 +2161,6 @@
                     <div class="card">
                         <a href="https://www.cnnturk.com/ekonomi/altin/11-haziran-altin-fiyatlari-gram-altin-ceyrek-altin-ne-kadar-altin-fiyatlarinda-son-durum-ne-yukseliyor-mu-dusuyor-mu-2296657" target="_blank" rel="noopener noreferrer">11 HAZİRAN ALTIN FİYATLARI: Gram altın, çeyrek altın ne kadar? Altın fiyatlarında son durum ne, yükseliyor mu, düşüyor mu?</a>
                         <p class="date">11 June 2025, 11:36</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.cnnturk.com/ekonomi/yapay-zeka-enerji-sektorunde-yatirim-rekoru-kirdi-2296719" target="_blank" rel="noopener noreferrer">Yapay zeka enerji sektöründe yatırım rekoru kırdı</a>
-                        <p class="date">11 June 2025, 11:24</p>
                     </div>
                 
             
@@ -2513,6 +2529,30 @@
                 
                 
                     <div class="card">
+                        <a href="https://www.cnnturk.com/spor/voleybol/sirbistan-turkiye-voleybol-maci-canli-izle-sirbistan-turkiye-voleybol-maci-ne-zaman-saat-kacta-hangi-kanalda-2296844" target="_blank" rel="noopener noreferrer">SIRBİSTAN - TÜRKİYE VOLEYBOL MAÇI CANLI İZLE: Sırbistan - Türkiye voleybol maçı ne zaman, saat kaçta, hangi kanalda?</a>
+                        <p class="date">11 June 2025, 15:33</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://www.cnnturk.com/spor/bugun-11-haziran-hangi-maclar-var-gunun-karsilasmalari-saati-ve-kanal-detaylari-2289099" target="_blank" rel="noopener noreferrer">BUGÜN (11 HAZİRAN) HANGİ MAÇLAR VAR? Günün Karşılaşmaları, Saati ve Kanal Detayları</a>
+                        <p class="date">11 June 2025, 15:32</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
+                        <a href="https://www.cnnturk.com/spor/futbol/senol-gunes-stadyumu-tamamen-trabzonsporun-oldu-2296841" target="_blank" rel="noopener noreferrer">Şenol Güneş Stadyumu tamamen Trabzonspor'un oldu!</a>
+                        <p class="date">11 June 2025, 15:10</p>
+                    </div>
+                
+            
+                
+                
+                    <div class="card">
                         <a href="https://www.cnnturk.com/spor/futbol/samsunsporda-ilk-kamp-yeri-netlesti-2296821" target="_blank" rel="noopener noreferrer">Samsunspor'da ilk kamp yeri netleşti</a>
                         <p class="date">11 June 2025, 14:13</p>
                     </div>
@@ -2563,30 +2603,6 @@
                     <div class="card">
                         <a href="https://www.cnnturk.com/spor/futbol/galatasaraydaki-sozlesmesi-sona-eren-muslera-istanbuldan-ayrildi-2296685" target="_blank" rel="noopener noreferrer">Galatasaray'daki sözleşmesi sona eren Muslera, İstanbul'dan ayrıldı</a>
                         <p class="date">11 June 2025, 11:06</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.cnnturk.com/spor/futbol/demir-ege-tiknaz-ilk-milli-macinin-ardindan-konustu-2296661" target="_blank" rel="noopener noreferrer">Demir Ege Tıknaz, ilk milli maçının ardından konuştu</a>
-                        <p class="date">11 June 2025, 10:06</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.cnnturk.com/spor/futbol/vincenzo-montella-isabet-oranimiz-dusuktu-futbol-maalesef-boyle-2296617" target="_blank" rel="noopener noreferrer">Vincenzo Montella: İsabet oranımız düşüktü, futbol maalesef böyle</a>
-                        <p class="date">11 June 2025, 09:30</p>
-                    </div>
-                
-            
-                
-                
-                    <div class="card">
-                        <a href="https://www.cnnturk.com/spor/futbol/meksika-turkiye-mac-ozeti-a-milli-takim-firsatlari-comertce-harcadi-2296609" target="_blank" rel="noopener noreferrer">Meksika - Türkiye MAÇ ÖZETİ | A Milli Takım, fırsatları cömertçe harcadı</a>
-                        <p class="date">11 June 2025, 09:15</p>
                     </div>
                 
             
@@ -2785,6 +2801,8 @@
         
     </div>
 
+    
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCMbTGAz9AGlSXzfROx94Mg1UcmuxIguBU&callback=initMap&libraries=places&language=tr&region=TR"></script>
     
     <script src="script.js"></script>
 </body>
