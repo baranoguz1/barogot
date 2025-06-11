@@ -73,11 +73,7 @@ jobs:
         working-directory: ./ 
         run: python main.py
 
-      # YENİ EKLENECEK HATA AYIKLAMA ADIMI
-      - name: Çıktı Klasörünün İçeriğini Kontrol Et
-        run: |
-          echo "--- Output klasörünün içeriği listeleniyor ---"
-          ls -R ./output
+
 
       - name: GitHub Pages'e Dağıt 🚀
         uses: peaceiris/actions-gh-pages@v3
