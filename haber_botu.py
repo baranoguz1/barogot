@@ -18,7 +18,6 @@ from dotenv import load_dotenv
 from pathlib import Path
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import subprocess
 # E-posta kütüphaneleri yorum satırı olarak bırakıldı, ihtiyaç halinde aktif edilebilir
 # import smtplib
 # from email.mime.multipart import MIMEMultipart
@@ -1258,7 +1257,7 @@ def generate_html():
     </nav>
     <button class="toggle-button" aria-label="Gece Modu Değiştir">🌙</button>
     <div class="page-wrapper">
-        <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:40px;">Son Güncelleme: {last_update}</p>
+        <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:50px;">Son Güncelleme: {last_update}</p>
 """)
 
     # Hava Durumu
