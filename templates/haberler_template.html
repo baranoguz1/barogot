@@ -40,7 +40,7 @@
             {% endfor %}
         </div>
 
-        {% if Maps_api_key %}
+        {% if GOOGLE_MAPS_API_KEY %}
         <h2 id="trafik" class="section-title">🚦 İstanbul Trafik Durumu & Yol Tarifi</h2>
         <div id="map_canvas"></div>
         <div class="route-controls">
@@ -188,8 +188,8 @@
         {% endfor %}
     </div>
 
-    {% if Maps_api_key %}
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ Maps_api_key }}&callback=initMap&libraries=places&language=tr&region=TR"></script>
+    {% if GOOGLE_MAPS_API_KEY %}
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap&libraries=places&language=tr&region=TR"></script>
     {% endif %}
     <script src="script.js"></script>
 </body>
