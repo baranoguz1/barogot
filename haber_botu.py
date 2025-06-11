@@ -1262,7 +1262,7 @@ def generate_html():
     </nav>
     <button class="toggle-button" aria-label="Gece Modu Değiştir">🌙</button>
     <div class="page-wrapper">
-        <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:20px;">Son Güncelleme: {last_update}</p>
+        <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:30px;">Son Güncelleme: {last_update}</p>
 """)
 
     # Hava Durumu
