@@ -168,6 +168,7 @@ def get_trending_topics_trends24(limit=10):
         # Bu işlem için Selenium'a gerek yok, requests daha hızlıdır.
         response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
         response.raise_for_status()
+        response.encoding = 'utf-8'
         soup = BeautifulSoup(response.text, 'html.parser')
         
         trend_list_items = soup.select("ol.trend-card__list li")
