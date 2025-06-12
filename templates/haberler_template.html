@@ -10,7 +10,6 @@
 <body class="">
     <nav class="sticky-nav">
         <a href="#hava">🌤️ Hava</a>
-        <a href="#trafik">🚦 Trafik</a>
         <a href="#doviz">💱 Döviz</a>
         <a href="#kitaplar">📚 Kitaplar</a>
         <a href="#etkinlikler">📅 Etkinlikler</a>
@@ -40,18 +39,7 @@
             {% endfor %}
         </div>
 
-        {% if GOOGLE_MAPS_API_KEY %}
-        <h2 id="trafik" class="section-title">🚦 İstanbul Trafik Durumu & Yol Tarifi</h2>
-        <div id="map_canvas"></div>
-        <div class="route-controls">
-            <input id="start_location" type="text" placeholder="Başlangıç (örn: Kadıköy)">
-            <button onclick="useCurrentLocation()" aria-label="Mevcut Konumumu Kullan">📍 Konumum</button>
-            <input id="end_location" type="text" placeholder="Varış (örn: Beşiktaş)">
-            <button onclick="calculateAndDisplayRoute()" aria-label="Yol Tarifi Göster">🧭 Tarifi Göster</button>
-        </div>
-        <div id="route-info"></div>
-        {% endif %}
-
+        
         <h2 id="doviz" class="section-title">💱 Döviz Kurları</h2>
         <div class="exchange-container">
             {% for currency, rate in exchange_rates.items() %}
@@ -188,9 +176,7 @@
         {% endfor %}
     </div>
 
-    {% if GOOGLE_MAPS_API_KEY %}
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap&libraries=places&language=tr&region=TR"></script>
-    {% endif %}
+
     <script src="script.js"></script>
 </body>
 </html>

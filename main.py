@@ -70,7 +70,7 @@ def main():
     """Ana iş akışını yönetir."""
     start_time = time.time()
     
-    context = {'GOOGLE_MAPS_API_KEY': config.GOOGLE_MAPS_API_KEY}
+    context = {}
     
     driver = setup_driver()
     if driver:
