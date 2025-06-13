@@ -24,6 +24,17 @@
     <div class="page-wrapper">
         <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:50px;">Son Güncelleme: {{ last_update }}</p>
 
+        {% if top_headlines %}
+        <div id="onemli-basliklar" class="container important-headlines" style="scroll-margin-top: 80px;">
+            <h2>⭐ Günün Önemli Başlıkları</h2>
+            <ul>
+                {% for headline in top_headlines %}
+                    <li>{{ headline }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <h2 id="hava" class="section-title">📍 İstanbul Saatlik Hava Durumu</h2>
         <div class="weather-container">
             {% for time_val, temp, description, icon_uri, weather_class in weather %}

@@ -1,4 +1,4 @@
-# main.py (Son Düzeltme)
+# main.py (Projenizin Yapısına Uygun Doğru Versiyon)
 import time
 import shutil
 from pathlib import Path
@@ -13,7 +13,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 import config
 from data_fetchers import api_fetchers, web_scrapers
-
+from analysis.summarizer import summarize_headlines # <-- 1. YENİ EKLENEN SATIR: Özetleyiciyi import et
 
 def setup_driver():
     """Paylaşılan Selenium WebDriver'ı kurar ve döndürür."""
@@ -47,15 +47,17 @@ def generate_output_files(context):
 
         env = Environment(loader=FileSystemLoader(root_dir / 'templates/'))
         template = env.get_template('haberler_template.html')
-        html_output_path = output_dir / "index.html"
+        # output klasörüne index.html olarak kaydetmek GitHub Pages için daha iyidir
+        html_output_path = output_dir / "index.html" 
         
         html_output = template.render(context)
         with open(html_output_path, "w", encoding="utf-8") as f:
             f.write(html_output)
-        print(f"✅ {html_output_path.name} dosyası başarıyla oluşturuldu.")
+        print(f"✅ index.html dosyası başarıyla oluşturuldu.")
 
-        static_files = ["style.css", "script.js", "manifest.json", "service-worker.js"]
-        for file_name in static_files:
+        # style.css ve script.js gibi statik dosyaları kopyala
+        static_files_to_copy = ["style.css", "script.js"] 
+        for file_name in static_files_to_copy:
             source_path = root_dir / file_name
             if source_path.exists():
                 shutil.copy(source_path, output_dir / file_name)
@@ -70,11 +72,11 @@ def main():
     """Ana iş akışını yönetir."""
     start_time = time.time()
     
+    # Tüm verileri toplayacağımız ana sözlük
     context = {}
     
     driver = setup_driver()
     if driver:
-        # HATA BU BLOKTAYDI. ŞİMDİ DOLDURULDU.
         try:
             print("\n--- Selenium ile Veri Kazıma Başladı ---")
             context['ratings'] = web_scrapers.get_daily_ratings(driver)
@@ -112,9 +114,19 @@ def main():
                 print(f"⚠️ RSS görevi hatası: {e}")
     context['news'] = news_results
     
+    # --- 2. YENİ EKLENEN BÖLÜM: Haberleri özetle ---
+    # Tüm kategorilerdeki haberleri tek bir listede topla
+    all_news_flat = [item for sublist in news_results.values() for item in sublist]
+    # Özetleyici fonksiyonu çağır
+    top_headlines = summarize_headlines(all_news_flat, num_sentences=5)
+    # Sonucu ana context'e ekle
+    context['top_headlines'] = top_headlines
+    # -----------------------------------------------
+    
     local_now = datetime.now(timezone.utc) + timedelta(hours=config.TIME_OFFSET_HOURS)
     context['last_update'] = local_now.strftime("%d %B %Y, %H:%M:%S")
 
+    # Tüm toplanan verilerle HTML dosyasını oluştur
     generate_output_files(context)
 
     end_time = time.time()

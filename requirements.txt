@@ -6,6 +6,7 @@ webdriver-manager
 python-dotenv
 openpyxl
 Jinja2
-
+sumy
+nltk
 
 
