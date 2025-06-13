@@ -160,3 +160,8 @@ body.dark-mode .important-headlines {
 body.dark-mode {
     --list-item-border: #3a3a3c;
 }
+
+/* Koyu Mod Başlık Rengi Düzeltmesi */
+body.dark-mode .important-headlines h2 {
+    color: #f0f0f0;
+}
