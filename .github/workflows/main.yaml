@@ -43,7 +43,7 @@ jobs:
 
       # ===== YENİ EKLENEN ADIM BAŞLANGICI =====
       - name: Download NLTK Data
-        run: python -m nltk.downloader punkt
+        run: python -m nltk.downloader punkt_tab
       # ===== YENİ EKLENEN ADIM SONU =====
 
       - name: GitHub Secrets'tan .env Dosyası Oluştur 🤫
