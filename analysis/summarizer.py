@@ -3,12 +3,6 @@ from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.lex_rank import LexRankSummarizer
 
-# NLTK'nın 'punkt' modelini indirmesini sağlayın (ilk çalıştırmada gerekebilir)
-try:
-    nltk.data.find('tokenizers/punkt')
-except nltk.downloader.DownloadError:
-    nltk.download('punkt')
-
 def summarize_headlines(all_news, num_sentences=5):
     """
     Verilen haber listesindeki başlıklardan bir özet çıkarır.

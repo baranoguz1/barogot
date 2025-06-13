@@ -41,6 +41,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable chromium-chromedriver libglib2.0-0 libnss3 libfontconfig1
 
+      # ===== YENİ EKLENEN ADIM BAŞLANGICI =====
+      - name: Download NLTK Data
+        run: python -m nltk.downloader punkt
+      # ===== YENİ EKLENEN ADIM SONU =====
+
       - name: GitHub Secrets'tan .env Dosyası Oluştur 🤫
         run: |
           echo "API_KEY=${{ secrets.API_KEY }}" > .env
