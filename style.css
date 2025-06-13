@@ -103,3 +103,46 @@ body.dark-mode .event-card-category {color: #bbb; }
 @media (max-width: 480px) {
   .film-card { width: 100%; }
 }
+
+/* ================================== */
+/* ===== Günün Önemli Başlıkları ===== */
+/* ================================== */
+
+.important-headlines {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.07);
+    scroll-margin-top: 80px; /* Sabit navigasyonun altında kalmaması için */
+}
+
+/* Gece modunda gölgeyi daha belirgin yap */
+body.dark-mode .important-headlines {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.important-headlines h2 {
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0.75rem;
+}
+
+.important-headlines ul {
+    /* Liste imini emoji olarak belirle */
+    list-style-type: '⭐';
+    padding-left: 2rem;
+    margin-top: 1rem;
+}
+
+.important-headlines li {
+    margin-bottom: 0.8rem;
+    padding-left: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    line-height: 1.5;
+}
