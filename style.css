@@ -112,10 +112,10 @@ body.dark-mode .event-card-category {color: #bbb; }
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 1rem 2rem;
+    padding: 1.5rem 2rem; /* İç boşluğu biraz artırdık */
     margin-bottom: 2rem;
     box-shadow: 0 4px 8px rgba(0,0,0,0.07);
-    scroll-margin-top: 80px; /* Sabit navigasyonun altında kalmaması için */
+    scroll-margin-top: 80px;
 }
 
 /* Gece modunda gölgeyi daha belirgin yap */
@@ -123,26 +123,40 @@ body.dark-mode .important-headlines {
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
+/* Başlığı diğer section-title'lara benzetiyoruz */
 .important-headlines h2 {
-    margin-top: 0.5rem;
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-    color: var(--primary-color);
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 0.75rem;
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    font-size: 1.8em;
+    font-weight: 600;
+    color: var(--text-color); /* Ana metin rengini kullan */
+    border-bottom: 1px solid var(--border-color); /* Diğer başlıklarla aynı çizgi */
 }
 
+/* Liste stillerini sıfırla */
 .important-headlines ul {
-    /* Liste imini emoji olarak belirle */
-    list-style-type: '⭐';
-    padding-left: 2rem;
-    margin-top: 1rem;
+    list-style-type: none; /* İkonları kaldırır */
+    padding-left: 0;       /* Sol boşluğu sıfırlar */
+    margin: 0;
 }
 
 .important-headlines li {
-    margin-bottom: 0.8rem;
-    padding-left: 0.75rem;
-    font-size: 1.1rem;
-    font-weight: 500;
-    line-height: 1.5;
+    margin-bottom: 0.9rem;
+    padding: 0.2rem 0; /* Üst ve alt boşluk ekle */
+    font-size: 1.05rem; /* Yazı tipini biraz küçülttük */
+    font-weight: 400;   /* Daha okunabilir bir kalınlık */
+    line-height: 1.6;
+    border-bottom: 1px solid var(--list-item-border, transparent); /* İsteğe bağlı ince ayırıcı */
+}
+
+/* Liste içindeki son elemanın alt çizgisini kaldır */
+.important-headlines li:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+/* Gece modunda liste elemanı ayırıcısı için renk */
+body.dark-mode {
+    --list-item-border: #3a3a3c;
 }
