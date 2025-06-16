@@ -217,12 +217,42 @@ def get_flashscore_sport_fixtures(driver, combined_path, league_name, max_fixtur
             if len(fixtures) >= max_fixtures:
                 break
             try:
-                time_str = match_element.find_element(By.CLASS_NAME, config.FLASHSCORE_TIME_CLASS).text.strip()
-                
+                time_str_raw = match_element.find_element(By.CLASS_NAME, config.FLASHSCORE_TIME_CLASS).text.strip()
+                converted_time_str = time_str_raw  # Hata durumunda orijinali kullan
+
+                # Zamanı UTC+3'e dönüştürmeyi dene
+                try:
+                    # Durum 1: "DD.MM. HH:MM" formatı (örn: "18.06. 22:00")
+                    if '.' in time_str_raw and ':' in time_str_raw:
+                        parts = time_str_raw.split()
+                        date_part = parts[0]
+                        time_part = parts[1]
+                        
+                        current_year = datetime.now().year
+                        full_date_str = f"{date_part}{current_year} {time_part}"
+                        
+                        utc_time = datetime.strptime(full_date_str, "%d.%m.%Y %H:%M")
+                        local_time = utc_time + timedelta(hours=config.TIME_OFFSET_HOURS)
+                        converted_time_str = local_time.strftime("%d.%m. %H:%M")
+
+                    # Durum 2: "HH:MM" formatı (örn: "21:45")
+                    elif ':' in time_str_raw and '.' not in time_str_raw:
+                        hour, minute = map(int, time_str_raw.split(':'))
+                        
+                        now_utc = datetime.now(timezone.utc)
+                        utc_time = now_utc.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                        
+                        local_time = utc_time + timedelta(hours=config.TIME_OFFSET_HOURS)
+                        converted_time_str = local_time.strftime("%H:%M")
+
+                except (ValueError, IndexError) as e:
+                    print(f"ℹ️ Flashscore zamanı ({time_str_raw}) dönüştürülemedi, orijinal kullanılıyor. Hata: {e}")
+                    converted_time_str = time_str_raw
+
                 if sport_path == "basketbol":
                     home_team_class = config.FLASHSCORE_BASKETBOL_HOME_TEAM_CLASS
                     away_team_class = config.FLASHSCORE_BASKETBOL_AWAY_TEAM_CLASS
-                else: # Varsayılan olarak futbol
+                else:  # Varsayılan olarak futbol
                     home_team_class = config.FLASHSCORE_FUTBOL_HOME_TEAM_CLASS
                     away_team_class = config.FLASHSCORE_FUTBOL_AWAY_TEAM_CLASS
 
@@ -232,9 +262,9 @@ def get_flashscore_sport_fixtures(driver, combined_path, league_name, max_fixtur
                 if not home_team or not away_team:
                     continue
 
-                fixtures.append(f"{time_str}: {home_team} vs {away_team}")
+                fixtures.append(f"{converted_time_str}: {home_team} vs {away_team}")
             except Exception:
-                continue # Tek bir maçta hata olursa atla
+                continue  # Tek bir maçta hata olursa atla
 
         print(f"✅ {league_name}: {len(fixtures)} maç bulundu.")
         return league_name, fixtures
