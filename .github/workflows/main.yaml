@@ -23,7 +23,7 @@ jobs:
       - name: Python Kurulumu 🐍
         uses: actions/setup-python@v4
         with:
-          python-version: '3.13' # Betiğinizin uyumlu olduğu Python sürümünü belirtin
+          python-version: '3.12' # Betiğinizin uyumlu olduğu Python sürümünü belirtin
 
       - name: Pip önbelleğini yükle ⚡
         uses: actions/cache@v4
