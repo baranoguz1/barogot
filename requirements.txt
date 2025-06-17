@@ -10,3 +10,4 @@ sumy
 nltk
 openai==1.35.3
 httpx==0.27.0
+feedparser==6.0.10

@@ -5,8 +5,10 @@ API'ler üzerinden veri çeken fonksiyonları içerir.
 """
 import requests
 import xml.etree.ElementTree as ET
-import email.utils
 from datetime import datetime, timezone, timedelta
+import feedparser
+from bs4 import BeautifulSoup
+import time
 
 # Ana dizindeki config dosyasını import ediyoruz
 import config
