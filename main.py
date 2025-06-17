@@ -144,8 +144,8 @@ def main():
         print("⚠️ Özetlenecek yeterli haber içeriği bulunamadı.")
         context['top_headlines'] = []
 
-        # Tüm toplanan verilerle HTML dosyasını oluştur
-        generate_output_files(context)
+    # Tüm toplanan verilerle HTML dosyasını oluştur
+    generate_output_files(context)
 
     end_time = time.time()
     print(f"\n🎉 Tüm işlemler {end_time - start_time:.2f} saniyede tamamlandı.")
