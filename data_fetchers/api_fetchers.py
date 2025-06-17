@@ -113,43 +113,41 @@ def get_exchange_rates():
         print("⚠️ Döviz kuru API yanıt formatı beklenmedik.")
         return {}
 
-def fetch_rss_feed(url, timeout=15):
-    """Verilen URL'den RSS akışını çeker ve haber öğelerini döndürür."""
-    headers = {"User-Agent": "Mozilla/5.0 (compatible; HaberBotu/1.0; +http://example.com/bot)"}
+def fetch_rss_feed(url):
+    """Verilen RSS URL'sinden haberleri çeker ve tarihleri parse eder."""
     try:
-        response = requests.get(url, headers=headers, timeout=timeout)
-        response.raise_for_status()
+        print(f"📰 RSS okunuyor: {url}")
+        feed = feedparser.parse(url)
+        if feed.bozo:
+            # bozo=1 ise feed düzgün parse edilememiştir.
+            raise Exception(f"RSS formatı bozuk - {feed.bozo_exception}")
 
-        try:
-            root = ET.fromstring(response.content)
-        except ET.ParseError as e_parse:
-            print(f"⚠️ XML Ayrıştırma Hatası ({url}): {e_parse}.")
-            return []
-
+        source_name = feed.feed.title
         news_items = []
-        for item in root.findall(".//item"):
-            title = item.findtext("title", "Başlık Yok").strip()
-            link = item.findtext("link", "#").strip()
-            pub_date_raw = item.findtext("pubDate")
+        for entry in feed.entries:
+            # Tarih bilgisini parse etmeye çalış
+            if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                # feedparser'ın parse ettiği time.struct_time'ı datetime nesnesine çevir
+                parsed_date = datetime.fromtimestamp(time.mktime(entry.published_parsed), tz=timezone.utc)
+            else:
+                # Eğer tarih bilgisi yoksa, şu anki zamanı UTC olarak kullan
+                parsed_date = datetime.now(timezone.utc)
 
-            pub_date_parsed = datetime.now()
-            if pub_date_raw:
-                try:
-                    pub_date_parsed = email.utils.parsedate_to_datetime(pub_date_raw)
-                except (TypeError, ValueError):
-                    try:
-                        pub_date_parsed = datetime.fromisoformat(pub_date_raw.replace("Z", "+00:00"))
-                    except ValueError:
-                        pass # Tarih anlaşılamadıysa şimdiki zaman kullanılır
+            summary_soup = BeautifulSoup(entry.summary, 'html.parser')
+            summary = summary_soup.get_text(separator=' ', strip=True)
 
-            news_items.append({"title": title, "link": link, "pub_date": pub_date_parsed})
+            news_items.append({
+                'source': source_name,
+                'title': entry.title,
+                'link': entry.link,
+                'summary': summary,
+                'pub_date': entry.get('published', 'Tarih yok'),
+                'pub_date_parsed': parsed_date  # SIRALAMA İÇİN GEREKLİ ANAHTAR
+            })
         return news_items
-    except requests.exceptions.RequestException as e:
-        print(f"⚠️ RSS Çekme Hatası ({url}): {e}")
-        return []
-    except Exception as e_general:
-        print(f"⚠️ RSS İşleme Genel Hata ({url}): {e_general}")
-        return []
+    except Exception as e:
+        print(f"❌ RSS okuma hatası ({url}): {e}")
+        return None
 
 def get_spotify_token():
     """Spotify API için erişim token'ı alır veya yeniler."""
