@@ -1,4 +1,5 @@
-# main.py (Projenizin Yapısına Uygun Doğru Versiyon)
+# main.py
+
 import time
 import shutil
 from pathlib import Path
@@ -12,12 +13,9 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 
 import config
-from data_fetchers.web_scrapers import fetch_bist100_data, fetch_article_snippet
+from data_fetchers import api_fetchers, web_scrapers
+from data_fetchers.web_scrapers import fetch_article_snippet
 from analysis.summarizer import generate_abstractive_summary
-from datetime import datetime
-from config import RSS_FEEDS, ISTANBUL_COORDINATES, ANKARA_COORDINATES
-from data_fetchers.api_fetchers import get_weather, get_earthquakes, get_news, get_movies, get_events
-from jinja2 import Environment, FileSystemLoader
 
 def setup_driver():
     """Paylaşılan Selenium WebDriver'ı kurar ve döndürür."""
