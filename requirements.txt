@@ -8,5 +8,5 @@ openpyxl
 Jinja2
 sumy
 nltk
-
+openai==1.35.3
 

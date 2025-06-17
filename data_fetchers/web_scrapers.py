@@ -271,3 +271,28 @@ def get_flashscore_sport_fixtures(driver, combined_path, league_name, max_fixtur
     except Exception as e:
         print(f"❌ {league_name} ({combined_path}) Flashscore verisi alınamadı: {e}")
         return league_name, []
+    
+
+def fetch_article_snippet(url, timeout=7):
+    """Verilen URL'den makalenin meta açıklamasını veya ilk birkaç paragrafını çeker."""
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers, timeout=timeout)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Strateji 1: Meta açıklamasını bul (genellikle en iyi özettir)
+        meta_desc = soup.find('meta', attrs={'name': 'description'})
+        if meta_desc and meta_desc.get('content'):
+            return meta_desc.get('content').strip()
+
+        # Strateji 2: Meta açıklama yoksa, ilk birkaç anlamlı paragrafı bul
+        paragraphs = soup.find_all('p')
+        content = ". ".join(p.get_text(strip=True) for p in paragraphs[:3] if p.get_text(strip=True))
+        return content if content else None
+
+    except requests.exceptions.RequestException as e:
+        print(f"⚠️ İçerik çekme hatası ({url}): {e}")
+        return None

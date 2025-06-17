@@ -12,8 +12,12 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 
 import config
-from data_fetchers import api_fetchers, web_scrapers
-from analysis.summarizer import summarize_headlines # <-- 1. YENİ EKLENEN SATIR: Özetleyiciyi import et
+from data_fetchers.web_scrapers import fetch_bist100_data, fetch_article_snippet
+from analysis.summarizer import generate_abstractive_summary
+from datetime import datetime
+from config import RSS_FEEDS, ISTANBUL_COORDINATES, ANKARA_COORDINATES
+from data_fetchers.api_fetchers import get_weather, get_earthquakes, get_news, get_movies, get_events
+from jinja2 import Environment, FileSystemLoader
 
 def setup_driver():
     """Paylaşılan Selenium WebDriver'ı kurar ve döndürür."""
@@ -114,20 +118,36 @@ def main():
                 print(f"⚠️ RSS görevi hatası: {e}")
     context['news'] = news_results
     
-    # --- 2. YENİ EKLENEN BÖLÜM: Haberleri özetle ---
-    # Tüm kategorilerdeki haberleri tek bir listede topla
+    # --- YENİ ÜRETKEN YAPAY ZEKA İLE ÖZETLEME AKIŞI ---
+    print("📰 Günün önemli olayları yapay zeka ile özetleniyor...")
     all_news_flat = [item for sublist in news_results.values() for item in sublist]
-    # Özetleyici fonksiyonu çağır
-    top_headlines = summarize_headlines(all_news_flat, num_sentences=5)
-    # Sonucu ana context'e ekle
-    context['top_headlines'] = top_headlines
-    # -----------------------------------------------
-    
-    local_now = datetime.now(timezone.utc) + timedelta(hours=config.TIME_OFFSET_HOURS)
-    context['last_update'] = local_now.strftime("%d %B %Y, %H:%M:%S")
 
-    # Tüm toplanan verilerle HTML dosyasını oluştur
-    generate_output_files(context)
+    # Haberleri tarihe göre sıralayıp en yeni 20 tanesini alalım
+    # Bu, API maliyetini ve işlem süresini yönetmek için önemlidir.
+    sorted_news = sorted(all_news_flat, key=lambda x: x['pub_date_parsed'], reverse=True)[:20]
+
+    news_for_summary = []
+    print(f"Özetleme için en yeni {len(sorted_news)} haberin içeriği çekiliyor...")
+    for news_item in sorted_news:
+        # Her haber için başlık ve linkten kısa bir içerik (snippet) çekiyoruz
+        snippet = fetch_article_snippet(news_item['link'])
+        if snippet:
+            news_for_summary.append({
+                "title": news_item['title'],
+                "snippet": snippet
+            })
+
+    if news_for_summary:
+        # Toplanan içerikleri OpenAI'ye göndererek anlamlı özetler oluştur
+        top_headlines = generate_abstractive_summary(news_for_summary, num_events=5)
+        context['top_headlines'] = top_headlines
+        print(f"✅ Önemli olaylar başarıyla özetlendi: {len(top_headlines)} başlık bulundu.")
+    else:
+        print("⚠️ Özetlenecek yeterli haber içeriği bulunamadı.")
+        context['top_headlines'] = []
+
+        # Tüm toplanan verilerle HTML dosyasını oluştur
+        generate_output_files(context)
 
     end_time = time.time()
     print(f"\n🎉 Tüm işlemler {end_time - start_time:.2f} saniyede tamamlandı.")
