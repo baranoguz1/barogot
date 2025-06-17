@@ -85,7 +85,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }} # GitHub tarafından otomatik sağlanır
           publish_dir: ./output  # haberler.html dosyasının oluşturulduğu klasör
           # publish_branch: gh-pages # Varsayılan olarak 'gh-pages' şubesine yayınlar
-          # user_name: 'github-actions[bot]' # Commit yapan kullanıcı adı (isteğe bağlı)
-          # user_email: 'github-actions[bot]@users.noreply.github.com' # Commit yapan e-posta (isteğe bağlı)
+          user_name: 'github-actions[bot]' # Commit yapan kullanıcı adı (isteğe bağlı)
+          user_email: 'github-actions[bot]@users.noreply.github.com' # Commit yapan e-posta (isteğe bağlı)
           # commit_message: 'Oluşturulan HTML sayfasını yayınla' # Commit mesajı (isteğe bağlı)
           # cname: ozelalanadiniz.com # Eğer özel bir alan adınız varsa
