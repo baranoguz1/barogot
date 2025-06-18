@@ -16,6 +16,7 @@ import config
 from data_fetchers import api_fetchers, web_scrapers
 from data_fetchers.web_scrapers import fetch_article_snippet
 from analysis.summarizer import generate_abstractive_summary
+from analysis.summarizer import generate_abstractive_summary, generate_weather_commentary
 
 # main.py dosyasının üst kısımlarına ekleyin
 
@@ -121,6 +122,11 @@ def main():
 
     print("\n--- API ve Diğer Veriler Çekiliyor ---")
     context['weather'] = api_fetchers.get_hourly_weather()
+
+    if context['weather']:
+        weather_comment = generate_weather_commentary(context['weather'])
+        context['weather_commentary'] = weather_comment
+        
     context['exchange_rates'] = api_fetchers.get_exchange_rates()
     context['movies'] = api_fetchers.fetch_movies()
     context['spotify_tracks'] = api_fetchers.get_new_turkish_rap_tracks_embed()

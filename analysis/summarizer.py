@@ -85,3 +85,44 @@ def generate_abstractive_summary(all_news, num_events=5):
     except Exception as e:
         print(f"❌ Gemini API hatası veya JSON parse hatası: {e}")
         return default_error_response
+    
+
+def generate_weather_commentary(hourly_forecast):
+    """Saatlik hava durumu verilerinden Gemini kullanarak bir yorum oluşturur."""
+    print("🌤️ Hava durumu yapay zeka ile yorumlanıyor...")
+    
+    # Gemini'ye gönderilecek talimatı (prompt) hazırlama
+    prompt_header = """
+    Aşağıda İstanbul için saatlik hava durumu verileri bulunmaktadır. Bu verilere dayanarak, kullanıcıya hitap eden, samimi ve kısa bir hava durumu yorumu yaz. 
+    - Genel durumdan bahset (örn: "Bugün hava genel olarak güneşli olacak...").
+    - Akşama doğru bir değişiklik varsa belirt (örn: "...ancak akşama doğru hava serinliyor.").
+    - Giyilebilecek kıyafetler hakkında kısa bir tavsiye ver.
+    - Yorumun 30-40 kelimeyi geçmesin ve tek bir paragraf olsun.
+
+    İşte veriler:
+    """
+    
+    # Hava durumu verilerini okunabilir bir metne dönüştürme
+    forecast_text = "\n".join(
+        [f"- Saat {item[0]}: Sıcaklık {item[1]:.0f}°C, Durum: {item[2]}" for item in hourly_forecast]
+    )
+    
+    full_prompt = prompt_header + forecast_text
+    
+    try:
+        # Bu kısım generate_abstractive_summary fonksiyonundakine benzer şekilde
+        # Gemini API anahtarını kullanarak API'yi çağırır.
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            return "Hava durumu yorumu için API anahtarı bulunamadı."
+
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        response = model.generate_content(full_prompt)
+        
+        print("✅ Hava durumu yorumu başarıyla oluşturuldu.")
+        return response.text.strip()
+
+    except Exception as e:
+        print(f"❌ Hava durumu yorumu oluşturulurken hata: {e}")
+        return "Şu an için hava durumu yorumu yapılamıyor."
