@@ -67,7 +67,7 @@ def generate_abstractive_summary(all_news, num_events=5):
 
         prompt = get_summarization_prompt(haber_icerikleri[:20]) # İlk 20 haberi kullan
         
-        model = genai.GenerativeModel(model_name)
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
         response = model.generate_content(prompt)
         
         # Yanıtın JSON formatında olduğundan emin ol ve temizle

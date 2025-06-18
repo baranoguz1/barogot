@@ -28,8 +28,9 @@
         <div id="onemli-basliklar" class="container important-headlines" style="scroll-margin-top: 80px;">
             <h2>Günün Önemli Başlıkları</h2>
             <ul>
+                {# Gelen listedeki her bir 'headline' artık bir sözlük #}
                 {% for headline in top_headlines %}
-                    <li>{{ headline }}</li>
+                    <li><strong>{{ headline.baslik }}</strong> - {{ headline.ozet }}</li>
                 {% endfor %}
             </ul>
         </div>

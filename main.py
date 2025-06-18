@@ -155,14 +155,17 @@ def main():
         if snippet:
             news_for_summary.append({
                 "title": news_item['title'],
-                "snippet": snippet
+                "content": snippet
             })
 
     if news_for_summary:
         # Toplanan içerikleri OpenAI'ye göndererek anlamlı özetler oluştur
-        top_headlines = generate_abstractive_summary(news_for_summary, num_events=5)
-        context['top_headlines'] = top_headlines
-        print(f"✅ Önemli olaylar başarıyla özetlendi: {len(top_headlines)} başlık bulundu.")
+        # Toplanan içerikleri Gemini'ye göndererek anlamlı özetler oluştur
+        summary_data = generate_abstractive_summary(news_for_summary, num_events=5)
+        # Şablona sadece başlık listesini gönder
+        context['top_headlines'] = summary_data.get("gunun_ozeti", []) 
+        # Başlık sayısını doğru hesapla
+        print(f"✅ Önemli olaylar başarıyla özetlendi: {len(context['top_headlines'])} başlık bulundu.")
     else:
         print("⚠️ Özetlenecek yeterli haber içeriği bulunamadı.")
         context['top_headlines'] = []
