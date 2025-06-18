@@ -134,7 +134,7 @@ def fetch_istanbul_events(driver):
 
 
 
-# web_scrapers.py içindeki fonksiyonun bu versiyon olduğundan emin olun
+
 
 def get_daily_ratings(driver, limit=10):
     """TIAK üzerinden günlük TV reytinglerini çeker (Daha Sağlam Versiyon)."""
@@ -144,7 +144,7 @@ def get_daily_ratings(driver, limit=10):
         driver.get(url)
         time.sleep(3) # Sayfanın oturması için bekle
 
-        # Çerez penceresini yönetme
+        # Çerez penceresini yönetme (bu kısım kalabilir, zararı olmaz)
         try:
             print("... Çerez penceresi kontrol ediliyor ...")
             cookie_accept_button = WebDriverWait(driver, 10).until(
@@ -157,45 +157,56 @@ def get_daily_ratings(driver, limit=10):
             print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
             pass
 
-        # "Günlük" sekmesiyle etkileşim kurmak
-        print("... 'Günlük' sekmesiyle etkileşim kuruluyor ...")
-        gunluk_buton = WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.XPATH, config.TIAK_GUNLUK_BUTON_XPATH))
-        )
-        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", gunluk_buton)
-        time.sleep(1)
-        driver.execute_script("arguments[0].click();", gunluk_buton)
-        print("✅ 'Günlük' sekmesine tıklandı.")
+        # --- KALDIRILAN KISIM ---
+        # "Günlük" sekmesine tıklama adımları kaldırıldı çünkü tablo zaten varsayılan olarak aktif.
+        # -------------------------
 
         # Reyting tablosunu bekle ve parse et
         print("... Reyting tablosu bekleniyor ...")
+        # Bekleme koşulunu, tablonun bulunduğu 'gunluk' ID'li div'in görünür olması olarak güncelliyoruz.
+        # Bu, sayfa yüklendiğinde doğru içeriğin mevcut olduğunu garanti eder.
         WebDriverWait(driver, 20).until(
             EC.visibility_of_element_located((By.ID, config.TIAK_TABLE_CONTAINER_ID))
         )
         
-        # (Fonksiyonun geri kalan parse etme kısmı aynı kalacak)
+        # Sayfa kaynağını al ve pandas ile tabloyu oku
         page_source = driver.page_source
-        tables = pd.read_html(page_source)
-        df = tables[0]
-        # ... (Geri kalan tüm kod aynı)
         
-        # ... (Önceki yanıttaki tam parse kodunu buraya yapıştırabilirsiniz) ...
-        # Çok seviyeli başlıkları düzeltme
-        new_columns = []
-        for col in df.columns:
-            if col[0] != col[1]: new_columns.append(f"{col[0]}_{col[1]}")
-            else: new_columns.append(col[0])
-        df.columns = new_columns
+        # 'lxml' parser'ını kullanarak daha güvenilir okuma yapalım
+        tables = pd.read_html(page_source, flavor='lxml')
+        
+        # Doğru tabloyu bulma (sayfada birden fazla tablo olabilir)
+        df = None
+        for table in tables:
+            # Sütun isimlerinde 'PROGRAM' ve 'KANAL' içeren tabloyu arıyoruz
+            if 'PROGRAM' in table.columns and 'KANAL' in table.columns:
+                df = table
+                break
+        
+        if df is None:
+            print("❌ KRİTİK HATA: Beklenen formatla eşleşen reyting tablosu sayfada bulunamadı.")
+            raise ValueError("Reyting tablosu bulunamadı.")
 
-        rating_col_name = next((col for col in df.columns if 'RTG' in col), None)
-        df.rename(columns={'SIRA': 'Sıra', 'PROGRAM': 'Program', 'KANAL': 'Kanal', rating_col_name: 'Rating %'}, inplace=True, errors='ignore')
-        
+        # Sütun isimlerini daha tutarlı hale getirme
+        # Olası çok seviyeli başlıkları temizleme
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = ['_'.join(col).strip() for col in df.columns.values]
+
+        # Sütun adlarını standartlaştır
+        df.rename(columns={
+            'SIRA': 'Sıra', 
+            'PROGRAM': 'Program', 
+            'KANAL': 'Kanal', 
+            'RTG%': 'Rating %'
+        }, inplace=True, errors='ignore')
+
         required_cols = ['Sıra', 'Program', 'Kanal', 'Rating %']
         if not all(col in df.columns for col in required_cols):
-            return [] # Gerekli sütunlar yoksa boş dön
+            print(f"❌ Sütunlar Eşleşmedi! Bulunan sütunlar: {df.columns.tolist()}")
+            return []
 
         df_required = df[required_cols].copy()
-        df_required['Rating %'] = pd.to_numeric(df_required['Rating %'], errors='coerce').fillna(0)
+        df_required['Rating %'] = pd.to_numeric(df_required['Rating %'].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
         df_required.dropna(subset=['Program'], inplace=True)
         
         df_cleaned = df_required.sort_values(by="Rating %", ascending=False).drop_duplicates(subset=['Program', 'Kanal'], keep='first')
@@ -205,10 +216,15 @@ def get_daily_ratings(driver, limit=10):
 
     except Exception as e:
         print(f"⚠️ TIAK Reytingleri alınırken genel hata: {e}")
+        # Hata ayıklama için sayfanın o anki görüntüsünü kaydetmek çok faydalıdır.
+        # Bu satır sayesinde, bir sonraki hatada `debug_tiak_page.html` dosyası oluşacaktır.
         with open("debug_tiak_page.html", "w", encoding="utf-8") as f:
-            f.write(driver.page_source)
+            if driver and hasattr(driver, 'page_source'):
+                 f.write(driver.page_source)
         print("ℹ️ Hata ayıklama için sayfanın mevcut hali 'debug_tiak_page.html' olarak kaydedildi.")
         return []
+
+
 
 
 def get_trending_topics_trends24(limit=10):
