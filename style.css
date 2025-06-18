@@ -165,3 +165,30 @@ body.dark-mode {
 body.dark-mode .important-headlines h2 {
     color: #f0f0f0;
 }
+
+/* ============================================= */
+/* Yapay Zeka Yorum Kartı Stilleri     */
+/* ============================================= */
+
+/* Kartın genel stilini belirler (Açık mod varsayılan) */
+.ai-commentary {
+    text-align: center;
+    background-color: #eef5ff; /* Orijinal açık mavi arka plan */
+    border: 1px solid #dbe9ff;
+    padding: 1em; /* İçeriğin kenarlara yapışmasını engeller */
+    transition: background-color 0.3s, border-color 0.3s; /* Renk geçişini yumuşatır */
+}
+
+/* Kartın içindeki paragraf için stil */
+.ai-commentary p {
+    font-size: 1.1em;
+    line-height: 1.5;
+    margin: 0; /* Paragrafın kendi dış boşluğunu kaldırır */
+}
+
+/* Koyu mod aktif olduğunda uygulanacak stiller */
+body.dark-mode .ai-commentary {
+    background-color: #2d3748; /* Diğer koyu mod kartlarıyla uyumlu bir renk */
+    border-color: #4a5568;   /* Koyu mod kenarlık rengi */
+    color: #e2e8f0;          /* Koyu mod metin rengi */
+}
