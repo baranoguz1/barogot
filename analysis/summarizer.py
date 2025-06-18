@@ -140,7 +140,7 @@ def generate_daily_briefing(context):
         weather_info = context.get('weather_commentary', 'Hava durumu verisi yok.')
         headlines = context.get('top_headlines', [])
         headline_titles = [h['baslik'] for h in headlines]
-        dolar_rate = context.get('exchange_rates', {}).get('USD', 'bilinmiyor')
+        dolar_rate = context.get('exchange_rates', {}).get('USDTRY', 'bilinmiyor')
 
         # Eğer özetlenecek başlık yoksa, fonksiyondan erken çık
         if not headline_titles:
