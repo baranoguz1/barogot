@@ -134,72 +134,77 @@ def fetch_istanbul_events(driver):
 
 
 
+# web_scrapers.py içindeki fonksiyonun bu versiyon olduğundan emin olun
+
 def get_daily_ratings(driver, limit=10):
-    """
-    TIAK üzerinden günlük TV reytinglerini çeker.
-    Strateji: Sayfadaki gizli tabloyu doğrudan pandas ile okur, tıklama yapmaz.
-    """
+    """TIAK üzerinden günlük TV reytinglerini çeker (Daha Sağlam Versiyon)."""
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
     try:
         driver.get(url)
+        time.sleep(3) # Sayfanın oturması için bekle
 
-        # Sayfanın yüklenmesini ve tüm HTML'in render edilmesini bekle.
-        # "gunluk" ID'li div'in (Günlük Tablosu'nun container'ı) DOM'da var olmasını beklemek yeterlidir.
-        print("... Sayfanın yüklenmesi ve gizli tabloların oluşması bekleniyor ...")
-        WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.ID, "gunluk"))
+        # Çerez penceresini yönetme
+        try:
+            print("... Çerez penceresi kontrol ediliyor ...")
+            cookie_accept_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Kabul Et')]"))
+            )
+            cookie_accept_button.click()
+            print("✅ Çerezler kabul edildi.")
+            time.sleep(1)
+        except Exception:
+            print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
+            pass
+
+        # "Günlük" sekmesiyle etkileşim kurma
+        print("... 'Günlük' sekmesiyle etkileşim kuruluyor ...")
+        gunluk_buton = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, config.TIAK_GUNLUK_BUTON_XPATH))
         )
-        print("✅ Gerekli HTML elementleri yüklendi.")
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", gunluk_buton)
+        time.sleep(1)
+        driver.execute_script("arguments[0].click();", gunluk_buton)
+        print("✅ 'Günlük' sekmesine tıklandı.")
 
-        # Sayfanın mevcut HTML kaynağını al
+        # Reyting tablosunu bekle ve parse et
+        print("... Reyting tablosu bekleniyor ...")
+        WebDriverWait(driver, 20).until(
+            EC.visibility_of_element_located((By.ID, config.TIAK_TABLE_CONTAINER_ID))
+        )
+        
+        # (Fonksiyonun geri kalan parse etme kısmı aynı kalacak)
         page_source = driver.page_source
-
-        # Pandas'ın sayfadaki TÜM tabloları okuyup bir liste olarak döndürmesini sağla
         tables = pd.read_html(page_source)
-        print(f"✅ Sayfada toplam {len(tables)} adet tablo bulundu.")
-
-        if not tables:
-            print("❌ Sayfada pandas tarafından okunabilen tablo bulunamadı.")
-            return []
-
-        # Doğru tabloyu bulmak için içinde aradığımız başlıkların olup olmadığını kontrol edelim.
-        ratings_df = None
-        for i, df_table in enumerate(tables):
-            # Bazen başlıklar ilk satırda olabilir, bu yüzden hem sütunları hem de ilk satırı kontrol et
-            header_and_first_row = list(df_table.columns) + list(df_table.iloc[0])
-            
-            # Aradığımız zorunlu sütunlar
-            required_cols = {'Program Adı', 'Kanal Adı', 'TOTAL'}
-            
-            # Eğer tablonun başlıkları aradığımız sütunları içeriyorsa, doğru tablo budur.
-            if required_cols.issubset(set(header_and_first_row)):
-                ratings_df = df_table
-                print(f"✅ Reyting tablosu {i}. indekste bulundu.")
-                break
+        df = tables[0]
+        # ... (Geri kalan tüm kod aynı)
         
-        if ratings_df is None:
-            print("❌ Reyting tablosu, bulunan tablolar arasında teşhis edilemedi.")
-            return []
+        # ... (Önceki yanıttaki tam parse kodunu buraya yapıştırabilirsiniz) ...
+        # Çok seviyeli başlıkları düzeltme
+        new_columns = []
+        for col in df.columns:
+            if col[0] != col[1]: new_columns.append(f"{col[0]}_{col[1]}")
+            else: new_columns.append(col[0])
+        df.columns = new_columns
 
-        # Sütun başlıkları ilk satırdaysa, bunu düzelt
-        if "Program Adı" in list(ratings_df.iloc[0]):
-            ratings_df.columns = ratings_df.iloc[0]
-            ratings_df = ratings_df.iloc[1:].reset_index(drop=True)
-
-        # Veriyi işle
-        df_required = ratings_df[['Sıra', 'Program Adı', 'Kanal Adı', 'TOTAL']].copy()
-        df_required.rename(columns={'TOTAL': 'Rating %'}, inplace=True)
+        rating_col_name = next((col for col in df.columns if 'RTG' in col), None)
+        df.rename(columns={'SIRA': 'Sıra', 'PROGRAM': 'Program', 'KANAL': 'Kanal', rating_col_name: 'Rating %'}, inplace=True, errors='ignore')
         
+        required_cols = ['Sıra', 'Program', 'Kanal', 'Rating %']
+        if not all(col in df.columns for col in required_cols):
+            return [] # Gerekli sütunlar yoksa boş dön
+
+        df_required = df[required_cols].copy()
         df_required['Rating %'] = pd.to_numeric(df_required['Rating %'], errors='coerce').fillna(0)
-        df_cleaned = df_required.sort_values(by="Rating %", ascending=False).drop_duplicates(subset=['Program Adı', 'Kanal Adı'], keep='first')
+        df_required.dropna(subset=['Program'], inplace=True)
+        
+        df_cleaned = df_required.sort_values(by="Rating %", ascending=False).drop_duplicates(subset=['Program', 'Kanal'], keep='first')
         
         print("✅ TIAK reytingleri başarıyla çekildi ve işlendi.")
         return df_cleaned.head(limit).values.tolist()
 
     except Exception as e:
         print(f"⚠️ TIAK Reytingleri alınırken genel hata: {e}")
-        # Hata ayıklama için sayfa kaynağını kaydetmek faydalı olabilir
         with open("debug_tiak_page.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
         print("ℹ️ Hata ayıklama için sayfanın mevcut hali 'debug_tiak_page.html' olarak kaydedildi.")

@@ -11,6 +11,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
+import undetected_chromedriver as uc
 
 import config
 from data_fetchers import api_fetchers, web_scrapers
@@ -38,22 +39,25 @@ def safe_strftime(value, format="%d.%m.%Y"):
         return "" # Formatlanamazsa boş göster
 
 def setup_driver():
-    """Paylaşılan Selenium WebDriver'ı kurar ve döndürür."""
-    print("ℹ️ Chrome WebDriver kuruluyor...")
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("--log-level=3")
+    """Paylaşılan ve tespit edilemeyen Selenium WebDriver'ı kurar."""
+    print("ℹ️ Undetected Chrome WebDriver kuruluyor...")
     try:
-        service = ChromeService(executable_path=ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-        print("✅ Chrome WebDriver başarıyla başlatıldı.")
+        chrome_options = uc.ChromeOptions()
+        chrome_options.add_argument("--headless=new") # Yeni headless mod
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--window-size=1920,1080")
+        
+        # GitHub Actions ortamı için ek ayarlar
+        prefs = {"profile.default_content_setting_values.notifications": 2}
+        chrome_options.add_experimental_option("prefs", prefs)
+
+        driver = uc.Chrome(options=chrome_options, version_main=114) # version_main'i gerektiğinde güncelleyebilirsiniz
+        print("✅ Undetected Chrome WebDriver başarıyla başlatıldı.")
         return driver
     except Exception as e:
-        print(f"❌ Chrome WebDriver başlatılamadı: {e}")
+        print(f"❌ Undetected Chrome WebDriver başlatılamadı: {e}")
         return None
 
 def generate_output_files(context):
