@@ -128,7 +128,9 @@ def generate_weather_commentary(hourly_forecast):
         return "Şu an için hava durumu yorumu yapılamıyor."
     
 
-# analysis/summarizer.py içine eklenecek yeni fonksiyon
+# ==============================================================================
+#                 YENİ EKLENEN YAPAY ZEKA FONKSİYONLARI
+# ==============================================================================
 
 def generate_daily_briefing(context):
     """Tüm verileri kullanarak güne dair genel bir özet oluşturur."""
@@ -140,8 +142,12 @@ def generate_daily_briefing(context):
         headline_titles = [h['baslik'] for h in headlines]
         dolar_rate = context.get('exchange_rates', {}).get('USD', 'bilinmiyor')
 
+        # Eğer özetlenecek başlık yoksa, fonksiyondan erken çık
+        if not headline_titles:
+            return "Bugün öne çıkan bir başlık bulunamadı ancak hava durumu ve piyasalar hakkında bilgi alabilirsiniz."
+
         prompt = f"""
-        Aşağıdaki verileri kullanarak, bir haber spikeri gibi samimi ve bilgilendirici bir tonda "Günün Özeti" raporu oluştur. 
+        Aşağıdaki verileri kullanarak, bir haber spikeri gibi samimi ve bilgilendirici bir tonda "Günün Özeti" raporu oluştur.
         Rapor kısa ve ilgi çekici olsun. İşte bugünün verileri:
         - Hava Durumu Yorumu: "{weather_info}"
         - Önemli Haber Başlıkları: {', '.join(headline_titles)}
@@ -149,18 +155,75 @@ def generate_daily_briefing(context):
 
         Bu bilgilere dayanarak 2-3 cümlelik bir açılış paragrafı yaz.
         """
+
+        # BU ALANA KENDİ GEMINI API ÇAĞRI KODUNUZU EKLEYİN
+        # Örnek statik cevap:
+        summary = (f"Günaydın! Bugün hava genel olarak iyi görünüyor. "
+                   f"Piyasalarda Dolar/TL kuru {dolar_rate} seviyesinde güne başlarken, "
+                   f"gündemin en önemli başlığı '{headline_titles[0]}' olarak öne çıkıyor. İşte günün detayları...")
         
-        # Gemini API çağrısı (generate_weather_commentary fonksiyonundakine benzer)
-        # ... (API anahtarını alıp modeli çağırma kısmı) ...
-        # response = model.generate_content(prompt)
-        # return response.text.strip()
-        
-        # Örnek statik cevap (API entegrasyonu yapılana kadar)
-        # Bu kısmı kendi Gemini API çağrınızla değiştirin.
-        return (f"Günaydın! Bugün hava {weather_info.lower().split(' ')[-1]} görünüyor. "
-                f"Piyasalarda Dolar/TL kuru {dolar_rate} seviyesinde güne başlarken, "
-                f"gündemin en önemli başlığı '{headline_titles[0]}' olarak öne çıkıyor. İşte günün detayları...")
+        print("✅ Günlük özet başarıyla oluşturuldu.")
+        return summary
 
     except Exception as e:
         print(f"❌ Günlük özet oluşturulurken hata: {e}")
+        return None
+
+
+def generate_dynamic_headline_for_trends(trends):
+    """(İsteğe bağlı) Twitter trend listesinden ana temayı çıkarıp dinamik bir başlık oluşturur."""
+    if not trends:
+        return "🔥 Türkiye Gündemi (Twitter)"
+
+    print("Gündem başlığı dinamik olarak oluşturuluyor...")
+    try:
+        prompt = f"""
+        Aşağıdaki Türkiye Twitter gündem listesine bakarak, bu gündemin ana temasını yansıtan tek cümlelik,
+        merak uyandırıcı bir başlık oluştur. Başlığın başına bir emoji koy.
+
+        Trendler: {', '.join(trends)}
+        """
+        
+        # BU ALANA KENDİ GEMINI API ÇAĞRI KODUNUZU EKLEYİN
+        # Örnek statik cevap:
+        headline = f"🗣️ Sosyal Medya Gündemi: '{trends[0]}' Zirvede"
+        
+        print("✅ Dinamik başlık başarıyla oluşturuldu.")
+        return headline
+
+    except Exception as e:
+        print(f"❌ Dinamik başlık oluşturulurken hata: {e}")
+        return "🔥 Türkiye Gündemi (Twitter)" # Hata durumunda varsayılan başlık
+
+
+def generate_contextual_activity_suggestion(weather_commentary, events):
+    """Hava durumu ve etkinliklere göre bağlamsal bir tavsiye oluşturur."""
+    if not events or not weather_commentary:
+        return None
+
+    print("Bağlamsal etkinlik tavsiyesi oluşturuluyor...")
+    try:
+        event_titles = [e['title'] for e in events[:3]]
+
+        prompt = f"""
+        Bir kullanıcıya etkinlik önereceksin. Durum şu:
+        - Hava Durumu Yorumu: "{weather_commentary}"
+        - Yaklaşan Bazı Etkinlikler: {', '.join(event_titles)}
+
+        Bu iki bilgiyi birleştirerek kullanıcıya 1-2 cümlelik kısa bir tavsiye ver.
+        Örneğin hava yağmurluysa kapalı bir mekanı, güneşliyse açık hava etkinliğini öne çıkar.
+        """
+
+        # BU ALANA KENDİ GEMINI API ÇAĞRI KODUNUZU EKLEYİN
+        # Örnek statik cevap:
+        if "yağmur" in weather_commentary or "kapalı" in weather_commentary:
+            suggestion = f"Bugün hava biraz kapalı görünüyor. Belki de '{event_titles[0]}' gibi kapalı bir mekanda keyifli vakit geçirebilirsiniz."
+        else:
+            suggestion = f"Hava harika! '{event_titles[0]}' gibi bir etkinlik güne renk katabilir."
+            
+        print("✅ Bağlamsal tavsiye başarıyla oluşturuldu.")
+        return suggestion
+
+    except Exception as e:
+        print(f"❌ Bağlamsal tavsiye oluşturulurken hata: {e}")
         return None

@@ -19,6 +19,7 @@ from analysis.summarizer import (
     generate_abstractive_summary, 
     generate_weather_commentary,
     generate_daily_briefing,
+    generate_dynamic_headline_for_trends,
     generate_contextual_activity_suggestion
 )
 
