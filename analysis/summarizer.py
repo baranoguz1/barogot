@@ -1,62 +1,87 @@
 import os
-import openai
+import json
+from datetime import datetime
+import google.generativeai as genai
+import config
 
-# OpenAI istemcisini API anahtarını ortam değişkeninden alarak başlatın
-# GitHub Actions'da bu anahtar zaten ayarlı. Lokalde çalışmak için siz de ayarlamalısınız.
-# Not: Ortam değişkeninin adı "OPENAI_API_KEY" olmalıdır.
-try:
-    client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-except openai.OpenAIError as e:
-    print(f"OpenAI istemcisi başlatılamadı. API anahtarınızı kontrol edin. Hata: {e}")
-    client = None
+def get_summarization_prompt(all_news):
+    """Haber içeriklerinden Gemini için bir prompt oluşturur."""
+    prompt_header = """
+Aşağıda çeşitli haber kaynaklarından alınmış haber başlıkları ve içerikleri bulunmaktadır. 
+Bu haberleri analiz ederek günün en önemli 5 olayını belirle. 
+Analizini yaparken şu adımları izle:
+1.  Birbiriyle ilişkili haberleri grupla.
+2.  Her önemli olay için Türkçe, dikkat çekici ve SEO uyumlu bir başlık oluştur. Başlıklar tırnak içinde olmalı.
+3.  Her başlık için, olayın en önemli detaylarını içeren, 30-50 kelimelik kısa bir özet metni yaz.
+4.  Her olayın ne zaman gerçekleştiğini veya ne zaman haber yapıldığını belirterek bir zaman bilgisi ekle.
+5.  Sonucunu, yalnızca aşağıdaki JSON formatında, başka hiçbir ek metin olmadan ver:
+    {
+      "gunun_ozeti": [
+        {
+          "baslik": "Örnek Başlık 1",
+          "ozet": "Bu bölümde olayın kısa ve özeti yer alacak.",
+          "zaman": "YYYY-MM-DDTHH:MM:SS"
+        },
+        {
+          "baslik": "Örnek Başlık 2",
+          "ozet": "Bu bölümde diğer önemli olayın özeti yer alacak.",
+          "zaman": "YYYY-MM-DDTHH:MM:SS"
+        }
+      ]
+    }
 
-def generate_abstractive_summary(news_items, num_events=5):
-    """
-    Verilen haber listesinden yola çıkarak günün önemli olaylarını OpenAI GPT ile özetler.
-    'news_items' her biri 'title' ve 'snippet' içeren bir dictionary listesi olmalıdır.
-    """
-    if not client or not client.api_key:
-        print("⚠️ OpenAI API anahtarı 'OPENAI_API_KEY' olarak ayarlanmamış veya istemci başlatılamadı.")
-        return ["OpenAI API anahtarı yapılandırılmadığı için özet oluşturulamadı."]
-
-    # Yapay zekaya gönderilecek metinleri hazırlayalım
-    # Her haber için başlık ve kısa içerik birleştirilir
-    texts_to_process = []
-    for item in news_items:
-        texts_to_process.append(f"Haber Başlığı: {item['title']}\nÖzet: {item['snippet']}")
-    
-    full_text = "\n\n---\n\n".join(texts_to_process)
-
-    # API limitlerini aşmamak için metni güvenli bir uzunlukta tutalım (yaklaşık 3000 kelime)
-    max_length = 15000 
-    if len(full_text) > max_length:
-        full_text = full_text[:max_length]
-
-    # Modele gönderilecek talimat (prompt)
-    system_prompt = f"""
-Sen Türkiye gündemini analiz eden uzman bir haber editörüsün.
-Sana sunulan haber başlıkları ve özetlerinden yola çıkarak, günün en önemli {num_events} olayını tespit et.
-Her olayı, tek bir cümleyle, net, tarafsız ve bilgilendirici bir şekilde özetle.
-Cevabını maddeleme veya numaralandırma olmadan, her bir olay ayrı bir satırda olacak şekilde ver.
-Örnek:
-Ekonomi bakanı yeni vergi düzenlemesi hakkında açıklamalarda bulundu.
-Marmara Bölgesi'nde beklenen şiddetli yağış için uyarı yapıldı.
+İşte analiz edilecek haberler:
 """
+    haber_metinleri = "\n\n".join(
+        [f"Haber Başlığı: {haber.get('title', 'Başlık Yok')}\nİçerik: {haber.get('content', 'İçerik Yok')}" for haber in all_news]
+    )
+    return prompt_header + haber_metinleri
+
+def summarize_with_gemini(all_news, model_name="gemini-1.5-flash-latest"):
+    """Verilen haberleri Google Gemini kullanarak özetler."""
+    print("📰 Günün önemli olayları yapay zeka ile özetleniyor...")
+    
+    # Varsayılan hata durumu yanıtı
+    default_error_response = {
+        "gunun_ozeti": [{
+            "baslik": "Günün Özeti Alınamadı",
+            "ozet": "Haberler özetlenirken bir sorun oluştu. API limitleri veya bağlantı sorunları olabilir.",
+            "zaman": datetime.now(config.TZ) # Çökmeyi engellemek için datetime nesnesi olarak bırakılır
+        }]
+    }
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o",  # En yeni ve yetenekli model
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": full_text}
-            ],
-            max_tokens=300,  # Özetin toplam uzunluğu
-            temperature=0.6,  # Dengeli ve tutarlı sonuçlar için
-        )
-        summary = response.choices[0].message.content.strip()
-        # Cevabı satırlara bölerek temiz bir liste haline getir
-        return [line.strip().lstrip('- ').strip() for line in summary.split('\n') if line.strip()]
-    
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("❌ Gemini API anahtarı (GEMINI_API_KEY) bulunamadı.")
+            return default_error_response
+
+        genai.configure(api_key=api_key)
+        
+        print("Özetleme için en yeni 20 haberin içeriği çekiliyor...")
+        haber_icerikleri = [haber for haber in all_news if haber.get('content')]
+        
+        if not haber_icerikleri:
+            print("⚠️ Özetlenecek yeterli haber içeriği bulunamadı.")
+            return default_error_response
+
+        prompt = get_summarization_prompt(haber_icerikleri[:20]) # İlk 20 haberi kullan
+        
+        model = genai.GenerativeModel(model_name)
+        response = model.generate_content(prompt)
+        
+        # Yanıtın JSON formatında olduğundan emin ol ve temizle
+        cleaned_response_text = response.text.strip().replace("```json", "").replace("```", "")
+        summary_data = json.loads(cleaned_response_text)
+        
+        # API'den gelen zaman bilgisini datetime nesnesine çevir
+        for item in summary_data.get("gunun_ozeti", []):
+            if isinstance(item.get("zaman"), str):
+                item["zaman"] = datetime.fromisoformat(item["zaman"])
+
+        print(f"✅ Önemli olaylar başarıyla özetlendi: {len(summary_data.get('gunun_ozeti', []))} başlık bulundu.")
+        return summary_data
+
     except Exception as e:
-        print(f"❌ OpenAI API hatası: {e}")
-        return [f"Yapay zeka ile özetleme sırasında bir hata oluştu: {e}"]
+        print(f"❌ Gemini API hatası veya JSON parse hatası: {e}")
+        return default_error_response
