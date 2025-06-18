@@ -132,32 +132,47 @@ def fetch_istanbul_events(driver):
         print(f"❌ Zorlu PSM etkinlikleri çekilirken genel bir HATA OLUŞTU: {e}\n{traceback.format_exc()}")
         return []
 
+# web_scrapers.py içindeki fonksiyonu bununla değiştirin
+
 def get_daily_ratings(driver, limit=10):
-    """TIAK üzerinden günlük TV reytinglerini çeker (Güncellenmiş Versiyon)."""
+    """TIAK üzerinden günlük TV reytinglerini çeker (Çerez Onayı Eklenmiş Versiyon)."""
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
     try:
         driver.get(url)
+
+        # --- YENİ EKLENEN KISIM: Çerez Onay Penceresini Yönetme ---
+        try:
+            print("... Çerez penceresi kontrol ediliyor ...")
+            # Metni "Kabul Et" olan butonu bul ve tıkla. Bu daha sağlam bir yöntemdir.
+            cookie_accept_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Kabul Et')]"))
+            )
+            cookie_accept_button.click()
+            print("✅ Çerezler kabul edildi.")
+            time.sleep(1) # Onay penceresinin kaybolması için kısa bir bekleme süresi
+        except Exception:
+            # Eğer pencere çıkmazsa veya zaten kabul edilmişse, hata verme ve devam et.
+            print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
+            pass
+        # --- YENİ KISIM BİTİŞ ---
+
 
         # "Günlük" sekmesine tıklamak için bekle ve tıkla
         print("... 'Günlük' sekmesi bekleniyor ...")
         gunluk_buton = WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((By.XPATH, config.TIAK_GUNLUK_BUTON_XPATH))
         )
-        # Bazen standart click çalışmayabilir, JavaScript ile tıklamak daha garantidir.
         driver.execute_script("arguments[0].click();", gunluk_buton)
         print("✅ 'Günlük' sekmesine tıklandı.")
 
-        # Tablonun görünür hale gelmesini bekle
+        # ... (Fonksiyonun geri kalanı aynı kalacak) ...
         print("... Reyting tablosu bekleniyor ...")
         table_container = WebDriverWait(driver, 20).until(
             EC.visibility_of_element_located((By.ID, config.TIAK_TABLE_CONTAINER_ID))
         )
 
-        # Sayfa kaynağını al ve tabloyu parse et
         soup = BeautifulSoup(driver.page_source, "html.parser")
-        
-        # ID'ye göre doğru container'ı bul ve içindeki tabloyu al
         target_div = soup.find("div", id=config.TIAK_TABLE_CONTAINER_ID)
         if not target_div:
             print(f"⚠️ TIAK tablo container'ı ('{config.TIAK_TABLE_CONTAINER_ID}') bulunamadı.")
@@ -168,25 +183,17 @@ def get_daily_ratings(driver, limit=10):
             print("⚠️ TIAK reyting tablosu bulunamadı.")
             return []
 
-        # Pandas ile tabloyu DataFrame'e çevir
         df = pd.read_html(str(table))[0]
-
-        # Sütun isimleri sitede değişmiş olabilir, ilk satırı sütun olarak ata
         df.columns = df.iloc[0]
-        df = df[1:] # İlk satırı (artık başlık oldu) veri kısmından çıkar
+        df = df[1:]
         
-        # Gerekli sütunları seç ve temizle (Sütun adlarının tam eşleştiğinden emin olun)
-        # Sitedeki güncel adlar: 'Sıra', 'Program Adı', 'Kanal Adı', 'TOTAL', 'AB', 'ABC1' olabilir.
-        # Biz 'TOTAL' grubunu rating olarak alalım.
         if 'TOTAL' not in df.columns or 'Program Adı' not in df.columns or 'Kanal Adı' not in df.columns:
             print("⚠️ Beklenen sütunlar (Program Adı, Kanal Adı, TOTAL) tabloda bulunamadı.")
             return []
 
-        # Sadece gerekli sütunları alalım ve isimlendirelim
         df_required = df[['Sıra', 'Program Adı', 'Kanal Adı', 'TOTAL']].copy()
         df_required.rename(columns={'TOTAL': 'Rating %'}, inplace=True)
         
-        # Rating'e göre sırala ve tekrarları kaldır
         df_required['Rating %'] = pd.to_numeric(df_required['Rating %'], errors='coerce')
         df_cleaned = df_required.sort_values(by="Rating %", ascending=False).drop_duplicates(subset=['Program Adı', 'Kanal Adı'], keep='first')
         
@@ -195,7 +202,6 @@ def get_daily_ratings(driver, limit=10):
 
     except Exception as e:
         print(f"⚠️ TIAK Reytingleri alınırken genel hata: {e}")
-        # Hata ayıklama için sayfa kaynağını kaydetmek faydalı olabilir
         with open("debug_tiak_page.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
         print("ℹ️ Hata ayıklama için sayfanın mevcut hali 'debug_tiak_page.html' olarak kaydedildi.")
