@@ -37,7 +37,7 @@ Analizini yaparken şu adımları izle:
     )
     return prompt_header + haber_metinleri
 
-def summarize_with_gemini(all_news, model_name="gemini-1.5-flash-latest"):
+def generate_abstractive_summary(all_news, num_events=5):
     """Verilen haberleri Google Gemini kullanarak özetler."""
     print("📰 Günün önemli olayları yapay zeka ile özetleniyor...")
     
