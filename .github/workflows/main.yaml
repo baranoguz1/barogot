@@ -42,29 +42,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable chromium-chromedriver libglib2.0-0 libnss3 libfontconfig1
 
-      - name: GitHub Secrets'tan .env Dosyası Oluştur 🤫
-        run: |
-          echo "API_KEY=${{ secrets.API_KEY }}" > .env
-          echo "GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}" > .env
-          echo "API_SECRET=${{ secrets.API_SECRET }}" >> .env
-          echo "ACCESS_TOKEN=${{ secrets.ACCESS_TOKEN }}" >> .env
-          echo "ACCESS_SECRET=${{ secrets.ACCESS_SECRET }}" >> .env
-          echo "BEARER_TOKEN=${{ secrets.BEARER_TOKEN }}" >> .env
-          echo "OPENWEATHER_API_KEY=${{ secrets.OPENWEATHER_API_KEY }}" >> .env
-          # echo "GITHUB_USERNAME=${{ secrets.GITHUB_USERNAME }}" >> .env
-          # GITHUB_TOKEN genellikle ${{ secrets.GITHUB_TOKEN }} olarak doğrudan kullanılır, .env'e yazmak gerekmeyebilir.
-          # Eğer betiğinizin .env'den okuması gerekiyorsa ekleyebilirsiniz:
-          # echo "GITHUB_TOKEN=${{ secrets.ACTION_SPECIFIC_GITHUB_TOKEN }}" >> .env # Özel bir token ise
-          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
-          echo "SPOTIFY_CLIENT_ID=${{ secrets.SPOTIFY_CLIENT_ID }}" >> .env
-          echo "SPOTIFY_CLIENT_SECRET=${{ secrets.SPOTIFY_CLIENT_SECRET }}" >> .env
-          echo "SPOTIFY_REFRESH_TOKEN=${{ secrets.SPOTIFY_REFRESH_TOKEN }}" >> .env
-          echo "SPOTIFY_USER_ID=${{ secrets.SPOTIFY_USER_ID }}" >> .env
-          echo "SPOTIFY_TARGET_PLAYLIST_ID=${{ secrets.SPOTIFY_TARGET_PLAYLIST_ID }}" >> .env
-          echo "TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}" >> .env
-          echo "✅ .env dosyası GitHub Secrets kullanılarak oluşturuldu."
 
       - name: Haber Botu Betiğini Çalıştır 🤖
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_SECRET: ${{ secrets.API_SECRET }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          ACCESS_SECRET: ${{ secrets.ACCESS_SECRET }}
+          BEARER_TOKEN: ${{ secrets.BEARER_TOKEN }}
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          SPOTIFY_USER_ID: ${{ secrets.SPOTIFY_USER_ID }}
+          SPOTIFY_TARGET_PLAYLIST_ID: ${{ secrets.SPOTIFY_TARGET_PLAYLIST_ID }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          
         run: python main.py
 
       - name: GitHub Pages artifact'ını yükle
