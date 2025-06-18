@@ -124,9 +124,11 @@ ZORLU_VENUE_SELECTOR = "div.location.place p"
 ZORLU_CATEGORY_SELECTOR = "div.event-list-card-item-header"
 
 
-# TIAK Reytingleri
-TIAK_GUNLUK_BUTON_XPATH = "//div[contains(@id, 'gunluk-tablolar')]"
-TIAK_TABLE_CONTAINER_CLASS = "gunluktablo"
+# --- TIAK Reytingleri ---
+# Not: TIAK sitesi sık sık değiştiği için bu seçiciler güncelliğini yitirebilir.
+TIAK_URL = "https://tiak.com.tr/tablolar"
+TIAK_GUNLUK_BUTON_XPATH = "//button[@data-bs-target='#gunluk']" # Günlük sekmesinin yeni XPATH'i
+TIAK_TABLE_CONTAINER_ID = "gunluk" # Tablonun içinde bulunduğu div'in yeni ID'si
 
 
 # Flashscore
