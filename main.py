@@ -167,6 +167,9 @@ def main():
         print("⚠️ Özetlenecek yeterli haber içeriği bulunamadı.")
         context['top_headlines'] = []
 
+     # Son güncelleme zamanını Türkiye saatine göre formatla ve context'e ekle
+    context['last_update'] = datetime.now(config.TZ).strftime('%d %B %Y, %H:%M:%S')
+
     # Tüm toplanan verilerle HTML dosyasını oluştur
     generate_output_files(context)
 
