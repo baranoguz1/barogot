@@ -11,6 +11,11 @@ from datetime import timezone, timedelta
 dotenv_path = Path(__file__).resolve().parent / ".env"
 if dotenv_path.exists():
     load_dotenv(dotenv_path=dotenv_path)
+    # --- Timezone Ayarı ---
+    TZ = timezone(timedelta(hours=3)) # <-- BU SATIRI EKLEYİN (Türkiye saati, GMT+3)
+
+    # --- Sabitler ve API Ayarları ---
+    OUTPUT_DIRECTORY = Path(__file__).resolve().parent / "output"
 else:
     print(f"⚠️ .env dosyası bulunamadı: {dotenv_path}")
 
