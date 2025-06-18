@@ -45,6 +45,7 @@ jobs:
       - name: GitHub Secrets'tan .env Dosyası Oluştur 🤫
         run: |
           echo "API_KEY=${{ secrets.API_KEY }}" > .env
+          echo "GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}" > .env
           echo "API_SECRET=${{ secrets.API_SECRET }}" >> .env
           echo "ACCESS_TOKEN=${{ secrets.ACCESS_TOKEN }}" >> .env
           echo "ACCESS_SECRET=${{ secrets.ACCESS_SECRET }}" >> .env
