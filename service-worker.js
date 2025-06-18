@@ -2,9 +2,11 @@
 
 const CACHE_NAME = 'static-v1';
 const URLS_TO_CACHE = [
-  '/',                // adjust to your root or index.html
-  '/haberler.html',
-  // add your CSS/JS/assets here
+  './',
+  './index.html', // haberler.html yerine index.html
+  './style.css',
+  './script.js'
+  // icon dosyalarınızı da buraya ekleyebilirsiniz
 ];
 
 // 1. Install: pre-cache your shell
@@ -35,7 +37,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
   // Network-first for your HTML shell
-  if (url.pathname.endsWith('haberler.html') || url.pathname === '/') {
+  if (url.pathname.endsWith('index.html') || url.pathname.endsWith('/')) { // haberler.html yerine index.html
     event.respondWith(
       fetch(event.request)
         .then(response => {

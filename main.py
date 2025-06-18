@@ -42,29 +42,38 @@ def generate_output_files(context):
     try:
         root_dir = Path(__file__).resolve().parent
         output_dir = config.OUTPUT_DIRECTORY
-        
+
         if output_dir.exists():
             shutil.rmtree(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        # Jinja2 template render etme
         env = Environment(loader=FileSystemLoader(root_dir / 'templates/'))
         template = env.get_template('haberler_template.html')
-        # output klasörüne index.html olarak kaydetmek GitHub Pages için daha iyidir
         html_output_path = output_dir / "index.html" 
-        
+
         html_output = template.render(context)
         with open(html_output_path, "w", encoding="utf-8") as f:
             f.write(html_output)
-        print(f"✅ index.html dosyası başarıyla oluşturuldu.")
+        print("✅ index.html dosyası başarıyla oluşturuldu.")
 
-        # style.css ve script.js gibi statik dosyaları kopyala
-        static_files_to_copy = ["style.css", "script.js"] 
+        # --- YENİ EKLENECEK KISIM ---
+        # Proje kök dizinindeki tüm önemli statik dosyaları kopyala
+        static_files_to_copy = [
+            "style.css", 
+            "script.js", 
+            "manifest.json", 
+            "service-worker.js"
+            # varsa icon dosyalarınız: "icon-192.png", "icon-512.png"
+        ] 
+        # --- BİTİŞ ---
+
         for file_name in static_files_to_copy:
             source_path = root_dir / file_name
             if source_path.exists():
                 shutil.copy(source_path, output_dir / file_name)
                 print(f"✅ {file_name} dosyası output klasörüne kopyalandı.")
-        
+
         print(f"\n✅ Çıktı klasörü başarıyla hazırlandı: {output_dir}")
 
     except Exception as e:
