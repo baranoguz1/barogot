@@ -11,7 +11,6 @@
     <nav class="sticky-nav">
         <a href="#hava">🌤️ Hava</a>
         <a href="#doviz">💱 Döviz</a>
-        <a href="#kitaplar">📚 Kitaplar</a>
         <a href="#etkinlikler">📅 Etkinlikler</a>
         <a href="#fikstur">⚽ Fikstür</a>
         <a href="#reyting">📺 Reyting</a>
@@ -19,6 +18,7 @@
         <a href="#muzik">🎧 Müzik</a>
         <a href="#filmler">🎬 Filmler</a>
         <a href="#haberler">📰 Haberler</a>
+        <a href="#kitaplar">📚 Kitaplar</a>
     </nav>
     <button id="theme-toggle" class="toggle-button" aria-label="Gece Modu Değiştir">🌙</button>
     <div class="page-wrapper">
@@ -42,7 +42,7 @@
             <p style="font-size: 1.1em; line-height: 1.5;">🤖 <strong>Yapay Zeka Yorumu:</strong> {{ weather_commentary }}</p>
         </div>
         {% endif %}
-        
+
         <div class="weather-container">
             {% for time_val, temp, description, icon_uri, weather_class in weather %}
             <div class="weather-card {{ weather_class }}">
@@ -66,20 +66,6 @@
             {% endfor %}
         </div>
 
-        <h2 id="kitaplar" class="section-title">📚 Çok Satan Kitaplar</h2>
-        <div class="film-container">
-            {% for book in books %}
-            <a href="{{ book.link }}" target="_blank" rel="noopener noreferrer" class="film-card">
-                <img src="{{ book.image_url }}" alt="Kapak: {{ book.title }}" loading="lazy">
-                <div class="film-card-content">
-                    <h3>{{ book.title }}</h3>
-                    <p>{{ book.author }}</p>
-                </div>
-            </a>
-            {% else %}
-            <p>⚠️ Kitap öneri verisi alınamadı.</p>
-            {% endfor %}
-        </div>
 
         <h2 id="etkinlikler" class="section-title">📅 İstanbul Etkinlikleri</h2>
         <div class="container">
@@ -190,6 +176,21 @@
                 <p>Bu kategoride haber bulunamadı.</p>
             {% endfor %}
             </div>
+
+        <h2 id="kitaplar" class="section-title">📚 Çok Satan Kitaplar</h2>
+        <div class="film-container">
+            {% for book in books %}
+            <a href="{{ book.link }}" target="_blank" rel="noopener noreferrer" class="film-card">
+                <img src="{{ book.image_url }}" alt="Kapak: {{ book.title }}" loading="lazy">
+                <div class="film-card-content">
+                    <h3>{{ book.title }}</h3>
+                    <p>{{ book.author }}</p>
+                </div>
+            </a>
+            {% else %}
+            <p>⚠️ Kitap öneri verisi alınamadı.</p>
+            {% endfor %}
+        </div>
         {% endfor %}
     </div>
 
