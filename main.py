@@ -49,7 +49,7 @@ def setup_driver():
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--window-size=1920,1080")
         
-        # GitHub Actions ortamı için ek ayarlar
+        # GitHub Actions ortamı için ek ayarlar.
         prefs = {"profile.default_content_setting_values.notifications": 2}
         chrome_options.add_experimental_option("prefs", prefs)
 

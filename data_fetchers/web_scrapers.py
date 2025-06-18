@@ -157,7 +157,7 @@ def get_daily_ratings(driver, limit=10):
             print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
             pass
 
-        # "Günlük" sekmesiyle etkileşim kurma
+        # "Günlük" sekmesiyle etkileşim kurmak
         print("... 'Günlük' sekmesiyle etkileşim kuruluyor ...")
         gunluk_buton = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.XPATH, config.TIAK_GUNLUK_BUTON_XPATH))
