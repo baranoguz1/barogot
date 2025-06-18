@@ -15,8 +15,13 @@ from webdriver_manager.chrome import ChromeDriverManager
 import config
 from data_fetchers import api_fetchers, web_scrapers
 from data_fetchers.web_scrapers import fetch_article_snippet
-from analysis.summarizer import generate_abstractive_summary
-from analysis.summarizer import generate_abstractive_summary, generate_weather_commentary
+from analysis.summarizer import (
+    generate_abstractive_summary, 
+    generate_weather_commentary,
+    generate_daily_briefing,
+    generate_dynamic_headline_for_trends,
+    generate_contextual_activity_suggestion
+)
 
 # main.py dosyasının üst kısımlarına ekleyin
 
@@ -126,11 +131,12 @@ def main():
     if context['weather']:
         weather_comment = generate_weather_commentary(context['weather'])
         context['weather_commentary'] = weather_comment
-        
+
     context['exchange_rates'] = api_fetchers.get_exchange_rates()
     context['movies'] = api_fetchers.fetch_movies()
     context['spotify_tracks'] = api_fetchers.get_new_turkish_rap_tracks_embed()
     context['twitter_trends'] = web_scrapers.get_trending_topics_trends24()
+    context['twitter_headline'] = generate_dynamic_headline_for_trends(context.get('twitter_trends'))
 
     print("\n--- RSS Akışları Paralel Olarak Çekiliyor ---")
     news_results = {category: [] for category in config.RSS_FEEDS}
@@ -175,6 +181,13 @@ def main():
     else:
         print("⚠️ Özetlenecek yeterli haber içeriği bulunamadı.")
         context['top_headlines'] = []
+
+    print("🧠 Bağlamsal tavsiyeler ve günlük özet oluşturuluyor...")
+    context['contextual_suggestion'] = generate_contextual_activity_suggestion(
+        context.get('weather_commentary'),
+        context.get('istanbul_events')
+    )
+    context['daily_briefing'] = generate_daily_briefing(context)
 
      # Son güncelleme zamanını Türkiye saatine göre formatla ve context'e ekle
     context['last_update'] = datetime.now(config.TZ).strftime('%d %B %Y, %H:%M:%S')

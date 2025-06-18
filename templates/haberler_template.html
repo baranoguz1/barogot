@@ -24,6 +24,14 @@
     <div class="page-wrapper">
         <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:50px;">Son Güncelleme: {{ last_update }}</p>
 
+        {# --- YENİ EKLENEN KISIM: GÜNLÜK ÖZET --- #}
+        {% if daily_briefing %}
+        <div class="card ai-commentary" style="margin-bottom: 40px;">
+            <p><strong>☀️ Günün Özeti:</strong> {{ daily_briefing }}</p>
+        </div>
+        {% endif %}
+        {# --- BİTİŞ --- #}
+
         {% if top_headlines %}
         <div id="onemli-basliklar" class="container important-headlines" style="scroll-margin-top: 80px;">
             <h2>Günün Önemli Başlıkları</h2>

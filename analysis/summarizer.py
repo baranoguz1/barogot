@@ -126,3 +126,41 @@ def generate_weather_commentary(hourly_forecast):
     except Exception as e:
         print(f"❌ Hava durumu yorumu oluşturulurken hata: {e}")
         return "Şu an için hava durumu yorumu yapılamıyor."
+    
+
+# analysis/summarizer.py içine eklenecek yeni fonksiyon
+
+def generate_daily_briefing(context):
+    """Tüm verileri kullanarak güne dair genel bir özet oluşturur."""
+    print("📰 Günlük özet raporu oluşturuluyor...")
+    try:
+        # Gemini'ye gönderilecek verileri hazırlama
+        weather_info = context.get('weather_commentary', 'Hava durumu verisi yok.')
+        headlines = context.get('top_headlines', [])
+        headline_titles = [h['baslik'] for h in headlines]
+        dolar_rate = context.get('exchange_rates', {}).get('USD', 'bilinmiyor')
+
+        prompt = f"""
+        Aşağıdaki verileri kullanarak, bir haber spikeri gibi samimi ve bilgilendirici bir tonda "Günün Özeti" raporu oluştur. 
+        Rapor kısa ve ilgi çekici olsun. İşte bugünün verileri:
+        - Hava Durumu Yorumu: "{weather_info}"
+        - Önemli Haber Başlıkları: {', '.join(headline_titles)}
+        - Dolar Kuru: {dolar_rate} TRY
+
+        Bu bilgilere dayanarak 2-3 cümlelik bir açılış paragrafı yaz.
+        """
+        
+        # Gemini API çağrısı (generate_weather_commentary fonksiyonundakine benzer)
+        # ... (API anahtarını alıp modeli çağırma kısmı) ...
+        # response = model.generate_content(prompt)
+        # return response.text.strip()
+        
+        # Örnek statik cevap (API entegrasyonu yapılana kadar)
+        # Bu kısmı kendi Gemini API çağrınızla değiştirin.
+        return (f"Günaydın! Bugün hava {weather_info.lower().split(' ')[-1]} görünüyor. "
+                f"Piyasalarda Dolar/TL kuru {dolar_rate} seviyesinde güne başlarken, "
+                f"gündemin en önemli başlığı '{headline_titles[0]}' olarak öne çıkıyor. İşte günün detayları...")
+
+    except Exception as e:
+        print(f"❌ Günlük özet oluşturulurken hata: {e}")
+        return None
