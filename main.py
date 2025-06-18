@@ -38,26 +38,29 @@ def safe_strftime(value, format="%d.%m.%Y"):
     except (ValueError, TypeError):
         return "" # Formatlanamazsa boş göster
 
+# main.py içindeki eski setup_driver fonksiyonunu silip bunu yapıştırın
+
 def setup_driver():
     """Paylaşılan ve tespit edilemeyen Selenium WebDriver'ı kurar."""
     print("ℹ️ Undetected Chrome WebDriver kuruluyor...")
     try:
         chrome_options = uc.ChromeOptions()
-        chrome_options.add_argument("--headless=new") # Yeni headless mod
-        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--window-size=1920,1080")
         
-        # GitHub Actions ortamı için ek ayarlar.
-        prefs = {"profile.default_content_setting_values.notifications": 2}
-        chrome_options.add_experimental_option("prefs", prefs)
-
-        driver = uc.Chrome(options=chrome_options, version_main=114) # version_main'i gerektiğinde güncelleyebilirsiniz
+        # versiyonu otomatik algılamasına izin veriyoruz
+        driver = uc.Chrome(options=chrome_options)
+        
         print("✅ Undetected Chrome WebDriver başarıyla başlatıldı.")
         return driver
     except Exception as e:
+        import traceback
         print(f"❌ Undetected Chrome WebDriver başlatılamadı: {e}")
+        # Hatanın tam izini yazdırarak daha fazla detay alalım
+        traceback.print_exc()
         return None
 
 def generate_output_files(context):
