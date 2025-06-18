@@ -136,18 +136,19 @@ def fetch_istanbul_events(driver):
 
 
 
+
 def get_daily_ratings(driver, limit=10):
     """TIAK üzerinden günlük TV reytinglerini çeker (Daha Sağlam Versiyon)."""
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
     try:
         driver.get(url)
-        time.sleep(3) # Sayfanın oturması için bekle
+        time.sleep(3) 
 
-        # Çerez penceresini yönetme (bu kısım kalabilir, zararı olmaz)
+        # Çerez penceresini yönetme
         try:
             print("... Çerez penceresi kontrol ediliyor ...")
-            cookie_accept_button = WebDriverWait(driver, 10).until(
+            cookie_accept_button = WebDriverWait(driver, 5).until( # Daha kısa bekleme süresi yeterli
                 EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Kabul Et')]"))
             )
             cookie_accept_button.click()
@@ -157,28 +158,24 @@ def get_daily_ratings(driver, limit=10):
             print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
             pass
 
-        # --- KALDIRILAN KISIM ---
-        # "Günlük" sekmesine tıklama adımları kaldırıldı çünkü tablo zaten varsayılan olarak aktif.
-        # -------------------------
-
         # Reyting tablosunu bekle ve parse et
         print("... Reyting tablosu bekleniyor ...")
-        # Bekleme koşulunu, tablonun bulunduğu 'gunluk' ID'li div'in görünür olması olarak güncelliyoruz.
-        # Bu, sayfa yüklendiğinde doğru içeriğin mevcut olduğunu garanti eder.
-        WebDriverWait(driver, 20).until(
-            EC.visibility_of_element_located((By.ID, config.TIAK_TABLE_CONTAINER_ID))
+        
+        # --- DEĞİŞİKLİK BURADA ---
+        # Sadece div'i değil, div'in içindeki asıl tabloyu bekliyoruz.
+        # Bu, tablonun verilerle birlikte yüklendiğinden emin olmamızı sağlar.
+        wait_condition = EC.visibility_of_element_located(
+            (By.XPATH, f"//div[@id='{config.TIAK_TABLE_CONTAINER_ID}']//table")
         )
+        WebDriverWait(driver, 20).until(wait_condition)
         
         # Sayfa kaynağını al ve pandas ile tabloyu oku
         page_source = driver.page_source
         
-        # 'lxml' parser'ını kullanarak daha güvenilir okuma yapalım
         tables = pd.read_html(page_source, flavor='lxml')
         
-        # Doğru tabloyu bulma (sayfada birden fazla tablo olabilir)
         df = None
         for table in tables:
-            # Sütun isimlerinde 'PROGRAM' ve 'KANAL' içeren tabloyu arıyoruz
             if 'PROGRAM' in table.columns and 'KANAL' in table.columns:
                 df = table
                 break
@@ -188,11 +185,9 @@ def get_daily_ratings(driver, limit=10):
             raise ValueError("Reyting tablosu bulunamadı.")
 
         # Sütun isimlerini daha tutarlı hale getirme
-        # Olası çok seviyeli başlıkları temizleme
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = ['_'.join(col).strip() for col in df.columns.values]
 
-        # Sütun adlarını standartlaştır
         df.rename(columns={
             'SIRA': 'Sıra', 
             'PROGRAM': 'Program', 
@@ -216,13 +211,13 @@ def get_daily_ratings(driver, limit=10):
 
     except Exception as e:
         print(f"⚠️ TIAK Reytingleri alınırken genel hata: {e}")
-        # Hata ayıklama için sayfanın o anki görüntüsünü kaydetmek çok faydalıdır.
-        # Bu satır sayesinde, bir sonraki hatada `debug_tiak_page.html` dosyası oluşacaktır.
         with open("debug_tiak_page.html", "w", encoding="utf-8") as f:
             if driver and hasattr(driver, 'page_source'):
                  f.write(driver.page_source)
         print("ℹ️ Hata ayıklama için sayfanın mevcut hali 'debug_tiak_page.html' olarak kaydedildi.")
         return []
+
+
 
 
 
