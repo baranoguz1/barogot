@@ -171,7 +171,7 @@ def main():
             })
 
     if news_for_summary:
-        # Toplanan içerikleri OpenAI'ye göndererek anlamlı özetler oluştur
+        # Toplanan içerikleri OpenAI'ye göndererek anlamlı özetler oluştur.
         # Toplanan içerikleri Gemini'ye göndererek anlamlı özetler oluştur
         summary_data = generate_abstractive_summary(news_for_summary, num_events=5)
         # Şablona sadece başlık listesini gönder

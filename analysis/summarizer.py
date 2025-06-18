@@ -74,7 +74,7 @@ def generate_abstractive_summary(all_news, num_events=5):
         cleaned_response_text = response.text.strip().replace("```json", "").replace("```", "")
         summary_data = json.loads(cleaned_response_text)
         
-        # API'den gelen zaman bilgisini datetime nesnesine çevir
+        # API'den gelen zaman bilgisini datetime nesnesine çevir.
         for item in summary_data.get("gunun_ozeti", []):
             if isinstance(item.get("zaman"), str):
                 item["zaman"] = datetime.fromisoformat(item["zaman"])
