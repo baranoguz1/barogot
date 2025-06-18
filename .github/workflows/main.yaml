@@ -62,6 +62,20 @@ jobs:
           
         run: python main.py
 
+      # --- YENİ EKLENEN ADIM: HATA AYIKLAMA DOSYASINI KAYDETME ---
+      - name: Upload TIAK Debug Artifact
+        # Bu adımı, betik hata verse bile her zaman çalıştırır
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          # İndirilecek dosyanın adı
+          name: tiak-debug-dosyasi
+          # Kaydedilecek dosyanın yolu
+          path: debug_tiak_page.html
+          # Eğer dosya bulunamazsa hata verme (betik başarılı olursa bu dosya oluşmaz)
+          if-no-files-found: ignore
+      # --- YENİ ADIM BİTİŞ ---
+
       - name: GitHub Pages artifact'ını yükle
         uses: actions/upload-pages-artifact@v3
         with:
