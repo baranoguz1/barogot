@@ -17,6 +17,20 @@ from data_fetchers import api_fetchers, web_scrapers
 from data_fetchers.web_scrapers import fetch_article_snippet
 from analysis.summarizer import generate_abstractive_summary
 
+# main.py dosyasının üst kısımlarına ekleyin
+
+def safe_strftime(value, format="%d.%m.%Y"):
+    """Gelen değer datetime ise formatlar, değilse boş string döndürür."""
+    if isinstance(value, datetime):
+        return value.strftime(format)
+    # Gerekirse string'den datetime'a çevirmeyi de deneyebiliriz
+    try:
+        # Örneğin 'YYYY-MM-DD' formatındaki stringleri de destekleyelim
+        dt = datetime.strptime(str(value)[:10], '%Y-%m-%d')
+        return dt.strftime(format)
+    except (ValueError, TypeError):
+        return "" # Formatlanamazsa boş göster
+
 def setup_driver():
     """Paylaşılan Selenium WebDriver'ı kurar ve döndürür."""
     print("ℹ️ Chrome WebDriver kuruluyor...")

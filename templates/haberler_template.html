@@ -176,7 +176,7 @@
                 {% if loop.index <= 10 %}
                     <div class="card">
                         <a href="{{ item.link }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
-                        <p class="date">{{ item.pub_date.strftime('%d %B %Y, %H:%M') }}</p>
+                        <p class="date">{{ item.pub_date_parsed.strftime('%d %B %Y, %H:%M') }}</p>
                     </div>
                 {% endif %}
             {% else %}
