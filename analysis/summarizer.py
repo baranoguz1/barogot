@@ -159,7 +159,7 @@ def generate_daily_briefing(context):
         # BU ALANA KENDİ GEMINI API ÇAĞRI KODUNUZU EKLEYİN
         # Örnek statik cevap:
         summary = (f"Selam! Bugün hava genel olarak iyi görünüyor. "
-                   f"Piyasalarda Dolar/TL kuru {dolar_rate} seviyesinde güne başlarken, "
+                   f"Piyasalarda Dolar/TL kuru {dolar_rate} seviyesinde seyrederken, "
                    f"gündemin en önemli başlığı '{headline_titles[0]}' olarak öne çıkıyor. İşte günün detayları...")
         
         print("✅ Günlük özet başarıyla oluşturuldu.")
