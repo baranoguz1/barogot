@@ -134,44 +134,57 @@ def fetch_istanbul_events(driver):
 
 # web_scrapers.py içindeki fonksiyonu bununla değiştirin
 
+# web_scrapers.py içindeki fonksiyonu bununla değiştirin
+
 def get_daily_ratings(driver, limit=10):
-    """TIAK üzerinden günlük TV reytinglerini çeker (Çerez Onayı Eklenmiş Versiyon)."""
+    """TIAK üzerinden günlük TV reytinglerini çeker (Daha Sağlam Versiyon)."""
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
     try:
         driver.get(url)
 
-        # --- YENİ EKLENEN KISIM: Çerez Onay Penceresini Yönetme ---
+        # Sayfanın ilk yüklenmesi ve JavaScript'in oturması için biraz bekle
+        print("... Sayfanın tam olarak yüklenmesi için 3 saniye bekleniyor ...")
+        time.sleep(3)
+
+        # Çerez penceresini yönetme (bu kısım aynı kalıyor)
         try:
             print("... Çerez penceresi kontrol ediliyor ...")
-            # Metni "Kabul Et" olan butonu bul ve tıkla. Bu daha sağlam bir yöntemdir.
             cookie_accept_button = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Kabul Et')]"))
             )
             cookie_accept_button.click()
             print("✅ Çerezler kabul edildi.")
-            time.sleep(1) # Onay penceresinin kaybolması için kısa bir bekleme süresi
+            time.sleep(1)
         except Exception:
-            # Eğer pencere çıkmazsa veya zaten kabul edilmişse, hata verme ve devam et.
             print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
             pass
-        # --- YENİ KISIM BİTİŞ ---
 
-
-        # "Günlük" sekmesine tıklamak için bekle ve tıkla
-        print("... 'Günlük' sekmesi bekleniyor ...")
+        # --- GÜNCELLENEN TIKLAMA MANTIĞI ---
+        print("... 'Günlük' sekmesiyle etkileşim kuruluyor ...")
+        
+        # 1. Adım: Butonun tıklanabilir olmasını değil, önce sadece sayfada var olmasını bekle.
         gunluk_buton = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((By.XPATH, config.TIAK_GUNLUK_BUTON_XPATH))
+            EC.presence_of_element_located((By.XPATH, config.TIAK_GUNLUK_BUTON_XPATH))
         )
+        print("✅ 'Günlük' sekmesi sayfada (DOM'da) bulundu.")
+
+        # 2. Adım: Butonu ekranın görünen alanına kaydır. Bu, gizli kalma sorununu çözer.
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", gunluk_buton)
+        time.sleep(1) # Kaydırma animasyonunun bitmesi için kısa bir bekleme.
+        print("✅ Buton görünür alana kaydırıldı.")
+
+        # 3. Adım: En güvenilir yöntem olan JavaScript ile tıkla.
         driver.execute_script("arguments[0].click();", gunluk_buton)
         print("✅ 'Günlük' sekmesine tıklandı.")
+        # --- GÜNCELLEME BİTİŞ ---
 
-        # ... (Fonksiyonun geri kalanı aynı kalacak) ...
         print("... Reyting tablosu bekleniyor ...")
         table_container = WebDriverWait(driver, 20).until(
             EC.visibility_of_element_located((By.ID, config.TIAK_TABLE_CONTAINER_ID))
         )
-
+        
+        # (Fonksiyonun geri kalanı aynı)
         soup = BeautifulSoup(driver.page_source, "html.parser")
         target_div = soup.find("div", id=config.TIAK_TABLE_CONTAINER_ID)
         if not target_div:
