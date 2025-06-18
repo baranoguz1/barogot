@@ -2,8 +2,8 @@ name: Haber Botu Sayfasını Oluştur ve Yayınla
 
 on:
   schedule:
-    # Betiği her 30 dakikada bir çalıştırır
-    - cron: '*/30 * * * *'
+    # Betiği her saat başında (örneğin 01:00, 02:00 gibi) çalıştırır
+  - cron: '0 * * * *'
   push:
     branches:
       - main
