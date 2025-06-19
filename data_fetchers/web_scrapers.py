@@ -138,40 +138,43 @@ def get_daily_ratings(driver, limit=10):
     TIAK üzerinden günlük TV reytinglerini çeker. (Hibrit Selenium + Pandas Çözümü)
     
     Bu fonksiyon, dinamik olarak yüklenen içeriği ele almak için Selenium kullanır
-    ve ardından tabloyu ayrıştırmak için Pandas'a geçer.
+    ve ardından doğru tabloyu akıllıca seçerek Pandas ile ayrıştırır.
     """
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
     try:
         driver.get(url)
         
-        # Dinamik olarak yüklenen tabloyu beklemek için bir bekleme süresi ayarla.
-        # Sitenin yeni yapısında tablo doğrudan bir <table> etiketiyle geliyor.
-        wait = WebDriverWait(driver, 20) # 20 saniye kadar bekle
+        wait = WebDriverWait(driver, 20)
         
-        # Sayfadaki ilk tablonun görünür olmasını bekle
         print("... Reyting tablosunun dinamik olarak yüklenmesi bekleniyor ...")
         wait.until(EC.visibility_of_element_located((By.TAG_NAME, "table")))
         print("✅ Reyting tablosu başarıyla yüklendi.")
         
-        # Tablo yüklendikten sonra sayfanın HTML kaynağını al
         page_source = driver.page_source
-        
-        # HTML kaynağını Pandas'a vererek tabloları oku
         all_tables = pd.read_html(page_source, encoding='utf-8')
         
         if not all_tables:
-            # Bu kodun çalışması pek olası değil çünkü yukarıda tabloyu zaten bekledik,
-            # ama bir güvenlik önlemi olarak kalmasında fayda var.
             raise ValueError("No tables found on the page after waiting.")
 
         print(f"✅ TIAK sayfasından {len(all_tables)} adet tablo bulundu.")
         
-        # Doğru reyting tablosunu bul (genellikle ilkidir)
-        ratings_df = all_tables[0]
+        # --- YENİ VE GELİŞTİRİLMİŞ BÖLÜM: DOĞRU TABLOYU BULMA ---
+        ratings_df = None
+        for table in all_tables:
+            # Bir tablonun sütunlarını string'e çevirip içinde anahtar kelimeler arayalım.
+            # Bu, MultiIndex (çok seviyeli başlık) veya basit başlıklarla da çalışır.
+            table_columns_str = ''.join(map(str, table.columns.values))
+            if 'KANAL' in table_columns_str and 'RTG' in table_columns_str:
+                print("✅ Reyting tablosu, beklenen sütunlara göre başarıyla tespit edildi.")
+                ratings_df = table
+                break # Doğru tabloyu bulduk, döngüden çık.
 
-        # --- Bundan sonraki kod, bir önceki versiyonla aynı kalabilir ---
-
+        if ratings_df is None:
+            # Eğer beklenen tablo bulunamazsa, hata ver.
+            raise ValueError("Found tables, but none contained the expected 'KANAL' and 'RTG' columns.")
+        # --- YENİ BÖLÜM SONU ---
+        
         # Sütun isimlerini temizleme (MultiIndex'ten kurtulma)
         if isinstance(ratings_df.columns, pd.MultiIndex):
             ratings_df.columns = ['_'.join(map(str, col)).strip() for col in ratings_df.columns.values]
@@ -184,26 +187,38 @@ def get_daily_ratings(driver, limit=10):
             print(f"❌ Gerekli 'KANAL' veya 'Total Day_RTG %' sütunları bulunamadı. Mevcut sütunlar: {ratings_df.columns.tolist()}")
             return []
             
-        # Sadece gerekli sütunları alıp yeniden adlandıralım
         df_filtered = ratings_df[[kanal_col, rtg_col]].copy()
         df_filtered.columns = ['Kanal', 'Rating %']
 
-        # 'Rating %' sütununu sayısal formata çevirelim
         df_filtered['Rating %'] = pd.to_numeric(df_filtered['Rating %'].astype(str).str.replace(',', '.'), errors='coerce')
         df_filtered.dropna(subset=['Rating %', 'Kanal'], inplace=True)
 
-        # Sıralama yapıp "Sıra" sütunu ekleyelim
         df_sorted = df_filtered.sort_values(by='Rating %', ascending=False).reset_index(drop=True)
         df_sorted.insert(0, 'Sıra', df_sorted.index + 1)
         
-        # Program ismi yeni tabloda yok, bu yüzden 'Genel Yayın' gibi bir ifade ekleyebiliriz.
         df_sorted.insert(2, 'Program', 'Tüm Gün Ortalaması')
 
-        # Sonuçları listeye çevirme
         final_list = df_sorted[['Sıra', 'Kanal', 'Program', 'Rating %']].head(limit).values.tolist()
 
         print(f"✅ TIAK reytingleri başarıyla çekildi ve {len(final_list)} kanal işlendi.")
         return final_list
+
+    except Exception as e:
+        print(f"❌ TIAK reytingleri alınırken genel bir HATA oluştu: {e}")
+        try:
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            debug_file_html = f"debug_tiak_page_error_{timestamp}.html"
+            debug_file_png = f"debug_tiak_page_error_{timestamp}.png"
+            with open(debug_file_html, "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            driver.save_screenshot(debug_file_png)
+            print(f"ℹ️ Hata ayıklama için sayfanın son hali '{debug_file_html}' ve '{debug_file_png}' olarak kaydedildi.")
+        except Exception as debug_e:
+            print(f"⚠️ Hata ayıklama dosyaları kaydedilirken ek bir hata oluştu: {debug_e}")
+            
+        import traceback
+        traceback.print_exc()
+        return []
 
     except Exception as e:
         print(f"❌ TIAK reytingleri alınırken genel bir HATA oluştu: {e}")
