@@ -136,89 +136,75 @@ def fetch_istanbul_events(driver):
 
 def get_daily_ratings(driver, limit=10):
     """
-    TIAK kazıyıcısının hata verdiği andaki sayfa kaynağını yakalamak için
-    tasarlanmış hata tespit sürümü (YAML ile uyumlu).
+    TIAK üzerinden "Günlük Raporlar" sekmesine tıklayarak TV reytinglerini çeker.
+    Bu, projenin nihai ve kararlı sürümüdür.
     """
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
     try:
         driver.get(url)
         wait = WebDriverWait(driver, 20)
-        
-        print("... Sayfanın temel elementlerinin yüklenmesi bekleniyor ...")
-        # Beklemek için daha genel bir seçici deneyelim, mesela body etiketi
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        print("✅ Sayfa yüklendi, şimdi asıl içeriği arayacağız.")
-        
-        # Denenecek seçicilerin bir listesini oluşturalım
-        selectors_to_try = {
-            "Günlük Raporlar Butonu": (By.CSS_SELECTOR, "a[href='#gunluk']"),
-            "List Tab Menüsü": (By.ID, "list-tab"),
-            "Herhangi Bir Tablo": (By.TAG_NAME, "table")
-        }
 
-        # Bu seçicilerden herhangi birinin var olup olmadığını kontrol edelim
-        found_element = False
-        for key, selector in selectors_to_try.items():
-            try:
-                print(f"... '{key}' aranıyor ...")
-                wait.until(EC.presence_of_element_located(selector))
-                print(f"✅ '{key}' bulundu! Görünüşe göre sayfa doğru yükleniyor.")
-                found_element = True
-                break 
-            except TimeoutException:
-                print(f"⚠️ '{key}' bulunamadı.")
-                continue
-        
-        if not found_element:
-            # Eğer hiçbir anahtar element bulunamazsa, bu bizim için bir ipucudur.
-            raise TimeoutException("Sayfadaki anahtar elementlerin hiçbiri (buton, menü, tablo) bulunamadı.")
-        
-        # Eğer bir element bulunduysa, asıl hedefimize tıklamayı deneyelim
-        print("... 'Günlük Raporlar' sekmesine tıklanıyor ...")
+        # Olası çerez pencerelerini atla
+        try:
+            cookie_button = WebDriverWait(driver, 3).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(.,'Kabul Et')]")))
+            print("✅ Çerez onay butonu bulundu, tıklanıyor...")
+            cookie_button.click()
+            time.sleep(1)
+        except TimeoutException:
+            print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
+
+        # 1. Adım: "Günlük Raporlar" düğmesinin sayfada var olmasını bekle (tıklanabilir olması şart değil).
+        print("... 'Günlük Raporlar' sekmesi aranıyor ...")
         gunluk_raporlar_button = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "a[href='#gunluk']"))
+            EC.presence_of_element_located((By.CSS_SELECTOR, "a[href='#gunluk']"))
         )
+        print("✅ 'Günlük Raporlar' sekmesi bulundu.")
+
+        # 2. Adım: Standart click yerine JavaScript ile tıkla. Bu yöntem engelleri aşar.
+        print("... JavaScript ile 'Günlük Raporlar' sekmesine tıklanıyor ...")
         driver.execute_script("arguments[0].click();", gunluk_raporlar_button)
-        
+        print("✅ 'Günlük Raporlar' sekmesine başarıyla tıklandı.")
+
+        # 3. Adım: Tıkladıktan sonra doğru tablonun yüklenmesini bekle.
         print("... Günlük reyting tablosunun yüklenmesi bekleniyor ...")
         gunluk_tablosu = wait.until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, "div#gunluk table"))
         )
-        
-        # Başarılı olursa veriyi işle... (Bu kısım aynı)
+        print("✅ Günlük reyting tablosu başarıyla yüklendi.")
+
+        # 4. Adım: Veriyi işle
         page_source = gunluk_tablosu.get_attribute('outerHTML')
         ratings_df = pd.read_html(page_source, na_values=['-'])[0]
+
         ratings_df.rename(columns={'SIRA': 'Sıra', 'PROGRAM': 'Program', 'KANAL': 'Kanal', 'RTG%': 'Rating %'}, inplace=True)
+        
         required_cols = ['Sıra', 'Program', 'Kanal', 'Rating %']
         if not all(col in ratings_df.columns for col in required_cols):
-            raise ValueError("Tablo bulundu ama beklenen sütunları içermiyor.")
+            raise ValueError(f"Beklenen sütunlar tabloda bulunamadı! Bulunanlar: {ratings_df.columns.tolist()}")
+
         df_cleaned = ratings_df[required_cols].copy()
+        
         df_cleaned['Rating %'] = pd.to_numeric(df_cleaned['Rating %'].astype(str).str.replace(',', '.'), errors='coerce')
         df_cleaned.dropna(subset=['Rating %'], inplace=True)
+        
         final_list = df_cleaned.head(limit).values.tolist()
+
+        print(f"✅ TIAK günlük program reytingleri başarıyla çekildi ve {len(final_list)} program işlendi.")
         return final_list
 
     except Exception as e:
-        print("\n" + "="*50)
-        print("❌ BEKLENEN HATA YAKALANDI. HATA AYIKLAMA DOSYALARI OLUŞTURULUYOR...")
-        print("="*50 + "\n")
-        
+        print(f"❌ TIAK reytingleri alınırken genel bir HATA oluştu: {e}")
+        # Hata anında yine de debug dosyalarını oluşturmaya çalışalım
         try:
-            # YAML ile uyumlu dosya adları
-            debug_file_html = f"DEBUG_TIAK_PAGE_SOURCE.html"
-            debug_file_png = f"DEBUG_TIAK_SCREENSHOT.png"
-            
-            with open(debug_file_html, "w", encoding="utf-8") as f:
+            with open("DEBUG_FINAL_ERROR.html", "w", encoding="utf-8") as f:
                 f.write(driver.page_source)
-            driver.save_screenshot(debug_file_png)
-            print(f"✅ Hata ayıklama dosyaları başarıyla oluşturuldu: {debug_file_html}, {debug_file_png}")
-            
+            driver.save_screenshot("DEBUG_FINAL_ERROR.png")
+            print("ℹ️ Hata ayıklama için sayfanın son hali kaydedildi.")
         except Exception as debug_e:
-            print(f"⚠️ Hata ayıklama dosyaları kaydedilirken ek bir hata oluştu: {debug_e}")
-        
-        # Orijinal hatayı tekrar fırlatarak 'run_script' adımının 'failure' durumuna geçmesini sağla
+            print(f"⚠️ Hata ayıklama dosyaları kaydedilemedi: {debug_e}")
         raise e
+
 
 
 
