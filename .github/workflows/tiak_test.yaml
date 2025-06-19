@@ -1,4 +1,4 @@
-name: TIAK Test ve Hata Ayıklama (İzole)
+name: TIAK İzole Test Ortamı
 
 on:
   # Bu iş akışının sadece GitHub arayüzünden manuel olarak tetiklendiğinde çalışmasını sağlar
@@ -26,14 +26,3 @@ jobs:
 
       - name: TIAK Test Betiğini Çalıştır 🧪
         run: python tiak_test.py
-
-      - name: Başarısız Durumda Hata Ayıklama Dosyalarını Kaydet
-        # Sadece önceki adımlardan herhangi biri BAŞARISIZ olursa çalışır
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tiak-hata-ayiklama-dosyalari
-          path: |
-            DEBUG_*.html
-            DEBUG_*.png
-          retention-days: 7
