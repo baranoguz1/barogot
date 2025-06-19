@@ -13,6 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import TimeoutException
 from datetime import datetime, timezone, timedelta
 
 # Ana dizindeki config dosyasını import ediyoruz
@@ -136,16 +137,46 @@ def fetch_istanbul_events(driver):
 def get_daily_ratings(driver, limit=10):
     """
     TIAK üzerinden "Günlük Raporlar" sekmesine tıklayarak TV reytinglerini çeker.
-    Bu, projenin nihai ve kararlı sürümüdür.
+    Bu sürüm, olası çerez pencerelerini otomatik olarak kapatır.
     """
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
     try:
         driver.get(url)
+        # Ana işlemler için 20 saniye, opsiyonel elementler için 5 saniye bekle
         wait = WebDriverWait(driver, 20)
+        short_wait = WebDriverWait(driver, 5)
+
+        # --- YENİ ADIM: Olası Çerez Onay Penceresini Kapat ---
+        try:
+            print("... Olası çerez penceresi kontrol ediliyor ...")
+            # Farklı sitelerde kullanılabilecek genel çerez butonu seçicileri
+            cookie_selectors = [
+                "//button[contains(.,'Kabul Et')]",
+                "//button[contains(.,'Accept All')]",
+                "//button[contains(.,'Tümünü Kabul Et')]",
+                "//button[contains(.,'Allow All')]"
+            ]
+            cookie_button_found = False
+            for selector in cookie_selectors:
+                try:
+                    cookie_button = short_wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
+                    print(f"✅ Çerez onay butonu bulundu, tıklanıyor...")
+                    cookie_button.click()
+                    cookie_button_found = True
+                    time.sleep(1) # Pencerenin kaybolması için kısa bir bekleme
+                    break # Butonu bulup tıkladıysak döngüden çık
+                except TimeoutException:
+                    continue # Bu seçiciyle bulunamadı, sonrakini dene
+            
+            if not cookie_button_found:
+                print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
+
+        except Exception as e:
+            print(f"⚠️ Çerez penceresi işlenirken bir hata oluştu (yoksayılıyor): {e}")
+        # --- YENİ ADIM SONU ---
 
         # 1. Adım: "Günlük Raporlar" sekmesini bul ve tıkla.
-        # Bu sekmenin `href` özelliği '#gunluk'`'tur.
         print("... 'Günlük Raporlar' sekmesi bulunuyor ve tıklanıyor ...")
         gunluk_raporlar_button = wait.until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, "a[href='#gunluk']"))
@@ -154,7 +185,6 @@ def get_daily_ratings(driver, limit=10):
         print("✅ 'Günlük Raporlar' sekmesine başarıyla tıklandı.")
 
         # 2. Adım: Tıkladıktan sonra doğru tablonun yüklenmesini bekle.
-        # Bu tablo, <div id="gunluk"> içindeki <table> elementidir.
         print("... Günlük reyting tablosunun yüklenmesi bekleniyor ...")
         gunluk_tablosu = wait.until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, "div#gunluk table"))
@@ -162,12 +192,10 @@ def get_daily_ratings(driver, limit=10):
         print("✅ Günlük reyting tablosu başarıyla yüklendi.")
 
         # 3. Adım: Tabloyu içeren sayfa kaynağını Pandas'a ver.
-        # Sadece #gunluk div'inin HTML'ini almak daha kararlı sonuç verir.
         page_source = gunluk_tablosu.get_attribute('outerHTML')
-        ratings_df = pd.read_html(page_source)[0]
+        ratings_df = pd.read_html(page_source, na_values=['-'])[0]
 
-        # 4. Adım: Veriyi işle (Bu tablo basit olduğu için sütun adları daha nettir)
-        # Sütunları yeniden adlandıralım
+        # 4. Adım: Veriyi işle
         ratings_df.rename(columns={
             'SIRA': 'Sıra', 
             'PROGRAM': 'Program', 
@@ -175,14 +203,12 @@ def get_daily_ratings(driver, limit=10):
             'RTG%': 'Rating %'
         }, inplace=True)
         
-        # Gerekli sütunların varlığını kontrol et
         required_cols = ['Sıra', 'Program', 'Kanal', 'Rating %']
         if not all(col in ratings_df.columns for col in required_cols):
             raise ValueError(f"Beklenen sütunlar tabloda bulunamadı! Bulunanlar: {ratings_df.columns.tolist()}")
 
         df_cleaned = ratings_df[required_cols].copy()
         
-        # Rating % sütununu sayısal formata çevir
         df_cleaned['Rating %'] = pd.to_numeric(df_cleaned['Rating %'].astype(str).str.replace(',', '.'), errors='coerce')
         df_cleaned.dropna(subset=['Rating %'], inplace=True)
         
@@ -193,7 +219,6 @@ def get_daily_ratings(driver, limit=10):
 
     except Exception as e:
         print(f"❌ TIAK reytingleri alınırken genel bir HATA oluştu: {e}")
-        # Hata ayıklama için sayfanın ekran görüntüsünü ve kaynağını kaydet
         try:
             timestamp = time.strftime("%Y%m%d-%H%M%S")
             debug_file_html = f"debug_tiak_page_error_{timestamp}.html"
@@ -208,7 +233,6 @@ def get_daily_ratings(driver, limit=10):
         import traceback
         traceback.print_exc()
         return []
-
 
 
 
