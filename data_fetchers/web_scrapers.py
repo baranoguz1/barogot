@@ -190,6 +190,7 @@ def get_daily_ratings(driver, limit=10):
 
         df_cleaned['Rating %'] = pd.to_numeric(df_cleaned['Rating %'].astype(str).str.replace(',', '.'), errors='coerce')
         df_cleaned.dropna(subset=['Rating %'], inplace=True)
+        df_cleaned['Sıra'] = df_cleaned['Sıra'].astype(int)
         final_list = df_cleaned.head(limit).values.tolist()
 
         if not final_list:
