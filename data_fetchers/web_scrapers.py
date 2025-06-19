@@ -136,66 +136,56 @@ def fetch_istanbul_events(driver):
 
 def get_daily_ratings(driver, limit=10):
     """
-    TIAK üzerinden "Günlük Raporlar" sekmesine tıklayarak TV reytinglerini çeker.
-    Bu sürüm, olası çerez pencerelerini otomatik olarak kapatır.
+    TIAK üzerinden TV reytinglerini çeker. Bu sürüm, kademeli bekleme ve
+    JavaScript tıklama yöntemleri ile en kararlı çalışma için tasarlanmıştır.
     """
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
     try:
         driver.get(url)
-        # Ana işlemler için 20 saniye, opsiyonel elementler için 5 saniye bekle
         wait = WebDriverWait(driver, 20)
-        short_wait = WebDriverWait(driver, 5)
 
-        # --- YENİ ADIM: Olası Çerez Onay Penceresini Kapat ---
+        # Olası çerez pencerelerini atla (bu adım önceki sürümden kalma ve doğru çalışıyor)
         try:
-            print("... Olası çerez penceresi kontrol ediliyor ...")
-            # Farklı sitelerde kullanılabilecek genel çerez butonu seçicileri
-            cookie_selectors = [
-                "//button[contains(.,'Kabul Et')]",
-                "//button[contains(.,'Accept All')]",
-                "//button[contains(.,'Tümünü Kabul Et')]",
-                "//button[contains(.,'Allow All')]"
-            ]
-            cookie_button_found = False
-            for selector in cookie_selectors:
-                try:
-                    cookie_button = short_wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
-                    print(f"✅ Çerez onay butonu bulundu, tıklanıyor...")
-                    cookie_button.click()
-                    cookie_button_found = True
-                    time.sleep(1) # Pencerenin kaybolması için kısa bir bekleme
-                    break # Butonu bulup tıkladıysak döngüden çık
-                except TimeoutException:
-                    continue # Bu seçiciyle bulunamadı, sonrakini dene
-            
-            if not cookie_button_found:
-                print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
-
+            short_wait = WebDriverWait(driver, 3)
+            cookie_button = short_wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(.,'Kabul Et')]")))
+            print(f"✅ Çerez onay butonu bulundu, tıklanıyor...")
+            cookie_button.click()
+            time.sleep(1)
+        except TimeoutException:
+            print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
         except Exception as e:
             print(f"⚠️ Çerez penceresi işlenirken bir hata oluştu (yoksayılıyor): {e}")
-        # --- YENİ ADIM SONU ---
 
-        # 1. Adım: "Günlük Raporlar" sekmesini bul ve tıkla.
-        print("... 'Günlük Raporlar' sekmesi bulunuyor ve tıklanıyor ...")
+        # --- YENİ KADEMELİ BEKLEME MANTIĞI ---
+        # 1. Adım: Önce sekmeleri içeren ana kapsayıcının (div) yüklenmesini bekle.
+        print("... Sekmeleri içeren ana menünün yüklenmesi bekleniyor ...")
+        wait.until(EC.visibility_of_element_located((By.ID, "list-tab")))
+        print("✅ Ana menü başarıyla yüklendi.")
+
+        # 2. Adım: Şimdi "Günlük Raporlar" sekmesinin görünür olmasını bekle.
+        print("... 'Günlük Raporlar' sekmesi bulunuyor ...")
         gunluk_raporlar_button = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "a[href='#gunluk']"))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "a[href='#gunluk']"))
         )
-        gunluk_raporlar_button.click()
+        
+        # 3. Adım: En güvenilir yöntem olan JavaScript ile tıkla.
+        print("... JavaScript ile 'Günlük Raporlar' sekmesine tıklanıyor ...")
+        driver.execute_script("arguments[0].click();", gunluk_raporlar_button)
         print("✅ 'Günlük Raporlar' sekmesine başarıyla tıklandı.")
+        # --- YENİ MANTIK SONU ---
 
-        # 2. Adım: Tıkladıktan sonra doğru tablonun yüklenmesini bekle.
+        # 4. Adım: Tıkladıktan sonra doğru tablonun yüklenmesini bekle.
         print("... Günlük reyting tablosunun yüklenmesi bekleniyor ...")
         gunluk_tablosu = wait.until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, "div#gunluk table"))
         )
         print("✅ Günlük reyting tablosu başarıyla yüklendi.")
 
-        # 3. Adım: Tabloyu içeren sayfa kaynağını Pandas'a ver.
+        # 5. Adım: Veriyi işle
         page_source = gunluk_tablosu.get_attribute('outerHTML')
         ratings_df = pd.read_html(page_source, na_values=['-'])[0]
 
-        # 4. Adım: Veriyi işle
         ratings_df.rename(columns={
             'SIRA': 'Sıra', 
             'PROGRAM': 'Program', 
