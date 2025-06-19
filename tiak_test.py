@@ -30,14 +30,13 @@ def setup_driver():
         print(f"❌ WebDriver başlatılırken KRİTİK HATA: {e}")
         return None
 
-def get_daily_ratings_test(driver, limit=10):
+def get_daily_ratings(driver, limit=10):
     """
-    Sadece TİAK için izole edilmiş test fonksiyonu.
+    TIAK üzerinden TV reytinglerini çeker. Bu sürüm, sayfanın JavaScript'inin
+    hazır olması için ek bekleme süresi içerir.
     """
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
-    
-    # Bu `try...except` bloğu, hata anında debug dosyalarını oluşturmak için kritik
     try:
         driver.get(url)
         wait = WebDriverWait(driver, 20)
@@ -49,19 +48,23 @@ def get_daily_ratings_test(driver, limit=10):
         )
         print("✅ 'Günlük Raporlar' sekmesi bulundu.")
 
-        # 2. Adım: JavaScript ile tıkla.
+        # 2. Adım: Tıklamadan önce sayfanın tam olarak hazır olması için 3 saniye bekle.
+        print("... Sayfanın etkileşime hazır olması için kısa bir süre bekleniyor ...")
+        time.sleep(3)
+
+        # 3. Adım: JavaScript ile tıkla.
         print("... JavaScript ile 'Günlük Raporlar' sekmesine tıklanıyor ...")
         driver.execute_script("arguments[0].click();", gunluk_raporlar_button)
         print("✅ 'Günlük Raporlar' sekmesine başarıyla tıklandı.")
 
-        # 3. Adım: Tablonun yüklenmesini bekle.
+        # 4. Adım: Tıkladıktan sonra doğru tablonun yüklenmesini bekle.
         print("... Günlük reyting tablosunun yüklenmesi bekleniyor ...")
         gunluk_tablosu = wait.until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, "div#gunluk table"))
         )
         print("✅ Günlük reyting tablosu başarıyla yüklendi.")
 
-        # 4. Adım: Veriyi işle
+        # 5. Adım: Veriyi işle
         page_source = gunluk_tablosu.get_attribute('outerHTML')
         ratings_df = pd.read_html(page_source, na_values=['-'])[0]
         ratings_df.rename(columns={'SIRA': 'Sıra', 'PROGRAM': 'Program', 'KANAL': 'Kanal', 'RTG%': 'Rating %'}, inplace=True)
@@ -75,33 +78,11 @@ def get_daily_ratings_test(driver, limit=10):
         df_cleaned.dropna(subset=['Rating %'], inplace=True)
         final_list = df_cleaned.head(limit).values.tolist()
 
-        if not final_list:
-            raise ValueError("Tüm adımlar tamamlandı ancak sonuç listesi boş.")
-
-        print("\n--- BAŞARILI! TİAK VERİLERİ ---")
-        for item in final_list:
-            print(item)
-        print("---------------------------------")
+        print(f"✅ TIAK günlük program reytingleri başarıyla çekildi ve {len(final_list)} program işlendi.")
         return final_list
 
     except Exception as e:
-        print("\n" + "="*50)
-        print("❌ HATA YAKALANDI. HATA AYIKLAMA DOSYALARI OLUŞTURULUYOR...")
-        print(f"Hata Sebebi: {e}")
-        print("="*50 + "\n")
-        
-        try:
-            debug_file_html = "DEBUG_TIAK_PAGE_SOURCE.html"
-            debug_file_png = "DEBUG_TIAK_SCREENSHOT.png"
-            
-            with open(debug_file_html, "w", encoding="utf-8") as f:
-                f.write(driver.page_source)
-            driver.save_screenshot(debug_file_png)
-            print(f"✅ Hata ayıklama dosyaları başarıyla oluşturuldu: {debug_file_html}, {debug_file_png}")
-            
-        except Exception as debug_e:
-            print(f"⚠️ Hata ayıklama dosyaları kaydedilirken ek bir hata oluştu: {debug_e}")
-        
+        print(f"❌ TIAK reytingleri alınırken genel bir HATA oluştu: {e}")
         raise e
 
 if __name__ == "__main__":
