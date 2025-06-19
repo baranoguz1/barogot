@@ -44,6 +44,8 @@ jobs:
 
 
       - name: Haber Botu Betiğini Çalıştır 🤖
+        # Betik hata verirse bile sonraki adımların çalışabilmesi için
+        continue-on-error: true
         env:
           API_KEY: ${{ secrets.API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -61,22 +63,20 @@ jobs:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
 
 
-        continue-on-error: true
+        
         run: python main.py
 
-      # --- YENİ EKLENEN ADIM: HATA AYIKLAMA DOSYASINI KAYDETME ---
-      - name: Upload TIAK Debug Artifact
-        # Bu adımı, betik hata verse bile her zaman çalıştırır
-        if: always()
+      - name: Hata Ayıklama Dosyalarını Kaydet (Artifacts)
+        # Sadece bir önceki "run_script" adımı başarısız olduğunda çalışır
+        if: steps.run_script.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          # İndirilecek dosyanın adı
-          name: tiak-debug-dosyasi
-          # Kaydedilecek dosyanın yolu
-          path: debug_tiak_page.html
-          # Eğer dosya bulunamazsa hata verme (betik başarılı olursa bu dosya oluşmaz)
-          if-no-files-found: ignore
-      # --- YENİ ADIM BİTİŞ ---
+          name: tiak-hata-ayiklama-dosyalari
+          # Python betiğinin oluşturduğu dosyaları ara
+          path: |
+            DEBUG_*.html
+            DEBUG_*.png
+          retention-days: 7
 
       - name: GitHub Pages artifact'ını yükle
         uses: actions/upload-pages-artifact@v3
@@ -84,14 +84,15 @@ jobs:
           # './output' klasörünün içeriğini yükle
           path: ./output
 
-  # Sonra deploy (dağıtım) adımı
-  deploy:
+    deploy:
+    # Sadece betik başarılı olduysa dağıtım yap
+    if: needs.build-and-deploy.outputs.run_script_outcome == 'success'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build # build adımının bitmesini bekle
+    needs: build-and-deploy
     steps:
-      - name: GitHub Pages'e dağıt
+      - name: GitHub Pages'e Dağıt
         id: deployment
         uses: actions/deploy-pages@v4
