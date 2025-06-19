@@ -127,8 +127,8 @@ ZORLU_CATEGORY_SELECTOR = "div.event-list-card-item-header"
 # --- TIAK Reytingleri ---
 # Not: TIAK sitesi sık sık değiştiği için bu seçiciler güncelliğini yitirebilir.
 TIAK_URL = "https://tiak.com.tr/tablolar"
-TIAK_GUNLUK_BUTON_XPATH = "//button[@data-bs-target='#gunluk']" # Günlük sekmesinin yeni XPATH'i
-TIAK_TABLE_CONTAINER_ID = "gunluk" # Tablonun içinde bulunduğu div'in yeni ID'si
+# TIAK_GUNLUK_BUTON_XPATH = "//button[@data-bs-target='#gunluk']" # Günlük sekmesinin yeni XPATH'i
+# TIAK_TABLE_CONTAINER_ID = "gunluk" # Tablonun içinde bulunduğu div'in yeni ID'si
 
 
 # Flashscore

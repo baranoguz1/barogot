@@ -133,91 +133,81 @@ def fetch_istanbul_events(driver):
         return []
 
 
-
-
-
-
 def get_daily_ratings(driver, limit=10):
-    """TIAK üzerinden günlük TV reytinglerini çeker (Daha Sağlam Versiyon)."""
+    """TIAK üzerinden günlük TV reytinglerini çeker (Yeni Site Uyumlu Versiyon)."""
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
     try:
-        driver.get(url)
-        time.sleep(3) 
+        # Sayfayı doğrudan pandas ile okumayı denemek, Selenium'dan daha hızlı ve stabildir.
+        # TIAK sitesi artık tabloları doğrudan HTML içine gömüyor gibi görünüyor.
+        all_tables = pd.read_html(url, encoding='utf-8')
+        
+        print(f"✅ TIAK sayfasından {len(all_tables)} adet tablo bulundu.")
 
-        # Çerez penceresini yönetme
-        try:
-            print("... Çerez penceresi kontrol ediliyor ...")
-            cookie_accept_button = WebDriverWait(driver, 5).until( # Daha kısa bekleme süresi yeterli
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Kabul Et')]"))
-            )
-            cookie_accept_button.click()
-            print("✅ Çerezler kabul edildi.")
-            time.sleep(1)
-        except Exception:
-            print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
-            pass
-
-        # Reyting tablosunu bekle ve parse et
-        print("... Reyting tablosu bekleniyor ...")
-        
-        # --- DEĞİŞİKLİK BURADA ---
-        # Sadece div'i değil, div'in içindeki asıl tabloyu bekliyoruz.
-        # Bu, tablonun verilerle birlikte yüklendiğinden emin olmamızı sağlar.
-        wait_condition = EC.visibility_of_element_located(
-            (By.XPATH, f"//div[@id='{config.TIAK_TABLE_CONTAINER_ID}']//table")
-        )
-        WebDriverWait(driver, 20).until(wait_condition)
-        
-        # Sayfa kaynağını al ve pandas ile tabloyu oku
-        page_source = driver.page_source
-        
-        tables = pd.read_html(page_source, flavor='lxml')
-        
-        df = None
-        for table in tables:
-            if 'PROGRAM' in table.columns and 'KANAL' in table.columns:
-                df = table
+        # Doğru tabloyu bulmak için tabloları analiz et
+        ratings_df = None
+        for i, table in enumerate(all_tables):
+            # Genellikle reyting tablosu "KANAL" ve "TOTAL DAY" gibi sütunlar içerir.
+            # Sütun isimleri çok katmanlı olabilir, bu yüzden string'e çevirip kontrol ediyoruz.
+            table_columns_str = ''.join(map(str, table.columns.values))
+            if 'KANAL' in table_columns_str and 'RTG' in table_columns_str:
+                print(f"✅ Potansiyel reyting tablosu {i}. indekste bulundu.")
+                ratings_df = table
                 break
-        
-        if df is None:
-            print("❌ KRİTİK HATA: Beklenen formatla eşleşen reyting tablosu sayfada bulunamadı.")
-            raise ValueError("Reyting tablosu bulunamadı.")
 
-        # Sütun isimlerini daha tutarlı hale getirme
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = ['_'.join(col).strip() for col in df.columns.values]
-
-        df.rename(columns={
-            'SIRA': 'Sıra', 
-            'PROGRAM': 'Program', 
-            'KANAL': 'Kanal', 
-            'RTG%': 'Rating %'
-        }, inplace=True, errors='ignore')
-
-        required_cols = ['Sıra', 'Program', 'Kanal', 'Rating %']
-        if not all(col in df.columns for col in required_cols):
-            print(f"❌ Sütunlar Eşleşmedi! Bulunan sütunlar: {df.columns.tolist()}")
+        if ratings_df is None:
+            print("❌ KRİTİK HATA: Sayfada beklenen formatla eşleşen bir reyting tablosu bulunamadı.")
+            # Hata ayıklama için sayfanın kaynağını kaydetme Selenium gerektirir.
+            # Bu basit yöntemde bu adımı atlıyoruz, ama gerekirse eklenebilir.
+            try:
+                driver.get(url)
+                with open("debug_tiak_page_pandas_fail.html", "w", encoding="utf-8") as f:
+                    f.write(driver.page_source)
+                print("ℹ️ Pandas'ın tabloyu bulamadığı sayfa 'debug_tiak_page_pandas_fail.html' olarak kaydedildi.")
+            except Exception as e:
+                print(f"⚠️ Hata ayıklama sayfası kaydedilirken hata oluştu: {e}")
             return []
 
-        df_required = df[required_cols].copy()
-        df_required['Rating %'] = pd.to_numeric(df_required['Rating %'].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
-        df_required.dropna(subset=['Program'], inplace=True)
+        # Sütun isimlerini temizleme (MultiIndex'ten kurtulma)
+        if isinstance(ratings_df.columns, pd.MultiIndex):
+            ratings_df.columns = ['_'.join(map(str, col)).strip() for col in ratings_df.columns.values]
+
+        # Gerekli sütunları belirleme ve yeniden adlandırma
+        # Yeni tabloda Total Day grubundaki RTG% sütununu hedefliyoruz.
+        kanal_col = next((col for col in ratings_df.columns if 'KANAL' in col), None)
+        rtg_col = next((col for col in ratings_df.columns if 'Total Day' in col and 'RTG' in col), None)
+
+        if not kanal_col or not rtg_col:
+            print(f"❌ Gerekli 'KANAL' veya 'Total Day RTG%' sütunları bulunamadı. Mevcut sütunlar: {ratings_df.columns.tolist()}")
+            return []
+            
+        # Sadece gerekli sütunları alıp yeniden adlandıralım
+        df_filtered = ratings_df[[kanal_col, rtg_col]].copy()
+        df_filtered.columns = ['Kanal', 'Rating %']
+
+        # 'Rating %' sütununu sayısal formata çevirelim
+        df_filtered['Rating %'] = pd.to_numeric(df_filtered['Rating %'].astype(str).str.replace(',', '.'), errors='coerce')
+        df_filtered.dropna(subset=['Rating %', 'Kanal'], inplace=True)
+
+        # Sıralama yapıp "Sıra" sütunu ekleyelim
+        df_sorted = df_filtered.sort_values(by='Rating %', ascending=False).reset_index(drop=True)
+        df_sorted.insert(0, 'Sıra', df_sorted.index + 1)
         
-        df_cleaned = df_required.sort_values(by="Rating %", ascending=False).drop_duplicates(subset=['Program', 'Kanal'], keep='first')
-        
-        print("✅ TIAK reytingleri başarıyla çekildi ve işlendi.")
-        return df_cleaned.head(limit).values.tolist()
+        # Program ismi yeni tabloda yok, bu yüzden 'Genel Yayın' gibi bir ifade ekleyebiliriz.
+        df_sorted.insert(2, 'Program', 'Tüm Gün Ortalaması')
+
+        # Sonuçları listeye çevirme
+        # Sütun sırası: Sıra, Kanal, Program, Rating %
+        final_list = df_sorted[['Sıra', 'Kanal', 'Program', 'Rating %']].head(limit).values.tolist()
+
+        print(f"✅ TIAK reytingleri başarıyla çekildi ve {len(final_list)} kanal işlendi.")
+        return final_list
 
     except Exception as e:
-        print(f"⚠️ TIAK Reytingleri alınırken genel hata: {e}")
-        with open("debug_tiak_page.html", "w", encoding="utf-8") as f:
-            if driver and hasattr(driver, 'page_source'):
-                 f.write(driver.page_source)
-        print("ℹ️ Hata ayıklama için sayfanın mevcut hali 'debug_tiak_page.html' olarak kaydedildi.")
+        print(f"❌ TIAK reytingleri alınırken genel bir HATA oluştu: {e}")
+        import traceback
+        traceback.print_exc()
         return []
-
-
 
 
 
