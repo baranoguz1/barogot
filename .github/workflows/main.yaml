@@ -2,20 +2,17 @@ name: Haber Botu Sayfasını Oluştur ve Yayınla
 
 on:
   schedule:
-    # Betiği her saat başında (örneğin 01:00, 02:00 gibi) çalıştırır
     - cron: '0 * * * *'
   push:
     branches:
       - main
   workflow_dispatch:
 
-# İzinleri ayarla: Sayfayı oluşturmak ve dağıtmak için
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Aynı anda sadece bir dağıtıma izin ver
 concurrency:
   group: "pages"
   cancel-in-progress: true
@@ -31,18 +28,16 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-          cache: 'pip' # Pip önbelleğini etkinleştir
+          cache: 'pip'
 
       - name: Bağımlılıkları Yükle ⚙️
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # Selenium ve Chrome için gerekli sistem paketleri
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
 
       - name: Haber Botu Betiğini Çalıştır 🤖
-        id: run_script
         env:
           API_KEY: ${{ secrets.API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -62,7 +57,6 @@ jobs:
       - name: GitHub Pages artifact'ını yükle
         uses: actions/upload-pages-artifact@v3
         with:
-          # './output' klasörünün içeriğini yükle
           path: ./output
 
   deploy:
@@ -70,7 +64,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    # build işinin başarılı olmasını bekle
     needs: build
     steps:
       - name: GitHub Pages'e dağıt

@@ -117,7 +117,9 @@ def main():
     if driver:
         try:
             print("\n--- Selenium ile Veri Kazıma Başladı ---")
-            context['ratings'] = web_scrapers.get_daily_ratings(driver)
+            #context['ratings'] = web_scrapers.get_daily_ratings(driver)
+            context['ratings'] = []
+            print("ℹ️ TIAK reytingleri geçici olarak devre dışı bırakıldı.")
             context['books'] = web_scrapers.fetch_books(driver)
             context['istanbul_events'] = web_scrapers.fetch_istanbul_events(driver)
             
