@@ -136,93 +136,63 @@ def fetch_istanbul_events(driver):
 
 def get_daily_ratings(driver, limit=10):
     """
-    TIAK üzerinden TV reytinglerini çeker. Bu sürüm, kademeli bekleme ve
-    JavaScript tıklama yöntemleri ile en kararlı çalışma için tasarlanmıştır.
+    TIAK kazıyıcısının hata verdiği andaki sayfa kaynağını yakalamak için
+    tasarlanmış hata tespit sürümü.
     """
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
     try:
         driver.get(url)
         wait = WebDriverWait(driver, 20)
-
-        # Olası çerez pencerelerini atla (bu adım önceki sürümden kalma ve doğru çalışıyor)
-        try:
-            short_wait = WebDriverWait(driver, 3)
-            cookie_button = short_wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(.,'Kabul Et')]")))
-            print(f"✅ Çerez onay butonu bulundu, tıklanıyor...")
-            cookie_button.click()
-            time.sleep(1)
-        except TimeoutException:
-            print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
-        except Exception as e:
-            print(f"⚠️ Çerez penceresi işlenirken bir hata oluştu (yoksayılıyor): {e}")
-
-        # --- YENİ KADEMELİ BEKLEME MANTIĞI ---
-        # 1. Adım: Önce sekmeleri içeren ana kapsayıcının (div) yüklenmesini bekle.
+        
+        # Beklenen adımlar...
         print("... Sekmeleri içeren ana menünün yüklenmesi bekleniyor ...")
         wait.until(EC.visibility_of_element_located((By.ID, "list-tab")))
-        print("✅ Ana menü başarıyla yüklendi.")
 
-        # 2. Adım: Şimdi "Günlük Raporlar" sekmesinin görünür olmasını bekle.
-        print("... 'Günlük Raporlar' sekmesi bulunuyor ...")
+        # --- BU KISIM BÜYÜK İHTİMALLE HİÇ ÇALIŞMAYACAK ---
         gunluk_raporlar_button = wait.until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, "a[href='#gunluk']"))
         )
-        
-        # 3. Adım: En güvenilir yöntem olan JavaScript ile tıkla.
-        print("... JavaScript ile 'Günlük Raporlar' sekmesine tıklanıyor ...")
         driver.execute_script("arguments[0].click();", gunluk_raporlar_button)
-        print("✅ 'Günlük Raporlar' sekmesine başarıyla tıklandı.")
-        # --- YENİ MANTIK SONU ---
+        # ...
 
-        # 4. Adım: Tıkladıktan sonra doğru tablonun yüklenmesini bekle.
-        print("... Günlük reyting tablosunun yüklenmesi bekleniyor ...")
-        gunluk_tablosu = wait.until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "div#gunluk table"))
-        )
-        print("✅ Günlük reyting tablosu başarıyla yüklendi.")
-
-        # 5. Adım: Veriyi işle
-        page_source = gunluk_tablosu.get_attribute('outerHTML')
-        ratings_df = pd.read_html(page_source, na_values=['-'])[0]
-
-        ratings_df.rename(columns={
-            'SIRA': 'Sıra', 
-            'PROGRAM': 'Program', 
-            'KANAL': 'Kanal', 
-            'RTG%': 'Rating %'
-        }, inplace=True)
+    except TimeoutException as e:
+        print("\n" + "="*50)
+        print("❌ ZAMAN AŞIMI HATASI (TIMEOUT) YAKALANDI. BU BEKLENEN BİR DURUMDUR.")
+        print("Sayfa yapısı, yerel tarayıcıdan farklı olabilir.")
+        print("Şimdi, hata anındaki sayfa içeriği bir dosyaya kaydedilecek.")
+        print("="*50 + "\n")
         
-        required_cols = ['Sıra', 'Program', 'Kanal', 'Rating %']
-        if not all(col in ratings_df.columns for col in required_cols):
-            raise ValueError(f"Beklenen sütunlar tabloda bulunamadı! Bulunanlar: {ratings_df.columns.tolist()}")
-
-        df_cleaned = ratings_df[required_cols].copy()
-        
-        df_cleaned['Rating %'] = pd.to_numeric(df_cleaned['Rating %'].astype(str).str.replace(',', '.'), errors='coerce')
-        df_cleaned.dropna(subset=['Rating %'], inplace=True)
-        
-        final_list = df_cleaned.head(limit).values.tolist()
-
-        print(f"✅ TIAK günlük program reytingleri başarıyla çekildi ve {len(final_list)} program işlendi.")
-        return final_list
-
-    except Exception as e:
-        print(f"❌ TIAK reytingleri alınırken genel bir HATA oluştu: {e}")
         try:
             timestamp = time.strftime("%Y%m%d-%H%M%S")
-            debug_file_html = f"debug_tiak_page_error_{timestamp}.html"
-            debug_file_png = f"debug_tiak_page_error_{timestamp}.png"
+            # Dosya adlarını Artifacts'te kolayca bulunacak şekilde belirgin yapalım
+            debug_file_html = f"DEBUG_TIAK_PAGE_SOURCE.html"
+            debug_file_png = f"DEBUG_TIAK_SCREENSHOT.png"
+            
+            # Hata anındaki sayfa kaynağını dosyaya yaz
             with open(debug_file_html, "w", encoding="utf-8") as f:
                 f.write(driver.page_source)
+            
+            # Hata anındaki ekran görüntüsünü kaydet
             driver.save_screenshot(debug_file_png)
-            print(f"ℹ️ Hata ayıklama için sayfanın son hali '{debug_file_html}' ve '{debug_file_png}' olarak kaydedildi.")
+            
+            print(f"✅ Hata ayıklama dosyaları başarıyla oluşturuldu:")
+            print(f"   -> HTML Kaynağı: {debug_file_html}")
+            print(f"   -> Ekran Görüntüsü: {debug_file_png}")
+            print("\nLÜTFEN GITHUB ACTIONS'DA OLUŞAN 'ARTIFACTS' BÖLÜMÜNDEN")
+            print("BU DOSYALARI İNDİRİP İÇERİĞİNİ ANALİZ EDİN VEYA PAYLAŞIN.")
+
         except Exception as debug_e:
             print(f"⚠️ Hata ayıklama dosyaları kaydedilirken ek bir hata oluştu: {debug_e}")
-            
+        
+        # Orijinal hatayı tekrar yükselterek programın başarısız olmasını sağla
+        raise e
+
+    except Exception as e:
+        print(f"❌ Beklenmedik genel bir HATA oluştu: {e}")
         import traceback
         traceback.print_exc()
-        return []
+        raise e
 
 
 
