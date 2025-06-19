@@ -16,6 +16,14 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 from datetime import datetime, timezone, timedelta
 
+
+import pandas as pd
+from io import StringIO
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+
+
 # Ana dizindeki config dosyasını import ediyoruz
 import config
 
@@ -134,12 +142,10 @@ def fetch_istanbul_events(driver):
         return []
 
 
-# data_fetchers/web_scrapers.py dosyasının içine
-
 def get_daily_ratings(driver, limit=10):
     """
-    TIAK üzerinden "Günlük Raporlar" sekmesine tıklayarak TV reytinglerini çeker.
-    Bu, projenin nihai ve kararlı sürümüdür.
+    TIAK sitesinin otomasyon ortamlarına gönderdiği eski yapıyla başa çıkabilen,
+    pandas'a doğru başlık satırını gösteren nihai ve kararlı sürüm.
     """
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
@@ -147,64 +153,58 @@ def get_daily_ratings(driver, limit=10):
         driver.get(url)
         wait = WebDriverWait(driver, 20)
 
-        # Olası çerez pencerelerini atla
-        try:
-            cookie_button = WebDriverWait(driver, 3).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(.,'Kabul Et')]")))
-            print("✅ Çerez onay butonu bulundu, tıklanıyor...")
-            cookie_button.click()
-            time.sleep(1) # Pencerenin kaybolması için kısa bir bekleme
-        except TimeoutException:
-            print("ℹ️ Çerez penceresi bulunamadı veya gerekli değil.")
-
-        # 1. Adım: "Günlük Raporlar" düğmesinin sayfada var olmasını bekle (tıklanabilir olması şart değil).
-        print("... 'Günlük Raporlar' sekmesi aranıyor ...")
-        gunluk_raporlar_button = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "a[href='#gunluk']"))
+        # 1. Adım: "Günlük Raporlar" başlığına tıkla.
+        print("... 'Günlük Raporlar' başlığı aranıyor ...")
+        gunluk_raporlar_basligi = wait.until(
+            EC.element_to_be_clickable((By.ID, "gunluk-tablolar"))
         )
-        print("✅ 'Günlük Raporlar' sekmesi bulundu.")
-
-        # 2. Adım: Standart click yerine JavaScript ile tıkla. Bu yöntem engelleri aşar.
-        print("... JavaScript ile 'Günlük Raporlar' sekmesine tıklanıyor ...")
-        driver.execute_script("arguments[0].click();", gunluk_raporlar_button)
-        print("✅ 'Günlük Raporlar' sekmesine başarıyla tıklandı.")
-
-        # 3. Adım: Tıkladıktan sonra doğru tablonun yüklenmesini bekle.
-        print("... Günlük reyting tablosunun yüklenmesi bekleniyor ...")
-        gunluk_tablosu = wait.until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "div#gunluk table"))
-        )
-        print("✅ Günlük reyting tablosu başarıyla yüklendi.")
-
-        # 4. Adım: Veriyi işle
-        page_source = gunluk_tablosu.get_attribute('outerHTML')
-        ratings_df = pd.read_html(page_source, na_values=['-'])[0]
-
-        ratings_df.rename(columns={'SIRA': 'Sıra', 'PROGRAM': 'Program', 'KANAL': 'Kanal', 'RTG%': 'Rating %'}, inplace=True)
+        gunluk_raporlar_basligi.click()
+        print("✅ 'Günlük Raporlar' başlığı tıklandı.")
         
-        required_cols = ['Sıra', 'Program', 'Kanal', 'Rating %']
+        # 2. Adım: AJAX'ın tabloyu doldurmasını bekle.
+        print("... Reyting tablosunun AJAX ile yüklenmesi bekleniyor ...")
+        tablo_konteyneri = wait.until(
+            EC.visibility_of_element_located((By.ID, "tablo"))
+        )
+        time.sleep(2) # Tablo içeriğinin tam dolması için kritik ek bekleme
+        print("✅ Reyting tablosu yüklendi.")
+
+        # 3. Adım: Veriyi işle
+        page_source = tablo_konteyneri.get_attribute('innerHTML')
+        
+        # Pandas'a tablonun ilk satırını başlık olarak kullanmasını söylüyoruz (header=0).
+        # Hata mesajını engellemek için StringIO kullanıyoruz.
+        ratings_df = pd.read_html(StringIO(page_source), header=0)[0]
+        
+        # Sütun isimlerindeki olası boşlukları temizle ve yeniden adlandır.
+        ratings_df = ratings_df.rename(columns=lambda x: x.strip())
+        ratings_df.rename(columns={'RATING %': 'Rating %'}, inplace=True, errors='ignore')
+
+        required_cols = ['SIRA', 'PROGRAM', 'KANAL', 'Rating %']
         if not all(col in ratings_df.columns for col in required_cols):
             raise ValueError(f"Beklenen sütunlar tabloda bulunamadı! Bulunanlar: {ratings_df.columns.tolist()}")
 
-        df_cleaned = ratings_df[required_cols].copy()
-        
+        # Sütunları doğru isimleriyle seçelim
+        df_cleaned = ratings_df[['SIRA', 'PROGRAM', 'KANAL', 'Rating %']].copy()
+        df_cleaned.columns = ['Sıra', 'Program', 'Kanal', 'Rating %']
+
         df_cleaned['Rating %'] = pd.to_numeric(df_cleaned['Rating %'].astype(str).str.replace(',', '.'), errors='coerce')
         df_cleaned.dropna(subset=['Rating %'], inplace=True)
-        
         final_list = df_cleaned.head(limit).values.tolist()
 
-        print(f"✅ TIAK günlük program reytingleri başarıyla çekildi ve {len(final_list)} program işlendi.")
+        if not final_list:
+            raise ValueError("Tüm adımlar tamamlandı ancak sonuç listesi boş.")
+
+        print("\n" + "="*40)
+        print("--- BAŞARILI! İZOLE TEST SONUÇLARI ---")
+        for item in final_list:
+            print(item)
+        print("="*40 + "\n")
+        
         return final_list
 
     except Exception as e:
-        print(f"❌ TIAK reytingleri alınırken genel bir HATA oluştu: {e}")
-        # Hata anında yine de debug dosyalarını oluşturmaya çalışalım
-        try:
-            with open("DEBUG_FINAL_ERROR.html", "w", encoding="utf-8") as f:
-                f.write(driver.page_source)
-            driver.save_screenshot("DEBUG_FINAL_ERROR.png")
-            print("ℹ️ Hata ayıklama için sayfanın son hali kaydedildi.")
-        except Exception as debug_e:
-            print(f"⚠️ Hata ayıklama dosyaları kaydedilemedi: {debug_e}")
+        print(f"❌ TIAK testi sırasında HATA oluştu: {e}")
         raise e
 
 
