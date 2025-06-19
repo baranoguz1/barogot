@@ -134,51 +134,54 @@ def fetch_istanbul_events(driver):
 
 
 def get_daily_ratings(driver, limit=10):
-    """TIAK üzerinden günlük TV reytinglerini çeker (Yeni Site Uyumlu Versiyon)."""
+    """
+    TIAK üzerinden günlük TV reytinglerini çeker. (Hibrit Selenium + Pandas Çözümü)
+    
+    Bu fonksiyon, dinamik olarak yüklenen içeriği ele almak için Selenium kullanır
+    ve ardından tabloyu ayrıştırmak için Pandas'a geçer.
+    """
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
     try:
-        # Sayfayı doğrudan pandas ile okumayı denemek, Selenium'dan daha hızlı ve stabildir.
-        # TIAK sitesi artık tabloları doğrudan HTML içine gömüyor gibi görünüyor.
-        all_tables = pd.read_html(url, encoding='utf-8')
+        driver.get(url)
         
+        # Dinamik olarak yüklenen tabloyu beklemek için bir bekleme süresi ayarla.
+        # Sitenin yeni yapısında tablo doğrudan bir <table> etiketiyle geliyor.
+        wait = WebDriverWait(driver, 20) # 20 saniye kadar bekle
+        
+        # Sayfadaki ilk tablonun görünür olmasını bekle
+        print("... Reyting tablosunun dinamik olarak yüklenmesi bekleniyor ...")
+        wait.until(EC.visibility_of_element_located((By.TAG_NAME, "table")))
+        print("✅ Reyting tablosu başarıyla yüklendi.")
+        
+        # Tablo yüklendikten sonra sayfanın HTML kaynağını al
+        page_source = driver.page_source
+        
+        # HTML kaynağını Pandas'a vererek tabloları oku
+        all_tables = pd.read_html(page_source, encoding='utf-8')
+        
+        if not all_tables:
+            # Bu kodun çalışması pek olası değil çünkü yukarıda tabloyu zaten bekledik,
+            # ama bir güvenlik önlemi olarak kalmasında fayda var.
+            raise ValueError("No tables found on the page after waiting.")
+
         print(f"✅ TIAK sayfasından {len(all_tables)} adet tablo bulundu.")
+        
+        # Doğru reyting tablosunu bul (genellikle ilkidir)
+        ratings_df = all_tables[0]
 
-        # Doğru tabloyu bulmak için tabloları analiz et
-        ratings_df = None
-        for i, table in enumerate(all_tables):
-            # Genellikle reyting tablosu "KANAL" ve "TOTAL DAY" gibi sütunlar içerir.
-            # Sütun isimleri çok katmanlı olabilir, bu yüzden string'e çevirip kontrol ediyoruz.
-            table_columns_str = ''.join(map(str, table.columns.values))
-            if 'KANAL' in table_columns_str and 'RTG' in table_columns_str:
-                print(f"✅ Potansiyel reyting tablosu {i}. indekste bulundu.")
-                ratings_df = table
-                break
-
-        if ratings_df is None:
-            print("❌ KRİTİK HATA: Sayfada beklenen formatla eşleşen bir reyting tablosu bulunamadı.")
-            # Hata ayıklama için sayfanın kaynağını kaydetme Selenium gerektirir.
-            # Bu basit yöntemde bu adımı atlıyoruz, ama gerekirse eklenebilir.
-            try:
-                driver.get(url)
-                with open("debug_tiak_page_pandas_fail.html", "w", encoding="utf-8") as f:
-                    f.write(driver.page_source)
-                print("ℹ️ Pandas'ın tabloyu bulamadığı sayfa 'debug_tiak_page_pandas_fail.html' olarak kaydedildi.")
-            except Exception as e:
-                print(f"⚠️ Hata ayıklama sayfası kaydedilirken hata oluştu: {e}")
-            return []
+        # --- Bundan sonraki kod, bir önceki versiyonla aynı kalabilir ---
 
         # Sütun isimlerini temizleme (MultiIndex'ten kurtulma)
         if isinstance(ratings_df.columns, pd.MultiIndex):
             ratings_df.columns = ['_'.join(map(str, col)).strip() for col in ratings_df.columns.values]
 
         # Gerekli sütunları belirleme ve yeniden adlandırma
-        # Yeni tabloda Total Day grubundaki RTG% sütununu hedefliyoruz.
         kanal_col = next((col for col in ratings_df.columns if 'KANAL' in col), None)
         rtg_col = next((col for col in ratings_df.columns if 'Total Day' in col and 'RTG' in col), None)
 
         if not kanal_col or not rtg_col:
-            print(f"❌ Gerekli 'KANAL' veya 'Total Day RTG%' sütunları bulunamadı. Mevcut sütunlar: {ratings_df.columns.tolist()}")
+            print(f"❌ Gerekli 'KANAL' veya 'Total Day_RTG %' sütunları bulunamadı. Mevcut sütunlar: {ratings_df.columns.tolist()}")
             return []
             
         # Sadece gerekli sütunları alıp yeniden adlandıralım
@@ -197,7 +200,6 @@ def get_daily_ratings(driver, limit=10):
         df_sorted.insert(2, 'Program', 'Tüm Gün Ortalaması')
 
         # Sonuçları listeye çevirme
-        # Sütun sırası: Sıra, Kanal, Program, Rating %
         final_list = df_sorted[['Sıra', 'Kanal', 'Program', 'Rating %']].head(limit).values.tolist()
 
         print(f"✅ TIAK reytingleri başarıyla çekildi ve {len(final_list)} kanal işlendi.")
@@ -205,9 +207,22 @@ def get_daily_ratings(driver, limit=10):
 
     except Exception as e:
         print(f"❌ TIAK reytingleri alınırken genel bir HATA oluştu: {e}")
+        # Hata ayıklama için sayfanın ekran görüntüsünü ve kaynağını kaydet
+        try:
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            debug_file_html = f"debug_tiak_page_error_{timestamp}.html"
+            debug_file_png = f"debug_tiak_page_error_{timestamp}.png"
+            with open(debug_file_html, "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            driver.save_screenshot(debug_file_png)
+            print(f"ℹ️ Hata ayıklama için sayfanın son hali '{debug_file_html}' ve '{debug_file_png}' olarak kaydedildi.")
+        except Exception as debug_e:
+            print(f"⚠️ Hata ayıklama dosyaları kaydedilirken ek bir hata oluştu: {debug_e}")
+            
         import traceback
         traceback.print_exc()
         return []
+
 
 
 
