@@ -78,20 +78,21 @@ jobs:
             DEBUG_*.png
           retention-days: 7
 
-      - name: GitHub Pages artifact'ını yükle
+      - name: GitHub Pages'e Yüklenecek Dosyaları Kaydet (Artifacts)
+        # Sadece betik başarılı olduğunda çalışır
+        if: steps.run_script.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:
-          # './output' klasörünün içeriğini yükle
           path: ./output
 
-    deploy:
-    # Sadece betik başarılı olduysa dağıtım yap
-    if: needs.build-and-deploy.outputs.run_script_outcome == 'success'
+  deploy:
+    # Sadece 'build' işindeki 'run_script' adımı başarılı olursa bu işi çalıştır
+    needs: build
+    if: needs.build.outputs.script_outcome == 'success'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build-and-deploy
     steps:
       - name: GitHub Pages'e Dağıt
         id: deployment
