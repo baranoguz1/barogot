@@ -41,7 +41,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
 
-      - name: Ana Betiği Çalıştır 🤖
+      - name: Haber Botu Betiğini Çalıştır 🤖
         id: run_script
         env:
           API_KEY: ${{ secrets.API_KEY }}
@@ -59,33 +59,20 @@ jobs:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: python main.py
 
-      - name: Başarılı Durumda Sayfayı Yükle
-        # Sadece bir önceki adım BAŞARILI ise çalışır
-        if: success()
+      - name: GitHub Pages artifact'ını yükle
         uses: actions/upload-pages-artifact@v3
         with:
+          # './output' klasörünün içeriğini yükle
           path: ./output
 
-      - name: Başarısız Durumda Hata Ayıklama Dosyalarını Kaydet
-        # Sadece önceki adımlardan herhangi biri BAŞARISIZ ise çalışır
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tiak-hata-ayiklama-dosyalari
-          path: |
-            DEBUG_*.html
-            DEBUG_*.png
-          retention-days: 7
-
   deploy:
-    needs: build
-    # build işi başarısız olursa bu işi hiç çalıştırma
-    if: success()
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    # build işinin başarılı olmasını bekle
+    needs: build
     steps:
-      - name: GitHub Pages'e Dağıt
+      - name: GitHub Pages'e dağıt
         id: deployment
         uses: actions/deploy-pages@v4
