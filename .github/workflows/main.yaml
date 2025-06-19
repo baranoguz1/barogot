@@ -59,7 +59,9 @@ jobs:
           SPOTIFY_USER_ID: ${{ secrets.SPOTIFY_USER_ID }}
           SPOTIFY_TARGET_PLAYLIST_ID: ${{ secrets.SPOTIFY_TARGET_PLAYLIST_ID }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
-          
+
+
+        continue-on-error: true
         run: python main.py
 
       # --- YENİ EKLENEN ADIM: HATA AYIKLAMA DOSYASINI KAYDETME ---
