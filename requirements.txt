@@ -14,3 +14,4 @@ feedparser==6.0.10
 google-generativeai
 lxml
 undetected-chromedriver # selenium için
+html5lib==1.1 
