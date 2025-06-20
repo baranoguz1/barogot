@@ -78,15 +78,15 @@ def generate_daily_briefing(context):
         return "Günün özeti için yeterli veri bulunamadı."
 
     weather = context.get('weather_commentary', 'Hava durumu bilgisi yok.')
-    main_headline = context['top_headlines'][0]['title'] if context.get('top_headlines') else "gündemde önemli bir gelişme yok."
+    # DEĞİŞİKLİK BURADA: 'title' yerine 'baslik' kullanıyoruz.
+    main_headline = context['top_headlines'][0]['baslik'] if context.get('top_headlines') else "gündemde önemli bir gelişme yok."
     
-    # Döviz kuru bilgisini alalım (DÜZELTİLMİŞ BÖLÜM)
+    # Döviz kuru bilgisini alalım
     exchange_rate_info = ""
     rates = context.get('exchange_rates')
     if rates and 'USDTRY' in rates:
         usd_rate_value = rates['USDTRY']
         if usd_rate_value:
-             # Değeri formatlayarak string'e ekleyelim
              exchange_rate_info = f"dolar kuru {usd_rate_value:.2f} seviyelerinden işlem görüyor."
 
     prompt = f"""
