@@ -145,7 +145,6 @@ def fetch_istanbul_events(driver):
 def get_daily_ratings(driver, limit=10):
     """
     TIAK sitesinden reyting verilerini çeker. Bu versiyon pandas kütüphanesini kullanmaz.
-    (Hata ayıklama modunda)
     """
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
@@ -153,7 +152,6 @@ def get_daily_ratings(driver, limit=10):
         driver.get(url)
         wait = WebDriverWait(driver, 20)
 
-        # 1. Adım: "Günlük Raporlar" başlığına tıkla.
         print("... 'Günlük Raporlar' başlığı aranıyor ...")
         gunluk_raporlar_basligi = wait.until(
             EC.element_to_be_clickable((By.ID, "gunluk-tablolar"))
@@ -161,59 +159,55 @@ def get_daily_ratings(driver, limit=10):
         gunluk_raporlar_basligi.click()
         print("✅ 'Günlük Raporlar' başlığı tıklandı.")
 
-        # 2. Adım: AJAX'ın tabloyu doldurmasını bekle.
         print("... Reyting tablosunun AJAX ile yüklenmesi bekleniyor ...")
         tablo_konteyneri = wait.until(
             EC.visibility_of_element_located((By.ID, "tablo"))
         )
-        time.sleep(2) 
+        time.sleep(2)
         print("✅ Reyting tablosu yüklendi.")
 
-        # 3. Adım: Veriyi BeautifulSoup ile işle
         page_source = tablo_konteyneri.get_attribute('innerHTML')
-        
-        # --- HATA AYIKLAMA KODU BAŞLANGICI ---
-        print("\n" + "---" * 15)
-        print("DEBUG: TABLONUN HTML İÇERİĞİ AŞAĞIDADIR:")
-        print(page_source)
-        print("---" * 15 + "\n")
-        # --- HATA AYIKLAMA KODU BİTİŞİ ---
-
         soup = BeautifulSoup(page_source, 'html.parser')
 
         final_list = []
-        table_rows = soup.select('tbody tr') # Satırları bulmayı deniyoruz
+        table_rows = soup.select('tbody tr')
 
-        print(f"DEBUG: BeautifulSoup {len(table_rows)} adet tablo satırı (tr) buldu.")
-
-        for row in table_rows:
+        # DÜZELTME 1: Başlık satırını atlamak için döngüye ikinci satırdan başlıyoruz ([1:]).
+        for row in table_rows[1:]:
             if len(final_list) >= limit:
                 break
             
             cols = row.find_all('td')
-            if len(cols) >= 4:
+            # DÜZELTME 2: Yeterli sütun olup olmadığını kontrol ediyoruz (en az 6).
+            if len(cols) >= 6:
                 try:
                     sira = int(cols[0].get_text(strip=True))
                     program = cols[1].get_text(strip=True)
                     kanal = cols[2].get_text(strip=True)
-                    rating_str = cols[3].get_text(strip=True).replace(',', '.')
+                    # DÜZELTME 3: Reytingi doğru sütundan alıyoruz (6. sütun, index 5).
+                    rating_str = cols[5].get_text(strip=True).replace(',', '.')
                     rating_percent = float(rating_str)
                     
                     final_list.append([sira, program, kanal, rating_percent])
                 except (ValueError, IndexError):
+                    # Bir veri satırı hatalıysa görmezden gel ve devam et.
                     continue
         
         if not final_list:
-            # Hata mesajını daha anlaşılır hale getirelim
-            raise ValueError("HTML içeriği alındı ama içinden veri çıkarılamadı.")
+            raise ValueError("HTML içeriği analiz edildi ama içinden geçerli veri satırı bulunamadı.")
 
-        # ... (Başarılı sonuçları yazdırma kısmı aynı)
+        print("\n" + "="*40)
+        print("--- BAŞARILI! Reyting Verileri ---")
+        for item in final_list:
+            print(item)
+        print("="*40 + "\n")
         
         return final_list
 
     except Exception as e:
         print(f"❌ TIAK reytingleri çekilirken HATA oluştu: {e}")
-        traceback.print_exc()
+        # Hatanın detayını görmek için bu satırı geçici olarak ekleyebilirsiniz:
+        # traceback.print_exc() 
         return []
 
 
