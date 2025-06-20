@@ -9,4 +9,4 @@ google-generativeai
 lxml
 undetected-chromedriver
 html5lib==1.1
-Flask
+#Flask
