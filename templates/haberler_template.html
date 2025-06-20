@@ -45,12 +45,6 @@
         {% endif %}
 
         <h2 id="hava" class="section-title">📍 İstanbul Saatlik Hava Durumu</h2>
-        {# --- {% if weather_commentary %} --- #}
-        {# <div class="card ai-commentary"> #}
-            {# ---<p><strong>Hava Durumu: </strong> {{ weather_commentary }}</p> --- #}
-        </div>
-        {# {% endif %} #}
-
         <div class="weather-container">
             {% for time_val, temp, description, icon_uri, weather_class in weather %}
             <div class="weather-card {{ weather_class }}">
