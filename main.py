@@ -16,8 +16,7 @@ import undetected_chromedriver as uc
 import config
 from data_fetchers import api_fetchers, web_scrapers
 from data_fetchers.web_scrapers import fetch_article_snippet
-#from analysis.summarizer import ( ## summarizer_test.py için değiştirildi, orijinali bu.
-from analysis.summarizer_test import (
+from analysis.summarizer import ( 
     generate_abstractive_summary, 
     generate_weather_commentary,
     generate_daily_briefing,

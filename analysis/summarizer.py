@@ -1,229 +1,157 @@
-import os
-import json
-from datetime import datetime
 import google.generativeai as genai
-import config
+import json
+import logging
 
-def get_summarization_prompt(all_news):
-    """Haber içeriklerinden Gemini için bir prompt oluşturur."""
-    prompt_header = """
-Aşağıda çeşitli haber kaynaklarından alınmış haber başlıkları ve içerikleri bulunmaktadır. 
-Bu haberleri analiz ederek günün en önemli 5 olayını belirle. 
-Analizini yaparken şu adımları izle:
-1.  Birbiriyle ilişkili haberleri grupla.
-2.  Her önemli olay için Türkçe, dikkat çekici ve SEO uyumlu bir başlık oluştur. Başlıklar tırnak içinde olmalı.
-3.  Her başlık için, olayın en önemli detaylarını içeren, 30-50 kelimelik kısa bir özet metni yaz.
-4.  Her olayın ne zaman gerçekleştiğini veya ne zaman haber yapıldığını belirterek bir zaman bilgisi ekle.
-5.  Sonucunu, yalnızca aşağıdaki JSON formatında, başka hiçbir ek metin olmadan ver:
-    {
-      "gunun_ozeti": [
-        {
-          "baslik": "Örnek Başlık 1",
-          "ozet": "Bu bölümde olayın kısa ve özeti yer alacak.",
-          "zaman": "YYYY-MM-DDTHH:MM:SS"
-        },
-        {
-          "baslik": "Örnek Başlık 2",
-          "ozet": "Bu bölümde diğer önemli olayın özeti yer alacak.",
-          "zaman": "YYYY-MM-DDTHH:MM:SS"
-        }
-      ]
-    }
+# Hataları loglamak için temel yapılandırma
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-İşte analiz edilecek haberler:
-"""
-    haber_metinleri = "\n\n".join(
-        [f"Haber Başlığı: {haber.get('title', 'Başlık Yok')}\nİçerik: {haber.get('content', 'İçerik Yok')}" for haber in all_news]
-    )
-    return prompt_header + haber_metinleri
+def generate_abstractive_summary(news_content):
+    """
+    Verilen haber içeriklerinden Gemini API kullanarak özet bir JSON çıktısı oluşturur.
+    Özet, günün en önemli olaylarını içerir.
+    """
+    if not news_content:
+        logging.warning("Özetlenecek haber içeriği bulunamadı.")
+        return None
 
-def generate_abstractive_summary(all_news, num_events=5):
-    """Verilen haberleri Google Gemini kullanarak özetler."""
-    print("📰 Günün önemli olayları yapay zeka ile özetleniyor...")
-    
-    # Varsayılan hata durumu yanıtı
-    default_error_response = {
-        "gunun_ozeti": [{
-            "baslik": "Günün Özeti Alınamadı",
-            "ozet": "Haberler özetlenirken bir sorun oluştu. API limitleri veya bağlantı sorunları olabilir.",
-            "zaman": datetime.now(config.TZ) # Çökmeyi engellemek için datetime nesnesi olarak bırakılır
-        }]
-    }
+    prompt = f"""
+    Aşağıdaki haber içeriklerini analiz et. Bu içeriklerden günün en önemli 5 olayını belirle.
+    Her olay için bir başlık (baslik), olayın kısa bir özeti (ozet) ve olayın geçtiği zaman dilimini (zaman, örneğin 'Sabah', 'Öğle', 'Akşam' veya 'Günün Gelişmesi') belirle.
+    Sonucu, yalnızca ve yalnızca aşağıdaki JSON formatında bir liste olarak ver. Başka hiçbir metin ekleme.
+
+    Format:
+    [
+      {{
+        "baslik": "Örnek Başlık 1",
+        "ozet": "Örnek özet 1",
+        "zaman": "Örnek Zaman Dilimi 1"
+      }},
+      {{
+        "baslik": "Örnek Başlık 2",
+        "ozet": "Örnek özet 2",
+        "zaman": "Örnek Zaman Dilimi 2"
+      }}
+    ]
+
+    Haber İçerikleri:
+    {news_content}
+    """
 
     try:
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            print("❌ Gemini API anahtarı (GEMINI_API_KEY) bulunamadı.")
-            return default_error_response
-
-        genai.configure(api_key=api_key)
-        
-        print("Özetleme için en yeni 20 haberin içeriği çekiliyor...")
-        haber_icerikleri = [haber for haber in all_news if haber.get('content')]
-        
-        if not haber_icerikleri:
-            print("⚠️ Özetlenecek yeterli haber içeriği bulunamadı.")
-            return default_error_response
-
-        prompt = get_summarization_prompt(haber_icerikleri[:20]) # İlk 20 haberi kullan
-        
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
         response = model.generate_content(prompt)
-        
-        # Yanıtın JSON formatında olduğundan emin ol ve temizle
-        cleaned_response_text = response.text.strip().replace("```json", "").replace("```", "")
-        summary_data = json.loads(cleaned_response_text)
-        
-        # API'den gelen zaman bilgisini datetime nesnesine çevir.
-        for item in summary_data.get("gunun_ozeti", []):
-            if isinstance(item.get("zaman"), str):
-                item["zaman"] = datetime.fromisoformat(item["zaman"])
-
-        print(f"✅ Önemli olaylar başarıyla özetlendi: {len(summary_data.get('gunun_ozeti', []))} başlık bulundu.")
-        return summary_data
-
+        # Bazen model, JSON'u markdown kod bloğu içinde döndürebilir, bunu temizleyelim.
+        cleaned_response = response.text.strip().replace('```json', '').replace('```', '')
+        return json.loads(cleaned_response)
     except Exception as e:
-        print(f"❌ Gemini API hatası veya JSON parse hatası: {e}")
-        return default_error_response
-    
+        logging.error(f"Gemini API ile özet oluşturulurken hata oluştu: {e}")
+        return None
 
-def generate_weather_commentary(hourly_forecast):
-    """Saatlik hava durumu verilerinden Gemini kullanarak bir yorum oluşturur."""
-    print("🌤️ Hava durumu yapay zeka ile yorumlanıyor...")
-    
-    # Gemini'ye gönderilecek talimatı (prompt) hazırlama
-    prompt_header = """
-    Aşağıda İstanbul için saatlik hava durumu verileri bulunmaktadır. Bu verilere dayanarak, kullanıcıya hitap eden, samimi ve kısa bir hava durumu yorumu yaz. 
-    - Genel durumdan bahset (örn: "Bugün hava genel olarak güneşli olacak...").
-    - Akşama doğru bir değişiklik varsa belirt (örn: "...ancak akşama doğru hava serinliyor.").
-    - Giyilebilecek kıyafetler hakkında kısa bir tavsiye ver.
-    - Yorumun 30-40 kelimeyi geçmesin ve tek bir paragraf olsun.
-
-    İşte veriler:
+def generate_weather_commentary(hourly_data):
     """
+    Saatlik hava durumu verilerinden yola çıkarak gün için kısa, sohbet havasında bir yorum oluşturur.
+    """
+    if not hourly_data:
+        return "Hava durumu verileri alınamadı."
+
+    prompt = f"""
+    Aşağıdaki saatlik hava durumu verilerine bakarak gün için kısa, samimi ve bilgilendirici bir hava durumu yorumu yap.
+    Sıcaklık, hissedilen sıcaklık ve hava durumunu (örneğin, 'Parçalı Bulutlu') dikkate al.
+    Örnek: 'Bugün hava parçalı bulutlu ve sıcaklıklar 25°C civarında seyredecek. Akşama doğru serinleyebilir, yanınıza bir hırka almayı unutmayın!'
     
-    # Hava durumu verilerini okunabilir bir metne dönüştürme
-    forecast_text = "\n".join(
-        [f"- Saat {item[0]}: Sıcaklık {item[1]:.0f}°C, Durum: {item[2]}" for item in hourly_forecast]
-    )
-    
-    full_prompt = prompt_header + forecast_text
-    
+    Veriler:
+    {json.dumps(hourly_data, indent=2, ensure_ascii=False)}
+    """
     try:
-        # Bu kısım generate_abstractive_summary fonksiyonundakine benzer şekilde
-        # Gemini API anahtarını kullanarak API'yi çağırır.
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            return "Hava durumu yorumu için API anahtarı bulunamadı."
-
-        genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        response = model.generate_content(full_prompt)
-        
-        print("✅ Hava durumu yorumu başarıyla oluşturuldu.")
-        return response.text.strip()
-
+        response = model.generate_content(prompt)
+        return response.text
     except Exception as e:
-        print(f"❌ Hava durumu yorumu oluşturulurken hata: {e}")
-        return "Şu an için hava durumu yorumu yapılamıyor."
-    
-
-# ==============================================================================
-#                 YENİ EKLENEN YAPAY ZEKA FONKSİYONLARI
-# ==============================================================================
+        logging.error(f"Gemini API ile hava durumu yorumu oluşturulurken hata oluştu: {e}")
+        return "Bugün için hava durumu yorumu yapılamadı."
 
 def generate_daily_briefing(context):
-    """Tüm verileri kullanarak güne dair genel bir özet oluşturur."""
-    print("📰 Günlük özet raporu oluşturuluyor...")
+    """
+    Günün ana bağlamını (hava durumu, ana haber, döviz) kullanarak spiker tadında bir açılış metni oluşturur.
+    """
+    if not context.get('weather_commentary') or not context.get('top_headlines'):
+        return "Günün özeti için yeterli veri bulunamadı."
+
+    weather = context.get('weather_commentary', 'Hava durumu bilgisi yok.')
+    # DEĞİŞİKLİK BURADA: 'title' yerine 'baslik' kullanıyoruz.
+    main_headline = context['top_headlines'][0]['baslik'] if context.get('top_headlines') else "gündemde önemli bir gelişme yok."
+    
+    # Döviz kuru bilgisini alalım
+    exchange_rate_info = ""
+    rates = context.get('exchange_rates')
+    if rates and 'USDTRY' in rates:
+        usd_rate_value = rates['USDTRY']
+        if usd_rate_value:
+             exchange_rate_info = f"dolar kuru {usd_rate_value:.2f} seviyelerinden işlem görüyor."
+
+    prompt = f"""
+    Aşağıdaki bilgileri kullanarak bir haber bülteni sunucusu gibi güne başlangıç için kısa ve etkileyici bir açılış paragrafı oluştur.
+    - Hava Durumu Yorumu: "{weather}"
+    - Günün Ana Başlığı: "{main_headline}"
+    - Döviz Bilgisi: "{exchange_rate_info}"
+    
+    Paragraf bilgilendirici ve akıcı olsun.
+    """
     try:
-        # Gemini'ye gönderilecek verileri hazırlama
-        weather_info = context.get('weather_commentary', 'Hava durumu verisi yok.')
-        headlines = context.get('top_headlines', [])
-        headline_titles = [h['baslik'] for h in headlines]
-        dolar_rate = context.get('exchange_rates', {}).get('USDTRY', 'bilinmiyor')
-
-        # Eğer özetlenecek başlık yoksa, fonksiyondan erken çık
-        if not headline_titles:
-            return "Bugün öne çıkan bir başlık bulunamadı ancak hava durumu ve piyasalar hakkında bilgi alabilirsiniz."
-
-        prompt = f"""
-        Aşağıdaki verileri kullanarak, bir haber spikeri gibi samimi ve bilgilendirici bir tonda "Günün Özeti" raporu oluştur.
-        Rapor kısa ve ilgi çekici olsun. İşte bugünün verileri:
-        - Hava Durumu Yorumu: "{weather_info}"
-        - Önemli Haber Başlıkları: {', '.join(headline_titles)}
-        - Dolar Kuru: {dolar_rate} TRY
-
-        Bu bilgilere dayanarak 2-3 cümlelik bir açılış paragrafı yaz.
-        """
-
-        # BU ALANA KENDİ GEMINI API ÇAĞRI KODUNUZU EKLEYİN
-        # Örnek statik cevap:
-        summary = (f"Selam! Bugün hava genel olarak iyi görünüyor. "
-                   f"Piyasalarda Dolar/TL kuru {dolar_rate} seviyesinde seyrederken, "
-                   f"gündemin en önemli başlığı '{headline_titles[0]}' olarak öne çıkıyor. İşte günün detayları...")
-        
-        print("✅ Günlük özet başarıyla oluşturuldu.")
-        return summary
-
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        response = model.generate_content(prompt)
+        return response.text.strip()
     except Exception as e:
-        print(f"❌ Günlük özet oluşturulurken hata: {e}")
-        return None
+        logging.error(f"Gemini API ile günlük brifing oluşturulurken hata: {e}")
+        return "Günün özetini hazırlarken bir sorun oluştu."
 
 
 def generate_dynamic_headline_for_trends(trends):
-    """(İsteğe bağlı) Twitter trend listesinden ana temayı çıkarıp dinamik bir başlık oluşturur."""
+    """
+    Twitter trend listesinden en baskın temayı bularak dinamik bir başlık oluşturur.
+    """
     if not trends:
-        return "🔥 Türkiye Gündemi (Twitter)"
+        return "🔥 Türkiye Gündemi"
 
-    print("Gündem başlığı dinamik olarak oluşturuluyor...")
+    # Hatalı satırı kaldırıyoruz ve 'trends' değişkenini doğrudan kullanıyoruz.
+    
+    prompt = f"""
+    Aşağıdaki Twitter trend listesini analiz et. Bu listeyi özetleyen, emoji içeren, merak uyandırıcı ve kısa tek bir başlık oluştur.
+    Örnek: 'Gündem siyaset ve spor arasında gidip geliyor ⚽🗳️'
+    
+    Trendler:
+    {', '.join(trends)} 
+    """ # <--- DEĞİŞİKLİK BURADA
     try:
-        prompt = f"""
-        Aşağıdaki Türkiye Twitter gündem listesine bakarak, bu gündemin ana temasını yansıtan tek cümlelik,
-        merak uyandırıcı bir başlık oluştur. Başlığın başına bir emoji koy.
-
-        Trendler: {', '.join(trends)}
-        """
-        
-        # BU ALANA KENDİ GEMINI API ÇAĞRI KODUNUZU EKLEYİN
-        # Örnek statik cevap:
-        headline = f"🗣️ Sosyal Medya Gündemi: '{trends[0]}' Zirvede"
-        
-        print("✅ Dinamik başlık başarıyla oluşturuldu.")
-        return headline
-
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        response = model.generate_content(prompt)
+        return response.text.strip()
     except Exception as e:
-        print(f"❌ Dinamik başlık oluşturulurken hata: {e}")
-        return "🔥 Türkiye Gündemi (Twitter)" # Hata durumunda varsayılan başlık
-
+        logging.error(f"Gemini API ile trend başlığı oluşturulurken hata: {e}")
+        return "🔥 Türkiye Gündemi"
 
 def generate_contextual_activity_suggestion(weather_commentary, events):
-    """Hava durumu ve etkinliklere göre bağlamsal bir tavsiye oluşturur."""
-    if not events or not weather_commentary:
-        return None
+    """
+    Hava durumuna ve mevcut etkinliklere göre kişisel bir aktivite önerisi sunar.
+    """
+    if not weather_commentary or not events:
+        return "" # Eğer veri yoksa bu bölümü boş bırakmak daha iyi olabilir.
 
-    print("Bağlamsal etkinlik tavsiyesi oluşturuluyor...")
+    event_list = [f"'{event['title']}' ({event.get('type', 'Etkinlik')})" for event in events[:3]] # İlk 3 etkinlik yeterli
+
+    prompt = f"""
+    Bir kullanıcıya gün için aktivite önereceksin. Aşağıdaki bilgileri kullan:
+    - Güncel Hava Durumu Yorumu: "{weather_commentary}"
+    - Şehirdeki Bazı Etkinlikler: {', '.join(event_list)}
+
+    Bu bilgilere dayanarak, hava durumuyla etkinlikleri mantıklı bir şekilde birleştiren samimi bir öneri cümlesi yaz.
+    Örnek: 'Hava bugün güneşli görünüyor, bu fırsatı değerlendirip 'Açık Hava Konseri' gibi bir etkinliğe katılmaya ne dersin?'
+    ya da 'Yağmurlu bir gün kapıda, belki de 'Sanat Galerisi' gezmek için harika bir zamandır.'
+    """
     try:
-        event_titles = [e['title'] for e in events[:3]]
-
-        prompt = f"""
-        Bir kullanıcıya etkinlik önereceksin. Durum şu:
-        - Hava Durumu Yorumu: "{weather_commentary}"
-        - Yaklaşan Bazı Etkinlikler: {', '.join(event_titles)}
-
-        Bu iki bilgiyi birleştirerek kullanıcıya 1-2 cümlelik kısa bir tavsiye ver.
-        Örneğin hava yağmurluysa kapalı bir mekanı, güneşliyse açık hava etkinliğini öne çıkar.
-        """
-
-        # BU ALANA KENDİ GEMINI API ÇAĞRI KODUNUZU EKLEYİN
-        # Örnek statik cevap:
-        if "yağmur" in weather_commentary or "kapalı" in weather_commentary:
-            suggestion = f"Bugün hava biraz kapalı görünüyor. Belki de '{event_titles[0]}' gibi kapalı bir mekanda keyifli vakit geçirebilirsiniz."
-        else:
-            suggestion = f"Hava harika! '{event_titles[0]}' gibi bir etkinlik güne renk katabilir."
-            
-        print("✅ Bağlamsal tavsiye başarıyla oluşturuldu.")
-        return suggestion
-
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        response = model.generate_content(prompt)
+        return response.text.strip()
     except Exception as e:
-        print(f"❌ Bağlamsal tavsiye oluşturulurken hata: {e}")
-        return None
+        logging.error(f"Gemini API ile aktivite önerisi oluşturulurken hata: {e}")
+        return "Günün keyfini çıkarın!"
