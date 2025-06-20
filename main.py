@@ -16,7 +16,7 @@ import undetected_chromedriver as uc
 import config
 from data_fetchers import api_fetchers, web_scrapers
 from data_fetchers.web_scrapers import fetch_article_snippet
-#from analysis.summarizer import (
+#from analysis.summarizer import ( ## summarizer_test.py için değiştirildi, orijinali bu.
 from analysis.summarizer_test import (
     generate_abstractive_summary, 
     generate_weather_commentary,
@@ -181,7 +181,7 @@ def main():
     if news_for_summary:
         # Toplanan içerikleri OpenAI'ye göndererek anlamlı özetler oluştur.
         # Toplanan içerikleri Gemini'ye göndererek anlamlı özetler oluştur
-        summary_data = generate_abstractive_summary(news_for_summary, num_events=5)
+        summary_data = generate_abstractive_summary(news_for_summary)  ## summary_data = generate_abstractive_summary(news_for_summary, num_events=5) / summariz_test.py için değiştirildi, orjinali bu.
         # Şablona sadece başlık listesini gönder
         context['top_headlines'] = summary_data.get("gunun_ozeti", []) 
         # Başlık sayısını doğru hesapla
