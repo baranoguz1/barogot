@@ -181,9 +181,9 @@ def main():
     if news_for_summary:
         # Toplanan içerikleri OpenAI'ye göndererek anlamlı özetler oluştur.
         # Toplanan içerikleri Gemini'ye göndererek anlamlı özetler oluştur
-        summary_data = generate_abstractive_summary(news_for_summary)  ## summary_data = generate_abstractive_summary(news_for_summary, num_events=5) / summariz_test.py için değiştirildi, orjinali bu.
+        summary_data = generate_abstractive_summary(news_for_summary)  ## summary_data = generate_abstractive_summary(news_for_summary, num_events=5) / summariz_test.py için değiştirildi, orijinali bu.
         # Şablona sadece başlık listesini gönder
-        context['top_headlines'] = summary_data.get("gunun_ozeti", []) 
+        context['top_headlines'] = summary_data    ## context['top_headlines'] = summary_data.get("gunun_ozeti", []) / orijinal hali bu, summarizer_test.py için değiştirildi.
         # Başlık sayısını doğru hesapla
         print(f"✅ Önemli olaylar başarıyla özetlendi: {len(context['top_headlines'])} başlık bulundu.")
     else:
