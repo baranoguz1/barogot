@@ -107,15 +107,15 @@ def generate_dynamic_headline_for_trends(trends):
     if not trends:
         return "🔥 Türkiye Gündemi"
 
-    trend_list = [trend['name'] for trend in trends]
+    # Hatalı satırı kaldırıyoruz ve 'trends' değişkenini doğrudan kullanıyoruz.
     
     prompt = f"""
     Aşağıdaki Twitter trend listesini analiz et. Bu listeyi özetleyen, emoji içeren, merak uyandırıcı ve kısa tek bir başlık oluştur.
     Örnek: 'Gündem siyaset ve spor arasında gidip geliyor ⚽🗳️'
     
     Trendler:
-    {', '.join(trend_list)}
-    """
+    {', '.join(trends)} 
+    """ # <--- DEĞİŞİKLİK BURADA
     try:
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
         response = model.generate_content(prompt)
