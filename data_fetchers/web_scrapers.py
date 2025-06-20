@@ -6,7 +6,7 @@ fonksiyonları içerir.
 import time
 import re
 import traceback
-import pandas as pd
+#import pandas as pd
 import requests # get_trending_topics_trends24 için gerekli
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
@@ -144,8 +144,7 @@ def fetch_istanbul_events(driver):
 
 def get_daily_ratings(driver, limit=10):
     """
-    TIAK sitesinin otomasyon ortamlarına gönderdiği eski yapıyla başa çıkabilen,
-    pandas'a doğru başlık satırını gösteren nihai ve kararlı sürüm.
+    TIAK sitesinden reyting verilerini çeker. Bu versiyon pandas kütüphanesini kullanmaz.
     """
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
@@ -160,7 +159,7 @@ def get_daily_ratings(driver, limit=10):
         )
         gunluk_raporlar_basligi.click()
         print("✅ 'Günlük Raporlar' başlığı tıklandı.")
-        
+
         # 2. Adım: AJAX'ın tabloyu doldurmasını bekle.
         print("... Reyting tablosunun AJAX ile yüklenmesi bekleniyor ...")
         tablo_konteyneri = wait.until(
@@ -169,30 +168,31 @@ def get_daily_ratings(driver, limit=10):
         time.sleep(2) # Tablo içeriğinin tam dolması için kritik ek bekleme
         print("✅ Reyting tablosu yüklendi.")
 
-        # 3. Adım: Veriyi işle
+        # 3. Adım: Veriyi BeautifulSoup ile işle
         page_source = tablo_konteyneri.get_attribute('innerHTML')
+        soup = BeautifulSoup(page_source, 'html.parser')
+
+        final_list = []
+        table_rows = soup.select('tbody tr')
+
+        for row in table_rows:
+            if len(final_list) >= limit:
+                break
+            
+            cols = row.find_all('td')
+            if len(cols) >= 4:  # Beklenen sütun sayısını kontrol et
+                try:
+                    sira = int(cols[0].get_text(strip=True))
+                    program = cols[1].get_text(strip=True)
+                    kanal = cols[2].get_text(strip=True)
+                    rating_str = cols[3].get_text(strip=True).replace(',', '.')
+                    rating_percent = float(rating_str)
+                    
+                    final_list.append([sira, program, kanal, rating_percent])
+                except (ValueError, IndexError):
+                    # Bir satırda hata olursa atla ve devam et
+                    continue
         
-        # Pandas'a tablonun ilk satırını başlık olarak kullanmasını söylüyoruz (header=0).
-        # Hata mesajını engellemek için StringIO kullanıyoruz.
-        ratings_df = pd.read_html(StringIO(page_source), header=0)[0]
-        
-        # Sütun isimlerindeki olası boşlukları temizle ve yeniden adlandır.
-        ratings_df = ratings_df.rename(columns=lambda x: x.strip())
-        ratings_df.rename(columns={'RATING %': 'Rating %'}, inplace=True, errors='ignore')
-
-        required_cols = ['SIRA', 'PROGRAM', 'KANAL', 'Rating %']
-        if not all(col in ratings_df.columns for col in required_cols):
-            raise ValueError(f"Beklenen sütunlar tabloda bulunamadı! Bulunanlar: {ratings_df.columns.tolist()}")
-
-        # Sütunları doğru isimleriyle seçelim
-        df_cleaned = ratings_df[['SIRA', 'PROGRAM', 'KANAL', 'Rating %']].copy()
-        df_cleaned.columns = ['Sıra', 'Program', 'Kanal', 'Rating %']
-
-        df_cleaned['Rating %'] = pd.to_numeric(df_cleaned['Rating %'].astype(str).str.replace(',', '.'), errors='coerce')
-        df_cleaned.dropna(subset=['Rating %'], inplace=True)
-        df_cleaned['Sıra'] = df_cleaned['Sıra'].astype(int)
-        final_list = df_cleaned.head(limit).values.tolist()
-
         if not final_list:
             raise ValueError("Tüm adımlar tamamlandı ancak sonuç listesi boş.")
 
@@ -205,8 +205,10 @@ def get_daily_ratings(driver, limit=10):
         return final_list
 
     except Exception as e:
-        print(f"❌ TIAK testi sırasında HATA oluştu: {e}")
-        raise e
+        print(f"❌ TIAK reytingleri çekilirken HATA oluştu: {e}")
+        # Hatanın detayını görmek için bu satırı geçici olarak ekleyebilirsiniz:
+        # traceback.print_exc() 
+        return [] # Hata durumunda boş liste döndürerek programın devam etmesini sağla
 
 
 def get_trending_topics_trends24(limit=10):
