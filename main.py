@@ -4,41 +4,22 @@ import time
 import shutil
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
-
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service as ChromeService
-from webdriver_manager.chrome import ChromeDriverManager
 import undetected_chromedriver as uc
 
+# Proje modüllerini import et
 import config
 from data_fetchers import api_fetchers, web_scrapers
 from data_fetchers.web_scrapers import fetch_article_snippet
-from analysis.summarizer import ( 
-    generate_abstractive_summary, 
+from analysis.summarizer import (
+    generate_abstractive_summary,
     generate_weather_commentary,
     generate_daily_briefing,
     generate_dynamic_headline_for_trends,
     generate_contextual_activity_suggestion
 )
 
-# main.py dosyasının üst kısımlarına ekleyin
-
-def safe_strftime(value, format="%d.%m.%Y"):
-    """Gelen değer datetime ise formatlar, değilse boş string döndürür."""
-    if isinstance(value, datetime):
-        return value.strftime(format)
-    # Gerekirse string'den datetime'a çevirmeyi de deneyebiliriz
-    try:
-        # Örneğin 'YYYY-MM-DD' formatındaki stringleri de destekleyelim
-        dt = datetime.strptime(str(value)[:10], '%Y-%m-%d')
-        return dt.strftime(format)
-    except (ValueError, TypeError):
-        return "" # Formatlanamazsa boş göster
-
-# main.py içindeki eski setup_driver fonksiyonunu silip bunu yapıştırın
 
 def setup_driver():
     """Paylaşılan ve tespit edilemeyen Selenium WebDriver'ı kurar."""
@@ -50,16 +31,12 @@ def setup_driver():
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--window-size=1920,1080")
-        
-        # versiyonu otomatik algılamasına izin veriyoruz
         driver = uc.Chrome(options=chrome_options)
-        
         print("✅ Undetected Chrome WebDriver başarıyla başlatıldı.")
         return driver
     except Exception as e:
         import traceback
         print(f"❌ Undetected Chrome WebDriver başlatılamadı: {e}")
-        # Hatanın tam izini yazdırarak daha fazla detay alalım
         traceback.print_exc()
         return None
 
@@ -74,27 +51,16 @@ def generate_output_files(context):
             shutil.rmtree(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Jinja2 template render etme
         env = Environment(loader=FileSystemLoader(root_dir / 'templates/'))
         template = env.get_template('haberler_template.html')
-        html_output_path = output_dir / "index.html" 
+        html_output_path = output_dir / "index.html"
 
-        html_output = template.render(context)
+        html_output = template.render(**context) # Anahtar-değer çiftleri olarak göndermek daha sağlıklıdır
         with open(html_output_path, "w", encoding="utf-8") as f:
             f.write(html_output)
-        print("✅ index.html dosyası başarıyla oluşturuldu.")
+        print(f"✅ HTML dosyası başarıyla oluşturuldu: {html_output_path}")
 
-        # --- YENİ EKLENECEK KISIM ---
-        # Proje kök dizinindeki tüm önemli statik dosyaları kopyala
-        static_files_to_copy = [
-            "style.css", 
-            "script.js", 
-            "manifest.json", 
-            "service-worker.js"
-            # varsa icon dosyalarınız: "icon-192.png", "icon-512.png"
-        ] 
-        # --- BİTİŞ ---
-
+        static_files_to_copy = ["style.css", "script.js", "manifest.json", "service-worker.js"]
         for file_name in static_files_to_copy:
             source_path = root_dir / file_name
             if source_path.exists():
@@ -104,14 +70,17 @@ def generate_output_files(context):
         print(f"\n✅ Çıktı klasörü başarıyla hazırlandı: {output_dir}")
 
     except Exception as e:
-        print(f"❌ Çıktı dosyaları oluşturulurken veya kopyalanırken hata oluştu: {e}")
+        print(f"❌ Çıktı dosyaları oluşturulurken hata oluştu: {e}")
 
-def main():
-    """Ana iş akışını yönetir."""
-    start_time = time.time()
+# ==============================================================================
+# YENİ EKLENEN ANA VERİ TOPLAMA FONKSİYONU
+# Bu fonksiyon, app.py tarafından da kullanılacak olan ana mantığı içerir.
+# ==============================================================================
+def gather_all_data():
+    """Tüm kaynaklardan verileri toplayan ve tek bir context sözlüğü döndüren ana fonksiyon."""
     
-    # Tüm verileri toplayacağımız ana sözlük
     context = {}
+    print("--- Veri Toplama İşlemi Başladı ---")
     
     driver = setup_driver()
     if driver:
@@ -134,17 +103,11 @@ def main():
 
     print("\n--- API ve Diğer Veriler Çekiliyor ---")
     context['weather'] = api_fetchers.get_hourly_weather()
-
-    if context['weather']:
-        weather_comment = generate_weather_commentary(context['weather'])
-        context['weather_commentary'] = weather_comment
-
     context['exchange_rates'] = api_fetchers.get_exchange_rates()
     context['movies'] = api_fetchers.fetch_movies()
     context['spotify_tracks'] = api_fetchers.get_new_turkish_rap_tracks_embed()
     context['twitter_trends'] = web_scrapers.get_trending_topics_trends24()
-    context['twitter_headline'] = generate_dynamic_headline_for_trends(context.get('twitter_trends'))
-
+    
     print("\n--- RSS Akışları Paralel Olarak Çekiliyor ---")
     news_results = {category: [] for category in config.RSS_FEEDS}
     with ThreadPoolExecutor(max_workers=10) as executor:
@@ -158,52 +121,60 @@ def main():
                 print(f"⚠️ RSS görevi hatası: {e}")
     context['news'] = news_results
     
-    # --- YENİ ÜRETKEN YAPAY ZEKA İLE ÖZETLEME AKIŞI ---
-    print("📰 Günün önemli olayları yapay zeka ile özetleniyor...")
-    all_news_flat = [item for sublist in news_results.values() for item in sublist]
+    print("\n--- Yapay Zeka ile İçerik Üretimi Başladı ---")
+    # Önce temel AI yorumlarını üretelim
+    if context.get('weather'):
+        context['weather_commentary'] = generate_weather_commentary(context['weather'])
+    
+    if context.get('twitter_trends'):
+        context['twitter_headline'] = generate_dynamic_headline_for_trends(context.get('twitter_trends'))
 
-    # Haberleri tarihe göre sıralayıp en yeni 20 tanesini alalım
-    # Bu, API maliyetini ve işlem süresini yönetmek için önemlidir.
+    # Haber özetleme için içerikleri hazırla
+    all_news_flat = [item for sublist in news_results.values() for item in sublist]
     sorted_news = sorted(all_news_flat, key=lambda x: x['pub_date_parsed'], reverse=True)[:20]
 
     news_for_summary = []
     print(f"Özetleme için en yeni {len(sorted_news)} haberin içeriği çekiliyor...")
     for news_item in sorted_news:
-        # Her haber için başlık ve linkten kısa bir içerik (snippet) çekiyoruz
         snippet = fetch_article_snippet(news_item['link'])
         if snippet:
-            news_for_summary.append({
-                "title": news_item['title'],
-                "content": snippet
-            })
+            news_for_summary.append({"title": news_item['title'], "content": snippet})
 
     if news_for_summary:
-        # Toplanan içerikleri OpenAI'ye göndererek anlamlı özetler oluştur.
-        # Toplanan içerikleri Gemini'ye göndererek anlamlı özetler oluştur
-        summary_data = generate_abstractive_summary(news_for_summary)  ## summary_data = generate_abstractive_summary(news_for_summary, num_events=5) / summariz_test.py için değiştirildi, orijinali bu.
-        # Şablona sadece başlık listesini gönder
-        context['top_headlines'] = summary_data    ## context['top_headlines'] = summary_data.get("gunun_ozeti", []) / orijinal hali bu, summarizer_test.py için değiştirildi.
-        # Başlık sayısını doğru hesapla
-        print(f"✅ Önemli olaylar başarıyla özetlendi: {len(context['top_headlines'])} başlık bulundu.")
+        summary_data = generate_abstractive_summary(news_for_summary)
+        if summary_data:
+            context['top_headlines'] = summary_data
+            print(f"✅ Önemli olaylar başarıyla özetlendi: {len(context['top_headlines'])} başlık bulundu.")
+        else:
+            context['top_headlines'] = []
+            print("⚠️ Özet verisi AI tarafından üretilemedi veya formatı bozuk.")
     else:
-        print("⚠️ Özetlenecek yeterli haber içeriği bulunamadı.")
         context['top_headlines'] = []
-
-    print("🧠 Bağlamsal tavsiyeler ve günlük özet oluşturuluyor...")
-    context['contextual_suggestion'] = generate_contextual_activity_suggestion(
-        context.get('weather_commentary'),
-        context.get('istanbul_events')
-    )
+        print("⚠️ Özetlenecek yeterli haber içeriği bulunamadı.")
+    
+    # Diğer AI fonksiyonlarını çağır
+    context['contextual_suggestion'] = generate_contextual_activity_suggestion(context.get('weather_commentary'), context.get('istanbul_events'))
     context['daily_briefing'] = generate_daily_briefing(context)
 
-     # Son güncelleme zamanını Türkiye saatine göre formatla ve context'e ekle
+    # Son güncelleme zamanını ekle
     context['last_update'] = datetime.now(config.TZ).strftime('%d %B %Y, %H:%M:%S')
+    
+    print("--- Tüm Veri Toplama ve İşleme Adımları Tamamlandı ---")
+    return context
 
-    # Tüm toplanan verilerle HTML dosyasını oluştur
-    generate_output_files(context)
 
-    end_time = time.time()
-    print(f"\n🎉 Tüm işlemler {end_time - start_time:.2f} saniyede tamamlandı.")
-
+# ==============================================================================
+# ANA ÇALIŞTIRMA BÖLÜMÜ
+# `python main.py` komutu verildiğinde bu bölüm çalışır.
+# ==============================================================================
 if __name__ == "__main__":
-    main()
+    start_time = time.time()
+    
+    # 1. Tüm verileri topla
+    final_context = gather_all_data()
+    
+    # 2. Toplanan verilerle statik HTML dosyasını oluştur
+    generate_output_files(final_context)
+    
+    end_time = time.time()
+    print(f"\n🎉 Tüm statik sayfa oluşturma işlemi {end_time - start_time:.2f} saniyede tamamlandı.")

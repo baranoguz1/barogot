@@ -155,3 +155,34 @@ def generate_contextual_activity_suggestion(weather_commentary, events):
     except Exception as e:
         logging.error(f"Gemini API ile aktivite önerisi oluşturulurken hata: {e}")
         return "Günün keyfini çıkarın!"
+    
+
+def answer_user_query(context, user_question):
+    """
+    Kullanıcı sorusunu ve mevcut veri bağlamını alıp AI'dan cevap üreten fonksiyon.
+    """
+    import json
+    import logging
+    import google.generativeai as genai
+
+    try:
+        # Not: genai.configure() çağrısının app.py'de yapıldığını varsayıyoruz.
+        prompt = f"""
+        Sen bir günlük asistan botusun. Yalnızca ve yalnızca sana verdiğim aşağıdaki JSON formatındaki bağlam verilerini kullanarak kullanıcının sorusunu cevapla.
+        Cevabın kısa, net ve anlaşılır olsun. Farklı veri noktalarını birleştirebilirsin.
+        Eğer cevap bu verilerde yoksa veya çıkarım yapılamıyorsa, 'Bu bilgi bugünkü verilerimde mevcut değil.' de.
+
+        Bağlam Verileri:
+        {json.dumps(context, indent=2, ensure_ascii=False)}
+
+        Kullanıcı Sorusu:
+        "{user_question}"
+        """
+        
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        response = model.generate_content(prompt)
+        return response.text.strip()
+
+    except Exception as e:
+        logging.error(f"Kullanıcı sorusu cevaplanırken hata oluştu: {e}")
+        return f"Cevap üretirken bir hata oluştu. Lütfen tekrar deneyin."
