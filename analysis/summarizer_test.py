@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def generate_abstractive_summary(news_content):
     """
     Verilen haber içeriklerinden Gemini API kullanarak özet bir JSON çıktısı oluşturur.
-    Özet, günün en önemli 5 olayını içerir.
+    Özet, günün en önemli olaylarını içerir.
     """
     if not news_content:
         logging.warning("Özetlenecek haber içeriği bulunamadı.")
@@ -16,17 +16,21 @@ def generate_abstractive_summary(news_content):
 
     prompt = f"""
     Aşağıdaki haber içeriklerini analiz et. Bu içeriklerden günün en önemli 5 olayını belirle.
-    Her olay için bir başlık (title), olayın kısa bir özeti (summary) ve olayın geçtiği zaman dilimini (time, örneğin 'Sabah', 'Öğle', 'Akşam' veya 'Günün Gelişmesi') belirle.
+    Her olay için bir başlık (baslik), olayın kısa bir özeti (ozet) ve olayın geçtiği zaman dilimini (zaman, örneğin 'Sabah', 'Öğle', 'Akşam' veya 'Günün Gelişmesi') belirle.
     Sonucu, yalnızca ve yalnızca aşağıdaki JSON formatında bir liste olarak ver. Başka hiçbir metin ekleme.
 
     Format:
     [
       {{
-        "title": "Başlık 1",
-        "summary": "Özet 1",
-        "time": "Zaman Dilimi 1"
+        "baslik": "Örnek Başlık 1",
+        "ozet": "Örnek özet 1",
+        "zaman": "Örnek Zaman Dilimi 1"
       }},
-      ...
+      {{
+        "baslik": "Örnek Başlık 2",
+        "ozet": "Örnek özet 2",
+        "zaman": "Örnek Zaman Dilimi 2"
+      }}
     ]
 
     Haber İçerikleri:
