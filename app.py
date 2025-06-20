@@ -1,6 +1,18 @@
 from flask import Flask, render_template, request, jsonify
 import config
 import google.generativeai as genai
+import json
+import os
+from dotenv import load_dotenv
+
+# .env dosyasını yükle
+# Bu satırlar, .env dosyasındaki değişkenleri okuyup sisteme yükler.
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
+    print("✅ .env dosyası yüklendi.")
+else:
+    print("⚠️ .env dosyası bulunamadı, ortam değişkenleri kullanılacak.")
 
 # main.py'den yeniden kullanılabilir veri toplama fonksiyonumuzu import ediyoruz
 from main import gather_all_data 
