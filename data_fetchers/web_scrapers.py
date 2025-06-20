@@ -207,7 +207,7 @@ def get_daily_ratings(driver, limit=10):
     except Exception as e:
         print(f"❌ TIAK reytingleri çekilirken HATA oluştu: {e}")
         # Hatanın detayını görmek için bu satırı geçici olarak ekleyebilirsiniz:
-        # traceback.print_exc() 
+        traceback.print_exc() 
         return [] # Hata durumunda boş liste döndürerek programın devam etmesini sağla
 
 
