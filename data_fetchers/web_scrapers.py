@@ -17,7 +17,7 @@ from selenium.common.exceptions import TimeoutException
 from datetime import datetime, timezone, timedelta
 
 
-import pandas as pd
+
 from io import StringIO
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
