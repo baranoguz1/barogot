@@ -145,6 +145,7 @@ def fetch_istanbul_events(driver):
 def get_daily_ratings(driver, limit=10):
     """
     TIAK sitesinden reyting verilerini çeker. Bu versiyon pandas kütüphanesini kullanmaz.
+    (Hata ayıklama modunda)
     """
     url = config.TIAK_URL
     print(f"ℹ️ TIAK reytingleri çekiliyor: {url}")
@@ -165,22 +166,32 @@ def get_daily_ratings(driver, limit=10):
         tablo_konteyneri = wait.until(
             EC.visibility_of_element_located((By.ID, "tablo"))
         )
-        time.sleep(2) # Tablo içeriğinin tam dolması için kritik ek bekleme
+        time.sleep(2) 
         print("✅ Reyting tablosu yüklendi.")
 
         # 3. Adım: Veriyi BeautifulSoup ile işle
         page_source = tablo_konteyneri.get_attribute('innerHTML')
+        
+        # --- HATA AYIKLAMA KODU BAŞLANGICI ---
+        print("\n" + "---" * 15)
+        print("DEBUG: TABLONUN HTML İÇERİĞİ AŞAĞIDADIR:")
+        print(page_source)
+        print("---" * 15 + "\n")
+        # --- HATA AYIKLAMA KODU BİTİŞİ ---
+
         soup = BeautifulSoup(page_source, 'html.parser')
 
         final_list = []
-        table_rows = soup.select('tbody tr')
+        table_rows = soup.select('tbody tr') # Satırları bulmayı deniyoruz
+
+        print(f"DEBUG: BeautifulSoup {len(table_rows)} adet tablo satırı (tr) buldu.")
 
         for row in table_rows:
             if len(final_list) >= limit:
                 break
             
             cols = row.find_all('td')
-            if len(cols) >= 4:  # Beklenen sütun sayısını kontrol et
+            if len(cols) >= 4:
                 try:
                     sira = int(cols[0].get_text(strip=True))
                     program = cols[1].get_text(strip=True)
@@ -190,25 +201,20 @@ def get_daily_ratings(driver, limit=10):
                     
                     final_list.append([sira, program, kanal, rating_percent])
                 except (ValueError, IndexError):
-                    # Bir satırda hata olursa atla ve devam et
                     continue
         
         if not final_list:
-            raise ValueError("Tüm adımlar tamamlandı ancak sonuç listesi boş.")
+            # Hata mesajını daha anlaşılır hale getirelim
+            raise ValueError("HTML içeriği alındı ama içinden veri çıkarılamadı.")
 
-        print("\n" + "="*40)
-        print("--- BAŞARILI! İZOLE TEST SONUÇLARI ---")
-        for item in final_list:
-            print(item)
-        print("="*40 + "\n")
+        # ... (Başarılı sonuçları yazdırma kısmı aynı)
         
         return final_list
 
     except Exception as e:
         print(f"❌ TIAK reytingleri çekilirken HATA oluştu: {e}")
-        # Hatanın detayını görmek için bu satırı geçici olarak ekleyebilirsiniz:
-        traceback.print_exc() 
-        return [] # Hata durumunda boş liste döndürerek programın devam etmesini sağla
+        traceback.print_exc()
+        return []
 
 
 def get_trending_topics_trends24(limit=10):
