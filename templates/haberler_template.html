@@ -41,7 +41,7 @@
     </style>
     <div class="container-fluid">
         </div>
-        
+
     <button id="theme-toggle" class="toggle-button" aria-label="Gece Modu Değiştir">🌙</button>
     <div class="page-wrapper">
         <p style="text-align:center; font-size:0.9em; color:#777; margin-bottom:50px;">Son Güncelleme: {{ last_update }}</p>
@@ -222,5 +222,53 @@
 
 
     <script src="script.js"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const sendBtn = document.getElementById('chat-send-btn');
+        const chatInput = document.getElementById('chat-input');
+        const chatResponse = document.getElementById('chat-response');
+
+        async function handleSend() {
+            const question = chatInput.value;
+            if (!question.trim()) return;
+
+            chatResponse.textContent = 'Düşünüyorum...';
+            chatResponse.style.color = '#aaa';
+
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Sunucu hatası: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                chatResponse.textContent = data.answer;
+                chatResponse.style.color = '#fff'; 
+                chatInput.value = '';
+
+            } catch (error) {
+                chatResponse.textContent = 'Bir hata oluştu: ' + error.message;
+                chatResponse.style.color = '#ff6b6b';
+            }
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+    });
+    </script>
+    
 </body>
 </html>
