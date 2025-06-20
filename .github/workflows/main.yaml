@@ -1,8 +1,8 @@
 name: Haber Botu Sayfasını Oluştur ve Yayınla
 
 on:
-  #schedule:      bu 2 satır oto run olmasın diye summarizer_test.py için durduruldu.
-  #  - cron: '0 * * * *'
+  schedule:      
+    - cron: '0 * * * *'
   push:
     branches:
       - main
