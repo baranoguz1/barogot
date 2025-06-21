@@ -204,6 +204,7 @@ nav.sticky-nav a:not(:first-child)::before {
     justify-content: center; /* İçindeki linkleri yatayda ortalar */
     align-items: center;     /* İÇİNDEKİ TÜM ÖĞELERİ DİKEYDE MÜKEMMEL ORTALAR */
     flex-wrap: wrap;           /* Mobil cihazlarda linklerin alt satıra kaymasını sağlar */
+    width: 100%;
 }
 
 /* Gece modunda ayraç rengini güncellemek için (isteğe bağlı) */
