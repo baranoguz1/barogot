@@ -194,35 +194,34 @@ body.dark-mode .ai-commentary {
 }
 
 
-/* Navigasyon menüsündeki linklerin arasına ayraç ekler */
-/* Ana Navigasyon Çubuğu - Yapı ve Hizalama */
+/* --- NİHAİ NAVİGASYON STİLİ --- */
 nav.sticky-nav {
+    /* Pozisyon ve Temel Stil */
     position: sticky;
     top: 0;
-    background-color: #f8f9fa; /* Bu, varsayılan (açık mod) arkaplan rengidir */
-    padding-top: 15px;
-    padding-bottom: 15px;
+    background-color: var(--bg-color); /* Temanın arkaplan rengini kullanır */
     z-index: 1000;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     width: 100%;
+    box-sizing: border-box;
 
-    /* Yatay Kaydırma ve Hizalama Ayarları */
+    /* Flexbox ve Yatay Kaydırma Ayarları */
     display: flex;
-    align-items: center;        /* Öğeleri dikeyde ortalar */
-    justify-content: flex-start; /* Öğeleri sola yaslar (kaydırma için) */
-    overflow-x: auto;         /* Yatayda taşanları kaydırılabilir yapar */
-    flex-wrap: nowrap;        /* Öğelerin alt satıra inmesini ENGELLER */
-    
-    /* Kenar Boşlukları ve Kutu Modeli */
-    padding-left: 15px;
-    padding-right: 15px;
-    box-sizing: border-box; /* Padding'in genişliği etkilememesi için */
+    overflow-x: auto;      /* Yatay kaydırmayı sağlar */
+    align-items: center;   /* Dikeyde mükemmel ortalama */
+
+    /* İçeriklerin alt satıra inmesini tamamen engelle */
+    flex-wrap: nowrap;
+    white-space: nowrap;
+
+    /* padding-top ve padding-bottom ile yüksekliği kontrol et */
+    padding: 10px 15px;
 }
 
-/* SADECE Karanlık Mod aktifken geçerli olacak renkler */
+/* Karanlık Mod için SADECE renk değişikliği */
 body.dark-mode nav.sticky-nav {
-    background-color: var(--nav-bg-color-dark, #1a1a1a); /* Koyu arkaplan */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    background-color: var(--dark-bg);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 
