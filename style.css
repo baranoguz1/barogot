@@ -91,7 +91,7 @@ body.dark-mode .event-card-details p {color: var(--dark-text); }
 body.dark-mode .event-card-details p strong { color: var(--dark-text); }
 body.dark-mode .event-card-category {color: #bbb; }
 @media (max-width: 768px) {
-    .page-wrapper { padding-top: 130px; }
+    .page-wrapper { padding-top: 70px; }
     .sticky-nav { padding: 8px 0; gap: 5px 8px; }
     .sticky-nav a { font-size: 0.85em; padding: 4px 8px; }
     .section-title { font-size: 1.5em; }
@@ -195,24 +195,34 @@ body.dark-mode .ai-commentary {
 
 
 /* Navigasyon menüsündeki linklerin arasına ayraç ekler */
+/* Ana Navigasyon Çubuğu - Yapı ve Hizalama */
 nav.sticky-nav {
-    /* ... mevcut diğer stilleriniz ... */
-    display: flex;
-    justify-content: center; /* Bu satırı 'flex-start' olarak değiştireceğiz */
-    align-items: center;
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa; /* Bu, varsayılan (açık mod) arkaplan rengidir */
+    padding-top: 15px;
+    padding-bottom: 15px;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     width: 100%;
+
+    /* Yatay Kaydırma ve Hizalama Ayarları */
+    display: flex;
+    align-items: center;        /* Öğeleri dikeyde ortalar */
+    justify-content: flex-start; /* Öğeleri sola yaslar (kaydırma için) */
+    overflow-x: auto;         /* Yatayda taşanları kaydırılabilir yapar */
+    flex-wrap: nowrap;        /* Öğelerin alt satıra inmesini ENGELLER */
     
-    /* --- GÜNCELLENECEK VE EKLENECEK SATIRLAR --- */
-    flex-wrap: nowrap;         /* Linklerin alt satıra kaymasını ENGELLER */
-    overflow-x: auto;          /* Yatayda taşan kısmı kaydırılabilir yapar */
-    justify-content: flex-start; /* Linkleri sola yaslar, kaydırma için daha iyi */
-    padding-left: 15px;        /* Soldan küçük bir boşluk bırakır */
-    padding-right: 15px;       /* Sağdan küçük bir boşluk bırakır */
+    /* Kenar Boşlukları ve Kutu Modeli */
+    padding-left: 15px;
+    padding-right: 15px;
+    box-sizing: border-box; /* Padding'in genişliği etkilememesi için */
 }
 
-/* Gece modunda ayraç rengini güncellemek için (isteğe bağlı) */
-body.dark-mode nav.sticky-nav a:not(:first-child)::before {
-    color: rgba(255, 255, 255, 0.3); 
+/* SADECE Karanlık Mod aktifken geçerli olacak renkler */
+body.dark-mode nav.sticky-nav {
+    background-color: var(--nav-bg-color-dark, #1a1a1a); /* Koyu arkaplan */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
 }
 
 
