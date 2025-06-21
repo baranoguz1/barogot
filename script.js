@@ -37,17 +37,22 @@ window.onscroll = function() {
 
 function scrollFunction() {
     // Kullanıcı 100px'den fazla aşağı kaydırdığında butonu göster, aksi halde gizle
-    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
-        scrollToTopBtn.style.display = "block";
-    } else {
-        scrollToTopBtn.style.display = "none";
+    // Butonun var olup olmadığını kontrol edelim
+    if (scrollToTopBtn) {
+        if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+            scrollToTopBtn.style.display = "block";
+        } else {
+            scrollToTopBtn.style.display = "none";
+        }
     }
 }
 
-// Butona tıklandığında, sayfayı yumuşak bir şekilde en üste kaydır
-scrollToTopBtn.addEventListener("click", function() {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth' // Yumuşak kaydırma efekti için
+// Butonun var olup olmadığını kontrol ederek tıklama olayını ekle
+if (scrollToTopBtn) {
+    scrollToTopBtn.addEventListener("click", function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth' // Yumuşak kaydırma efekti için
+        });
     });
-});
+}

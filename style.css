@@ -200,6 +200,10 @@ nav.sticky-nav a:not(:first-child)::before {
     margin: 0 10px; /* Ayracın sağına ve soluna 10px boşluk verir */
     color: rgba(255, 255, 255, 0.4); /* Ayracın rengini biraz soluk yapar */
     font-weight: 300; /* Çizgiyi biraz daha ince gösterir */
+    display: flex;             /* Navigasyon çubuğunu esnek bir kutu yapar */
+    justify-content: center; /* İçindeki linkleri yatayda ortalar */
+    align-items: center;     /* İÇİNDEKİ TÜM ÖĞELERİ DİKEYDE MÜKEMMEL ORTALAR */
+    flex-wrap: wrap;           /* Mobil cihazlarda linklerin alt satıra kaymasını sağlar */
 }
 
 /* Gece modunda ayraç rengini güncellemek için (isteğe bağlı) */
