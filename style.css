@@ -91,7 +91,7 @@ body.dark-mode .event-card-details p {color: var(--dark-text); }
 body.dark-mode .event-card-details p strong { color: var(--dark-text); }
 body.dark-mode .event-card-category {color: #bbb; }
 @media (max-width: 768px) {
-    .page-wrapper { padding-top: 100px; }
+    .page-wrapper { padding-top: 130px; }
     .sticky-nav { padding: 8px 0; gap: 5px 8px; }
     .sticky-nav a { font-size: 0.85em; padding: 4px 8px; }
     .section-title { font-size: 1.5em; }
@@ -191,4 +191,41 @@ body.dark-mode .ai-commentary {
     background-color: #2d3748; /* Diğer koyu mod kartlarıyla uyumlu bir renk */
     border-color: #4a5568;   /* Koyu mod kenarlık rengi */
     color: #e2e8f0;          /* Koyu mod metin rengii */
+}
+
+
+/* Navigasyon menüsündeki linklerin arasına ayraç ekler */
+nav.sticky-nav a:not(:first-child)::before {
+    content: '|'; /* Ayraç olarak dikey çizgi kullanıyoruz */
+    margin: 0 10px; /* Ayracın sağına ve soluna 10px boşluk verir */
+    color: rgba(255, 255, 255, 0.4); /* Ayracın rengini biraz soluk yapar */
+    font-weight: 300; /* Çizgiyi biraz daha ince gösterir */
+}
+
+/* Gece modunda ayraç rengini güncellemek için (isteğe bağlı) */
+body.dark-mode nav.sticky-nav a:not(:first-child)::before {
+    color: rgba(255, 255, 255, 0.3); 
+}
+
+
+/* Yukarı Çık Butonu Stilleri */
+#scrollToTopBtn {
+    display: none; /* Başlangıçta gizli olsun */
+    position: fixed; /* Sayfa kaysa bile yeri sabit kalır */
+    bottom: 20px; /* Sayfanın altından 20px yukarıda */
+    right: 30px; /* Sayfanın sağından 30px içeride */
+    z-index: 99; /* Diğer tüm elementlerin üzerinde kalır */
+    border: none; /* Kenarlık yok */
+    outline: none; /* Tıklama çerçevesi yok */
+    background-color: #555; /* Arkaplan rengi */
+    color: white; /* Ok rengi */
+    cursor: pointer; /* Üzerine gelince fare imleci el olsun */
+    padding: 12px 16px; /* İç boşluklar */
+    border-radius: 50%; /* Tamamen yuvarlak yapar */
+    font-size: 18px; /* Ok boyutunu ayarlar */
+    transition: background-color 0.3s; /* Renk geçişini yumuşatır */
+}
+
+#scrollToTopBtn:hover {
+    background-color: #007bff; /* Üzerine gelince rengi değişir */
 }
