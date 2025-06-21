@@ -195,16 +195,19 @@ body.dark-mode .ai-commentary {
 
 
 /* Navigasyon menüsündeki linklerin arasına ayraç ekler */
-nav.sticky-nav a:not(:first-child)::before {
-    content: '|'; /* Ayraç olarak dikey çizgi kullanıyoruz */
-    margin: 0 10px; /* Ayracın sağına ve soluna 10px boşluk verir */
-    color: rgba(255, 255, 255, 0.4); /* Ayracın rengini biraz soluk yapar */
-    font-weight: 300; /* Çizgiyi biraz daha ince gösterir */
-    display: flex;             /* Navigasyon çubuğunu esnek bir kutu yapar */
-    justify-content: center; /* İçindeki linkleri yatayda ortalar */
-    align-items: center;     /* İÇİNDEKİ TÜM ÖĞELERİ DİKEYDE MÜKEMMEL ORTALAR */
-    flex-wrap: wrap;           /* Mobil cihazlarda linklerin alt satıra kaymasını sağlar */
+nav.sticky-nav {
+    /* ... mevcut diğer stilleriniz ... */
+    display: flex;
+    justify-content: center; /* Bu satırı 'flex-start' olarak değiştireceğiz */
+    align-items: center;
     width: 100%;
+    
+    /* --- GÜNCELLENECEK VE EKLENECEK SATIRLAR --- */
+    flex-wrap: nowrap;         /* Linklerin alt satıra kaymasını ENGELLER */
+    overflow-x: auto;          /* Yatayda taşan kısmı kaydırılabilir yapar */
+    justify-content: flex-start; /* Linkleri sola yaslar, kaydırma için daha iyi */
+    padding-left: 15px;        /* Soldan küçük bir boşluk bırakır */
+    padding-right: 15px;       /* Sağdan küçük bir boşluk bırakır */
 }
 
 /* Gece modunda ayraç rengini güncellemek için (isteğe bağlı) */
