@@ -304,7 +304,7 @@ body.dark-mode nav.sticky-nav a:not(:first-child)::before {
     position: fixed; /* Sayfa kaysa bile yeri sabit kalır */
     bottom: 20px; /* Sayfanın altından 20px yukarıda */
     right: 30px; /* Sayfanın sağından 30px içeride */
-    z-index: 99; /* Diğer tüm elementlerin üzerinde kalır */
+    z-index: 1001; /* Diğer tüm elementlerin üzerinde kalır */
     border: none; /* Kenarlık yok */
     outline: none; /* Tıklama çerçevesi yok */
     background-color: #555; /* Arkaplan rengi */
