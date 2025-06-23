@@ -171,7 +171,7 @@ def fetch_bilet_events(driver, limit=9):
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.event-item"))
         )
         print("✅ Bubilet: Etkinlikler HTML'de bulundu.")
-        time.sleep(1) # Sayfanın oturması için kısa bekleme
+        time.sleep(1) # Sayfanın oturması için kısa bekleme.
 
         soup = BeautifulSoup(driver.page_source, 'html.parser')
         event_cards = soup.find_all('div', class_='event-item')
