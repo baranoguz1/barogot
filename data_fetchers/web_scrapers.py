@@ -145,7 +145,7 @@ def fetch_istanbul_events(driver):
 def fetch_bilet_events(driver, limit=9):
     """
     Bubilet'in İstanbul etkinlikleri sayfasından etkinlikleri Selenium kullanarak çeker.
-    Hata ayıklama için ekran görüntüsü alır ve dosya yolunu garanti eder.
+    Doğru bekleme stratejisi ile güncellendi.
     """
     url = "https://www.bubilet.com.tr/istanbul-etkinlikleri"
     print(f"ℹ️ Bubilet etkinlikleri çekiliyor: {url}")
@@ -163,10 +163,15 @@ def fetch_bilet_events(driver, limit=9):
         except Exception:
             print("ℹ️ Bubilet: Çerez onayı pop-up'ı bulunamadı veya zaten kapalı, devam ediliyor.")
 
+        # --- DEĞİŞİKLİK BURADA ---
+        # 'visibility_of_all_elements_located' yerine 'presence_of_all_elements_located' kullanıyoruz.
+        # Bu, elementler ekranda görünür olmasa bile HTML'de var olmalarını bekler.
+        print("ℹ️ Bubilet: Etkinliklerin HTML'de var olması bekleniyor...")
         WebDriverWait(driver, 20).until(
-            EC.visibility_of_all_elements_located((By.CSS_SELECTOR, "div.event-item"))
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.event-item"))
         )
-        time.sleep(1)
+        print("✅ Bubilet: Etkinlikler HTML'de bulundu.")
+        time.sleep(1) # Sayfanın oturması için kısa bekleme
 
         soup = BeautifulSoup(driver.page_source, 'html.parser')
         event_cards = soup.find_all('div', class_='event-item')
@@ -198,25 +203,17 @@ def fetch_bilet_events(driver, limit=9):
 
     except Exception as e:
         print(f"❌ Bubilet etkinlikleri çekilirken HATA oluştu: {e}")
-        
-        # --- DEĞİŞİKLİK BURADA: DOSYA YOLUNU GARANTİYE ALIYORUZ ---
         try:
-            # Bu script'in bulunduğu dizinin bir üst dizinine git (proje ana klasörü)
             project_root = Path(__file__).resolve().parent.parent
             screenshot_path = project_root / "bubilet_debug_screenshot.png"
             page_source_path = project_root / "bubilet_debug_page.html"
-            
             driver.save_screenshot(str(screenshot_path))
             with open(page_source_path, "w", encoding="utf-8") as f:
                 f.write(driver.page_source)
-                
-            print(f"🐞 Hata ayıklama için ekran görüntüsü '{screenshot_path}' olarak kaydedildi.")
-            print(f"🐞 Hata ayıklama için sayfa kaynağı '{page_source_path}' olarak kaydedildi.")
-
+            print(f"🐞 Hata ayıklama için ekran görüntüsü ve sayfa kaynağı kaydedildi.")
         except Exception as save_error:
             print(f"❌❌ DEBUG DOSYALARI KAYDEDİLİRKEN HATA OLUŞTU: {save_error}")
             traceback.print_exc()
-
         return []
 
 
