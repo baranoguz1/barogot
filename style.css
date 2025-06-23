@@ -298,24 +298,40 @@ body.dark-mode nav.sticky-nav a:not(:first-child)::before {
 }
 
 
-/* Yukarı Çık Butonu Stilleri */
+/* ============================================= */
+/* ===== YUKARI ÇIK BUTONU STİLLERİ (YENİ) ===== */
+/* ============================================= */
+
 #scrollToTopBtn {
-    display: none; /* Başlangıçta gizli olsun */
-    position: fixed; /* Sayfa kaysa bile yeri sabit kalır */
-    bottom: 20px; /* Sayfanın altından 20px yukarıda */
-    right: 20px; /* Sayfanın sağından 30px içeride */
-    z-index: 1001; /* Diğer tüm elementlerin üzerinde kalır */
-    border: none; /* Kenarlık yok */
-    outline: none; /* Tıklama çerçevesi yok */
-    background-color: #555; /* Arkaplan rengi */
-    color: white; /* Ok rengi */
-    cursor: pointer; /* Üzerine gelince fare imleci el olsun */
-    padding: 8px 12x; /* İç boşluklar */
-    border-radius: 20px; /* Tamamen yuvarlak yapar */
-    font-size: 15px; /* Ok boyutunu ayarlar */
-    transition: background-color 0.3s; /* Renk geçişini yumuşatır */
+    /* Konumlandırma ve Görünürlük */
+    display: none; /* Başlangıçta gizli */
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1001; /* Tema butonu ile aynı katman seviyesi */
+
+    /* --- TEMA BUTONUNDAN ALINAN GÖRÜNÜM ÖZELLİKLERİ --- */
+
+    /* Boyutlandırma */
+    padding: 8px 12px;
+    font-size: 1.2em;
+
+    /* Şekil ve Kenarlık */
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+
+    /* Renkler (Otomatik Dark Mode uyumu için) */
+    background-color: var(--card-color);
+    color: var(--text-color);
+
+    /* Diğer Ortak Stiller */
+    cursor: pointer;
+    outline: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: background-color 0.3s, color 0.3s, transform 0.2s ease;
 }
 
+/* Hover (fareyle üzerine gelme) efekti de tema butonuyla aynı olsun */
 #scrollToTopBtn:hover {
-    background-color: #007bff; /* Üzerine gelince rengi değişir */
+    transform: scale(1.1);
 }
