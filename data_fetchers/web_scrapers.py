@@ -140,6 +140,54 @@ def fetch_istanbul_events(driver):
     except Exception as e:
         print(f"❌ Zorlu PSM etkinlikleri çekilirken genel bir HATA OLUŞTU: {e}\n{traceback.format_exc()}")
         return []
+    
+def fetch_bilet_events(driver, limit=9):
+    """
+    Bubilet'in İstanbul etkinlikleri sayfasından etkinlikleri Selenium kullanarak çeker.
+    """
+    url = "https://www.bubilet.com.tr/istanbul-etkinlikleri"
+    print(f"ℹ️ Bubilet etkinlikleri çekiliyor: {url}")
+    events = []
+    try:
+        driver.get(url)
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.event-item"))
+        )
+        time.sleep(1)
+
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        event_cards = soup.find_all('div', class_='event-item')
+
+        if not event_cards:
+            print("⚠️ Bubilet: Etkinlik kartları bulunamadı.")
+            return []
+
+        for card in event_cards[:limit]:
+            link_tag = card.find('a', class_='event-item-box-link')
+            image_tag = card.find('img', class_='event-image')
+            title_tag = card.find('h3', class_='event-title')
+            category_tag = card.find('p', class_='event-category')
+            location_tag = card.find('p', class_='event-location')
+            date_tag = card.find('p', class_='event-date')
+
+            if all([link_tag, image_tag, title_tag, location_tag, date_tag]):
+                # HTML şablonu ile uyumlu anahtarlar kullanıyoruz
+                events.append({
+                    'link': link_tag['href'],
+                    'image': image_tag.get('data-src') or image_tag.get('src'),
+                    'title': title_tag.get_text(strip=True),
+                    'category': category_tag.get_text(strip=True) if category_tag else "Diğer",
+                    'location': location_tag.get_text(strip=True),
+                    'date': date_tag.get_text(strip=True)
+                })
+        print(f"✅ {len(events)} adet etkinlik (Bubilet) başarıyla çekildi.")
+        return events
+
+    except Exception as e:
+        print(f"❌ Bubilet etkinlikleri çekilirken HATA oluştu: {e}")
+        return []
+
+
 
 
 def get_daily_ratings(driver, limit=10):

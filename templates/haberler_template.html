@@ -131,20 +131,40 @@
 
         <h2 id="etkinlikler" class="section-title">📅 İstanbul Etkinlikleri</h2>
         <div class="container">
-             {% for event in istanbul_events %}
-             <div class="custom-event-card">
-                <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer">
-                    {% if event.image_url %}<img src="{{ event.image_url }}" alt="{{ event.title }}" class="custom-event-card-image">{% endif %}
+
+            {# Main.py'dan gelen 'istanbul_events' listesindeki her bir etkinlik için döngü #}
+            {% for event in istanbul_events %}
+            <div class="custom-event-card">
+                <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer" class="custom-event-card-image-link">
+                    {# event.image veya event.image_url'den hangisi varsa onu kullanır #}
+                    <img src="{{ event.image_url or event.image }}" alt="{{ event.title }}" class="custom-event-card-image">
                 </a>
-                 <div class="custom-event-card-content">
-                    <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer"><h3 class="event-card-title">{{ event.title }}</h3></a>
-                    <p><strong>Tarih:</strong> {{ event.date_str }} {{ event.time_str }}</p>
-                    <p><strong>Mekan:</strong> {{ event.venue }}</p>
-                 </div>
-             </div>
-             {% else %}
-             <p>⚠️ İstanbul etkinlik verisi alınamadı.</p>
-             {% endfor %}
+                <div class="custom-event-card-content">
+                    {# Kategori bilgisi varsa gösterir #}
+                    {% if event.category %}
+                        <p class="event-card-category">{{ event.category }}</p>
+                    {% endif %}
+
+                    <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer">
+                        <h3 class="event-card-title">{{ event.title }}</h3>
+                    </a>
+
+                    <div class="event-card-details">
+                        {# Mekan için event.venue veya event.location'dan birini kullanır #}
+                        <p><strong>Mekan:</strong> {{ event.venue or event.location }}</p>
+                        {# Tarih için event.date_str veya event.date'ten birini kullanır #}
+                        <p><strong>Tarih:</strong> {{ event.date_str or event.date }}</p>
+                    </div>
+                </div>
+                <div class="custom-event-card-actions">
+                    <a href="{{ event.link }}" target="_blank" class="event-card-link-button">Bilet Al & Detaylar</a>
+                </div>
+            </div>
+            {% else %}
+                {# Eğer 'istanbul_events' listesi boşsa bu mesaj gösterilir #}
+                <p>⚠️ Gösterilecek bir etkinlik bulunamadı.</p>
+            {% endfor %}
+
         </div>
 
         <h2 id="filmler" class="section-title">🎬 Vizyondaki Filmler</h2>

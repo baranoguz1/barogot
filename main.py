@@ -88,7 +88,14 @@ def gather_all_data():
             print("\n--- Selenium ile Veri Kazıma Başladı ---")
             context['ratings'] = web_scrapers.get_daily_ratings(driver)
             context['books'] = web_scrapers.fetch_books(driver)
-            context['istanbul_events'] = web_scrapers.fetch_istanbul_events(driver)
+            print("ℹ️ Etkinlikler çekiliyor (Zorlu PSM)...")
+            zorlu_events = web_scrapers.fetch_istanbul_events(driver) or []
+            
+            print("ℹ️ Etkinlikler çekiliyor (Bubilet)...")
+            bubilet_events = web_scrapers.fetch_bilet_events(driver) or []
+            all_events = zorlu_events + bubilet_events
+            context['istanbul_events'] = all_events
+            print(f"✅ Toplam {len(all_events)} adet etkinlik birleştirildi.")
             
             fixtures_all = {}
             for path, name in config.SPORT_LEAGUES_CONFIG:
