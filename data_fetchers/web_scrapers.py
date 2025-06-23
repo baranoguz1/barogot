@@ -6,6 +6,7 @@ fonksiyonları içerir.
 import time
 import re
 import traceback
+from pathlib import Path
 #import pandas as pd
 import requests # get_trending_topics_trends24 için gerekli
 from bs4 import BeautifulSoup
