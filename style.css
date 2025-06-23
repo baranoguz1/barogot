@@ -310,7 +310,7 @@ body.dark-mode nav.sticky-nav a:not(:first-child)::before {
     background-color: #555; /* Arkaplan rengi */
     color: white; /* Ok rengi */
     cursor: pointer; /* Üzerine gelince fare imleci el olsun */
-    padding: 12px 16px; /* İç boşluklar */
+    padding: 12px 12px; /* İç boşluklar */
     border-radius: 50%; /* Tamamen yuvarlak yapar */
     font-size: 18px; /* Ok boyutunu ayarlar */
     transition: background-color 0.3s; /* Renk geçişini yumuşatır */
