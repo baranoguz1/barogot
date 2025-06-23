@@ -240,8 +240,8 @@ nav.sticky-nav a:hover {
 /* İlk link hariç diğer tüm linklerin başına ayraç ekler */
 nav.sticky-nav a:not(:first-child)::before {
     content: '|'; /* Görüntülenecek karakter */
-    padding-right: 5px; /* Ayraç ile link arasına boşluk koyar */
-    margin-left: 5px;   /* Ayraç ile bir önceki link arasına boşluk koyar */
+    padding-right: 15px; /* Ayraç ile link arasına boşluk koyar */
+    margin-left: 1px;   /* Ayraç ile bir önceki link arasına boşluk koyar */
     color: #ccc; /* Ayracın rengi (açık mod) */
     font-weight: normal;
 }
@@ -277,7 +277,7 @@ body.dark-mode nav.sticky-nav a:not(:first-child)::before {
 
 .toggle-button {
     position: fixed; /* Butonu sayfaya göre sabitler, menünün kaymasından etkilenmez */
-    top: 15px;       /* Ekranın üstünden boşluk (yeni menü yüksekliğine uygun) */
+    top: 25px;       /* Ekranın üstünden boşluk (yeni menü yüksekliğine uygun) */
     right: 20px;      /* Ekranın sağından boşluk */
     z-index: 1001;    /* Navigasyon menüsü de dahil her şeyin üzerinde kalmasını sağlar */
 
