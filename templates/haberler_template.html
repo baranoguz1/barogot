@@ -11,11 +11,11 @@
     <nav class="sticky-nav">
         <a href="#hava">🌤️ Hava</a>
         <a href="#doviz">💱 Döviz</a>
-        <a href="#etkinlikler">📅 Etkinlikler</a>
         <a href="#fikstur">⚽ Fikstür</a>
         <a href="#reyting">📺 Reyting</a>
         <a href="#twitter">🔥 Gündem</a>
         <a href="#muzik">🎧 Müzik</a>
+        <a href="#etkinlikler">📅 Etkinlikler</a>
         <a href="#filmler">🎬 Filmler</a>
         <a href="#haberler">📰 Haberler</a>
         <a href="#kitaplar">📚 Kitaplar</a>
@@ -69,24 +69,6 @@
             {% endfor %}
         </div>
 
-
-        <h2 id="etkinlikler" class="section-title">📅 İstanbul Etkinlikleri</h2>
-        <div class="container">
-             {% for event in istanbul_events %}
-             <div class="custom-event-card">
-                <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer">
-                    {% if event.image_url %}<img src="{{ event.image_url }}" alt="{{ event.title }}" class="custom-event-card-image">{% endif %}
-                </a>
-                 <div class="custom-event-card-content">
-                    <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer"><h3 class="event-card-title">{{ event.title }}</h3></a>
-                    <p><strong>Tarih:</strong> {{ event.date_str }} {{ event.time_str }}</p>
-                    <p><strong>Mekan:</strong> {{ event.venue }}</p>
-                 </div>
-             </div>
-             {% else %}
-             <p>⚠️ İstanbul etkinlik verisi alınamadı.</p>
-             {% endfor %}
-        </div>
         
         <h2 id="fikstur" class="section-title">⚽ Haftalık Fikstür</h2>
         <div class="container">
@@ -146,6 +128,24 @@
             <p>⚠️ Spotify parça listesi alinamadı.</p>
             {% endfor %}
         </div></div>
+
+        <h2 id="etkinlikler" class="section-title">📅 İstanbul Etkinlikleri</h2>
+        <div class="container">
+             {% for event in istanbul_events %}
+             <div class="custom-event-card">
+                <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer">
+                    {% if event.image_url %}<img src="{{ event.image_url }}" alt="{{ event.title }}" class="custom-event-card-image">{% endif %}
+                </a>
+                 <div class="custom-event-card-content">
+                    <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer"><h3 class="event-card-title">{{ event.title }}</h3></a>
+                    <p><strong>Tarih:</strong> {{ event.date_str }} {{ event.time_str }}</p>
+                    <p><strong>Mekan:</strong> {{ event.venue }}</p>
+                 </div>
+             </div>
+             {% else %}
+             <p>⚠️ İstanbul etkinlik verisi alınamadı.</p>
+             {% endfor %}
+        </div>
 
         <h2 id="filmler" class="section-title">🎬 Vizyondaki Filmler</h2>
         <div class="film-container">
