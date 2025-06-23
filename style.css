@@ -195,26 +195,29 @@ body.dark-mode .ai-commentary {
 
 
 /* ============================================= */
-/* ===== NİHAİ NAVİGASYON BARI STİLLERİ ===== */
+/* ===== KAYDIRILABİLİR NAVİGASYON BARI STİLLERİ ===== */
 /* ============================================= */
 
 /* 1. Ana Navigasyon Çubuğu (Tüm Modlar İçin) */
 nav.sticky-nav {
-    position: sticky;
+    position: sticky; /* Sayfa kaydırıldığında üstte sabit kalır */
     top: 0;
-    background-color: var(--bg-color);
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 1000;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     width: 100%;
     box-sizing: border-box;
 
     /* Flexbox & Yatay Kaydırma Ayarları */
-    display: flex;
-    align-items: center;    /* Dikeyde mükemmel ortalama */
+    display: flex;          /* Öğeleri esnek bir kutuya yerleştirir */
+    align-items: center;    /* Dikeyde ortalar */
     overflow-x: auto;       /* Yatayda taşanları kaydırılabilir yapar */
     flex-wrap: nowrap;      /* Öğelerin alt satıra inmesini ENGELLER */
-    white-space: nowrap;    /* Metinlerin de alt satıra inmesini engeller */
-    padding: 10px 15px;     /* Yüksekliği ve kenar boşluklarını ayarlar */
+    white-space: nowrap;    /* Link metinlerinin de alt satıra inmesini engeller */
+    padding: 10px 15px;     /* İç boşlukları ayarlar */
+    justify-content: flex-start; /* Öğeleri baştan başlatır */
 }
 
 /* 2. Navigasyon Linkleri ve Ayraçları */
@@ -227,11 +230,18 @@ nav.sticky-nav a {
     transition: color 0.2s ease, background-color 0.2s ease;
 }
 
+nav.sticky-nav a:hover {
+    color: var(--primary-hover);
+    background-color: rgba(0, 86, 179, 0.1);
+}
+
+/* İlk link hariç diğer tüm linklerin başına ayraç ekler */
 nav.sticky-nav a:not(:first-child)::before {
-    content: '|';
-    padding-right: 20px; /* Ayraç ile bir sonraki link arasına boşluk koyar */
-    margin-left: 10px;   /* Ayraç ile bir önceki link arasına boşluk koyar */
-    color: #ccc;
+    content: '|'; /* Görüntülenecek karakter */
+    padding-right: 15px; /* Ayraç ile link arasına boşluk koyar */
+    margin-left: 5px;   /* Ayraç ile bir önceki link arasına boşluk koyar */
+    color: #ccc; /* Ayracın rengi (açık mod) */
+    font-weight: normal;
 }
 
 
@@ -240,7 +250,7 @@ nav.sticky-nav a:not(:first-child)::before {
 /* ============================================= */
 
 body.dark-mode nav.sticky-nav {
-    background-color: var(--dark-bg);
+    background-color: rgba(44, 44, 44, 0.9);
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
@@ -253,6 +263,7 @@ body.dark-mode nav.sticky-nav a:hover {
     background-color: rgba(77, 171, 247, 0.2);
 }
 
+/* Karanlık modda ayracın rengini değiştirir */
 body.dark-mode nav.sticky-nav a:not(:first-child)::before {
     color: #444;
 }
