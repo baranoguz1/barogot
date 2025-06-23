@@ -200,7 +200,7 @@ body.dark-mode .ai-commentary {
 
 /* 1. Ana Navigasyon Çubuğu (Tüm Modlar İçin) */
 nav.sticky-nav {
-    position: sticky; /* Sayfa kaydırıldığında üstte sabit kalır */
+    position: fixed; /* Sayfa kaydırıldığında sayfa ile kayar */
     top: 0;
     background-color: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(8px);
@@ -238,7 +238,7 @@ nav.sticky-nav a:hover {
 /* İlk link hariç diğer tüm linklerin başına ayraç ekler */
 nav.sticky-nav a:not(:first-child)::before {
     content: '|'; /* Görüntülenecek karakter */
-    padding-right: 15px; /* Ayraç ile link arasına boşluk koyar */
+    padding-right: 5px; /* Ayraç ile link arasına boşluk koyar */
     margin-left: 5px;   /* Ayraç ile bir önceki link arasına boşluk koyar */
     color: #ccc; /* Ayracın rengi (açık mod) */
     font-weight: normal;
