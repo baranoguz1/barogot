@@ -144,7 +144,7 @@ def fetch_istanbul_events(driver):
 def fetch_bilet_events(driver, limit=9):
     """
     Bubilet'in İstanbul etkinlikleri sayfasından etkinlikleri Selenium kullanarak çeker.
-    Hata ayıklama için ekran görüntüsü alma özelliği eklendi.
+    Hata ayıklama için ekran görüntüsü alır ve dosya yolunu garanti eder.
     """
     url = "https://www.bubilet.com.tr/istanbul-etkinlikleri"
     print(f"ℹ️ Bubilet etkinlikleri çekiliyor: {url}")
@@ -152,19 +152,16 @@ def fetch_bilet_events(driver, limit=9):
     try:
         driver.get(url)
 
-        # ADIM 1: Olası Çerez Pop-up'ını kapatmayı dene
         try:
-            # Pop-up'ın butonu için 5 saniye bekle, bulunursa tıkla
             cookie_accept_button = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Kabul Et')] | //div[contains(@class, 'cookie-accept')]"))
             )
             print("ℹ️ Bubilet: Çerez onayı pop-up'ı bulundu ve kapatılıyor.")
             cookie_accept_button.click()
-            time.sleep(1) # Tıklama sonrası sayfanın toparlanması için bekle
+            time.sleep(1)
         except Exception:
             print("ℹ️ Bubilet: Çerez onayı pop-up'ı bulunamadı veya zaten kapalı, devam ediliyor.")
 
-        # ADIM 2: Etkinlik kartlarının yüklenmesini bekle
         WebDriverWait(driver, 20).until(
             EC.visibility_of_all_elements_located((By.CSS_SELECTOR, "div.event-item"))
         )
@@ -177,7 +174,6 @@ def fetch_bilet_events(driver, limit=9):
             print("⚠️ Bubilet: Etkinlik kartları bulunamadı.")
             return []
 
-        # ... (Veri çekme döngüsü aynı kalacak) ...
         for card in event_cards[:limit]:
             link_tag = card.find('a', class_='event-item-box-link')
             image_tag = card.find('img', class_='event-image')
@@ -200,19 +196,26 @@ def fetch_bilet_events(driver, limit=9):
         return events
 
     except Exception as e:
-        # HATA DURUMUNDA EKRAN GÖRÜNTÜSÜ VE SAYFA KAYNAĞINI KAYDET
         print(f"❌ Bubilet etkinlikleri çekilirken HATA oluştu: {e}")
         
-        screenshot_path = "bubilet_debug_screenshot.png"
-        page_source_path = "bubilet_debug_page.html"
-        
-        driver.save_screenshot(screenshot_path)
-        with open(page_source_path, "w", encoding="utf-8") as f:
-            f.write(driver.page_source)
+        # --- DEĞİŞİKLİK BURADA: DOSYA YOLUNU GARANTİYE ALIYORUZ ---
+        try:
+            # Bu script'in bulunduğu dizinin bir üst dizinine git (proje ana klasörü)
+            project_root = Path(__file__).resolve().parent.parent
+            screenshot_path = project_root / "bubilet_debug_screenshot.png"
+            page_source_path = project_root / "bubilet_debug_page.html"
             
-        print(f"🐞 Hata ayıklama için ekran görüntüsü '{screenshot_path}' olarak kaydedildi.")
-        print(f"🐞 Hata ayıklama için sayfa kaynağı '{page_source_path}' olarak kaydedildi.")
-        
+            driver.save_screenshot(str(screenshot_path))
+            with open(page_source_path, "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+                
+            print(f"🐞 Hata ayıklama için ekran görüntüsü '{screenshot_path}' olarak kaydedildi.")
+            print(f"🐞 Hata ayıklama için sayfa kaynağı '{page_source_path}' olarak kaydedildi.")
+
+        except Exception as save_error:
+            print(f"❌❌ DEBUG DOSYALARI KAYDEDİLİRKEN HATA OLUŞTU: {save_error}")
+            traceback.print_exc()
+
         return []
 
 
