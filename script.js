@@ -37,9 +37,9 @@ window.onscroll = function() {
 
 function scrollFunction() {
     // Kullanıcı 100px'den fazla aşağı kaydırdığında butonu göster, aksi halde gizle
-    // Butonun var olup olmadığını kontrol edelim
     if (scrollToTopBtn) {
-        if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+        // DEĞİŞİKLİK: Eski yöntem yerine daha modern ve güvenilir olan window.scrollY kullanıldı.
+        if (window.scrollY > 100) {
             scrollToTopBtn.style.display = "block";
         } else {
             scrollToTopBtn.style.display = "none";
