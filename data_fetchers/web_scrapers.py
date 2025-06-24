@@ -155,7 +155,6 @@ def fetch_eventmag_events(driver, limit=15):
     try:
         driver.get(url)
         
-        # DÜZELTİLMİŞ BEKLEME KURALI: Sayfadaki ana etkinlik kartı olan 'div.td_module_flex' elementlerini bekle
         main_event_card_selector = "div.td_module_flex"
         WebDriverWait(driver, 20).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, main_event_card_selector))
@@ -163,7 +162,6 @@ def fetch_eventmag_events(driver, limit=15):
         
         soup = BeautifulSoup(driver.page_source, "html.parser")
         
-        # DÜZELTİLMİŞ ANA SEÇİCİ
         event_cards = soup.select(main_event_card_selector)
 
         if not event_cards:
@@ -172,12 +170,11 @@ def fetch_eventmag_events(driver, limit=15):
 
         for card in event_cards[:limit]:
             try:
-                # YENİ VE GÜNCELLENMİŞ DETAY SEÇİCİLERİ
                 title_element = card.select_one("h3.entry-title a")
                 image_element = card.select_one(".td-module-container img")
                 date_element = card.select_one(".td-editor-date time")
                 category_element = card.select_one("a.td-post-category")
-                venue_element = card.select_one(".td-module-meta-info a") # Mekan bilgisi eklendi
+                venue_element = card.select_one(".td-module-meta-info a")
 
                 if not all([title_element, image_element, date_element, category_element, venue_element]):
                     continue
@@ -204,9 +201,19 @@ def fetch_eventmag_events(driver, limit=15):
         print(f"✅ {len(events)} adet etkinlik (Eventmag) başarıyla çekildi.")
         return events
 
+    # --- YENİ VE GELİŞTİRİLMİŞ HATA YAKALAMA BLOĞU ---
     except Exception as e:
-        print(f"❌ Eventmag etkinlikleri çekilirken genel bir HATA OLUŞTU: {e}")
-        traceback.print_exc()
+        print("\n" + "="*50)
+        print("❌ DETAYLI HATA RAPORU (Eventmag)")
+        print(f"HATA TÜRÜ: {type(e)}")
+        print(f"HATA MESAJI (str): {str(e)}")
+        print(f"HATA ARGÜMANLARI: {e.args}")
+        print("\n--- TRACEBACK BAŞLANGICI ---")
+        # Traceback'i bir string olarak alıp stdout'a yazdırıyoruz.
+        error_traceback = traceback.format_exc()
+        print(error_traceback)
+        print("--- TRACEBACK SONU ---\n")
+        print("="*50 + "\n")
         return []
 
 
