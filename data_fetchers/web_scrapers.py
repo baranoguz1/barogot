@@ -142,73 +142,92 @@ def fetch_istanbul_events(driver):
         print(f"❌ Zorlu PSM etkinlikleri çekilirken genel bir HATA OLUŞTU: {e}\n{traceback.format_exc()}")
         return []
     
-def fetch_bilet_events(driver):
+# data_fetchers/web_scrapers.py dosyasında bu fonksiyonu güncelleyin
+
+def fetch_bilet_events(driver, limit=20): # Limiti artırabilir veya kaldırabilirsiniz
     """
     Bubilet'in İstanbul etkinlikleri sayfasından etkinlikleri çeker.
     Sayfa aşağı kaydırıldıkça yeni etkinlikler yüklendiği için,
     önce sayfanın sonuna kadar kaydırma işlemi yapılır.
     """
-    print("Bubilet etkinlikleri çekiliyor...")
+    url = "https://www.bubilet.com.tr/istanbul-etkinlikleri"
+    print(f"ℹ️ Bubilet etkinlikleri çekiliyor: {url}")
+    events = []
     try:
-        driver.get("https://www.bubilet.com.tr/istanbul-etkinlikleri")
+        driver.get(url)
+
+        try:
+            cookie_accept_button = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Kabul Et')] | //div[contains(@class, 'cookie-accept')]"))
+            )
+            print("ℹ️ Bubilet: Çerez onayı pop-up'ı bulundu ve kapatılıyor.")
+            cookie_accept_button.click()
+            time.sleep(1)
+        except Exception:
+            print("ℹ️ Bubilet: Çerez onayı pop-up'ı bulunamadı veya zaten kapalı, devam ediliyor.")
 
         # Sayfanın en altına kadar kaydırma işlemi
         last_height = driver.execute_script("return document.body.scrollHeight")
+        print("ℹ️ Bubilet: Tüm etkinlikleri yüklemek için sayfa aşağı kaydırılıyor...")
         while True:
-            print("Sayfa aşağı kaydırılıyor...")
-            # Sayfanın en altına git
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            
-            # Yeni içeriğin yüklenmesi için bekle
-            time.sleep(2)  # 2 saniye bekleme, gerekirse artırılabilir
-            
-            # Yeni sayfa yüksekliğini hesapla ve karşılaştır
+            time.sleep(2)
             new_height = driver.execute_script("return document.body.scrollHeight")
             if new_height == last_height:
-                print("Sayfanın sonuna ulaşıldı.")
+                print("✅ Bubilet: Sayfanın sonuna ulaşıldı.")
                 break
             last_height = new_height
 
-        # Çerez pop-up'ını kabul et (eğer varsa ve kaydırmadan sonra tekrar çıkıyorsa)
-        try:
-            accept_button = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.ID, "accept-all-button"))
-            )
-            accept_button.click()
-            print("Çerezler kabul edildi.")
-        except:
-            print("Çerez pop-up'ı bulunamadı veya tıklanamadı, devam ediliyor.")
-
-        # Tüm etkinliklerin yüklendiğinden emin olmak için kısa bir bekleme daha
-        WebDriverWait(driver, 10).until(
+        print("ℹ️ Bubilet: Etkinliklerin HTML'de var olması bekleniyor...")
+        WebDriverWait(driver, 20).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.event-item"))
         )
+        print("✅ Bubilet: Etkinlikler HTML'de bulundu.")
+        time.sleep(1)
 
         soup = BeautifulSoup(driver.page_source, 'html.parser')
-        events = soup.find_all('div', class_='event-item')
-        
-        if not events:
-            print("Bubilet'ten hiç etkinlik bulunamadı. Sayfa yapısı değişmiş olabilir.")
-            # Hata ayıklama için sayfa kaynağını ve ekran görüntüsünü kaydet
-            with open("bubilet_debug_page.html", "w", encoding="utf-8") as f:
-                f.write(driver.page_source)
-            driver.save_screenshot("bubilet_debug_screenshot.png")
+        event_cards = soup.find_all('div', class_='event-item')
+
+        if not event_cards:
+            print("⚠️ Bubilet: Etkinlik kartları bulunamadı.")
             return []
 
-        extracted_events = []
-        for event in events:
-            # ... (geri kalan veri çekme kodları aynı kalacak)
-            # ...
+        # --- DÜZELTİLEN KISIM BAŞLANGICI ---
+        for card in event_cards[:limit]:
+            link_tag = card.find('a', class_='event-item-box-link')
+            image_tag = card.find('img', class_='event-image')
+            title_tag = card.find('h3', class_='event-title')
+            category_tag = card.find('p', class_='event-category')
+            location_tag = card.find('p', class_='event-location')
+            date_tag = card.find('p', class_='event-date')
+
+            if all([link_tag, image_tag, title_tag, location_tag, date_tag]):
+                events.append({
+                    'link': link_tag['href'],
+                    'image': image_tag.get('data-src') or image_tag.get('src'),
+                    'title': title_tag.get_text(strip=True),
+                    'category': category_tag.get_text(strip=True) if category_tag else "Diğer",
+                    'location': location_tag.get_text(strip=True),
+                    'date': date_tag.get_text(strip=True)
+                })
+        # --- DÜZELTİLEN KISIM SONU ---
         
-        print(f"Bubilet'ten {len(extracted_events)} etkinlik başarıyla çekildi.")
-        return extracted_events
+        print(f"✅ {len(events)} adet etkinlik (Bubilet) başarıyla çekildi.")
+        return events
 
     except Exception as e:
-        print(f"Bubilet etkinlikleri çekilirken bir hata oluştu: {e}")
-        # Hata ayıklama için sayfa kaynağını ve ekran görüntüsünü kaydet
-        with open("bubilet_debug_page.html", "w", encoding="utf-8") as f:
-            f.write(driver.page_source)
-        driver.save_screenshot("bubilet_debug_screenshot.png")
+        print(f"❌ Bubilet etkinlikleri çekilirken HATA oluştu: {e}")
+        try:
+            project_root = Path(__file__).resolve().parent.parent
+            screenshot_path = project_root / "bubilet_debug_screenshot.png"
+            page_source_path = project_root / "bubilet_debug_page.html"
+            driver.save_screenshot(str(screenshot_path))
+            with open(page_source_path, "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            print(f"🐞 Hata ayıklama için ekran görüntüsü ve sayfa kaynağı kaydedildi.")
+        except Exception as save_error:
+            print(f"❌❌ DEBUG DOSYALARI KAYDEDİLİRKEN HATA OLUŞTU: {save_error}")
+            traceback.print_exc()
         return []
 
 
