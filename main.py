@@ -91,7 +91,7 @@ def gather_all_data():
             print("ℹ️ Etkinlikler çekiliyor (Zorlu PSM)...")
             zorlu_events = web_scrapers.fetch_istanbul_events(driver) or []
             
-            print("ℹ️ Etkinlikler çekiliyor (Bubilet)...")
+            print("ℹ️ Etkinlikler çekiliyor (Eventmag)...")
             eventmag_events = web_scrapers.fetch_eventmag_events(driver) or []
             all_events = zorlu_events + eventmag_events
             context['istanbul_events'] = all_events

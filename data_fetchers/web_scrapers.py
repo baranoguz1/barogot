@@ -147,54 +147,58 @@ def fetch_istanbul_events(driver):
 def fetch_eventmag_events(driver, limit=15):
     """
     Eventmag İstanbul etkinlikleri sayfasından etkinlikleri çeker.
-    Bu site, veri çekme işlemlerine daha uygun bir yapıya sahiptir.
+    Ekran görüntüsünden elde edilen yeni ve doğru seçicilerle güncellenmiştir.
     """
     url = "https://eventmag.co/kategori/istanbul/"
-    print(f"ℹ️ Eventmag etkinlikleri çekiliyor: {url}")
+    print(f"ℹ️ Eventmag etkinlikleri çekiliyor (Yeni Seçiciler): {url}")
     events = []
     try:
         driver.get(url)
         
-        # Etkinlik kartlarının yüklenmesini bekle
+        # DÜZELTİLMİŞ BEKLEME KURALI: Sayfadaki ana etkinlik kartı olan 'div.td_module_flex' elementlerini bekle
+        main_event_card_selector = "div.td_module_flex"
         WebDriverWait(driver, 20).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article.post"))
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, main_event_card_selector))
         )
         
         soup = BeautifulSoup(driver.page_source, "html.parser")
         
-        # Etkinlikleri içeren 'article' etiketlerini bul
-        event_articles = soup.select("article.post")
+        # DÜZELTİLMİŞ ANA SEÇİCİ
+        event_cards = soup.select(main_event_card_selector)
 
-        if not event_articles:
-            print("⚠️ Eventmag: Etkinlik kartları ('article.post') bulunamadı.")
+        if not event_cards:
+            print(f"⚠️ Eventmag: Etkinlik kartları ('{main_event_card_selector}') bulunamadı.")
             return []
 
-        for article in event_articles[:limit]:
+        for card in event_cards[:limit]:
             try:
-                title_element = article.select_one("h3.entry-title a")
-                image_element = article.select_one(".td-module-thumb img")
-                date_element = article.select_one(".td-post-date time")
-                
-                if not all([title_element, image_element, date_element]):
+                # YENİ VE GÜNCELLENMİŞ DETAY SEÇİCİLERİ
+                title_element = card.select_one("h3.entry-title a")
+                image_element = card.select_one(".td-module-container img")
+                date_element = card.select_one(".td-editor-date time")
+                category_element = card.select_one("a.td-post-category")
+                venue_element = card.select_one(".td-module-meta-info a") # Mekan bilgisi eklendi
+
+                if not all([title_element, image_element, date_element, category_element, venue_element]):
                     continue
 
                 title = title_element.get_text(strip=True)
                 link = title_element.get('href')
-                # 'lazy-load' için 'data-src', normal yükleme için 'src' kullanılır.
                 image_url = image_element.get('data-src') or image_element.get('src')
-                # Datetime formatını temizleyip sadece tarihi alabiliriz.
                 date_str = date_element.get('datetime').split('T')[0]
+                category = category_element.get_text(strip=True)
+                location = venue_element.get_text(strip=True)
 
                 events.append({
                     'title': title,
                     'link': link,
                     'image': image_url,
                     'date': date_str,
-                    'location': 'Detayda belirtilmiştir', # Bu sitede lokasyon detay sayfasında
-                    'category': 'Etkinlik'
+                    'location': location,
+                    'category': category
                 })
             except Exception as e_item:
-                print(f"⚠️ Eventmag'de bir etkinlik işlenirken hata oluştu: {e_item}")
+                print(f"⚠️ Eventmag'de bir etkinlik işlenirken hata oluştu, atlanıyor: {e_item}")
                 continue
 
         print(f"✅ {len(events)} adet etkinlik (Eventmag) başarıyla çekildi.")
