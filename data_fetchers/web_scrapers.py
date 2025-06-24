@@ -150,7 +150,7 @@ def fetch_bilet_events(driver, limit=20): # Limiti artırabilir veya kaldırabil
     Sayfa aşağı kaydırıldıkça yeni etkinlikler yüklendiği için,
     önce sayfanın sonuna kadar kaydırma işlemi yapılır.
     """
-    url = "https://www.bubilet.com.tr/istanbul-etkinlikleri"
+    url = "https://www.bubilet.com.tr/istanbul"
     print(f"ℹ️ Bubilet etkinlikleri çekiliyor: {url}")
     events = []
     try:
