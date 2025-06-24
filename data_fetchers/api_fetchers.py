@@ -209,3 +209,49 @@ def get_new_turkish_rap_tracks_embed(limit=10):
     except KeyError:
         print("⚠️ Spotify API yanıt formatı beklenmedik.")
         return []
+    
+
+def fetch_mock_istanbul_events(limit=5):
+    """
+    API anahtarı beklenirken geliştirme ve test amacıyla sahte etkinlik verisi üretir.
+    API'den dönen veriyle aynı yapıyı kullanır.
+    """
+    print("ℹ️ GEÇİCİ: API yanıtı beklenirken sahte etkinlik verisi kullanılıyor...")
+    
+    mock_events = [
+        {
+            'title': 'Sahte Konser: Pop Grubu',
+            'link': '#',
+            'image': 'https://via.placeholder.com/300x200.png?text=Konser+Afisi',
+            'date': '2025-07-15',
+            'location': 'Hayali Sahne, Beşiktaş',
+            'category': 'Pop Müzik'
+        },
+        {
+            'title': 'Sahte Tiyatro: Bir Yaz Gecesi Rüyası',
+            'link': '#',
+            'image': 'https://via.placeholder.com/300x200.png?text=Tiyatro+Oyunu',
+            'date': '2025-07-18',
+            'location': 'Kültür Merkezi, Kadıköy',
+            'category': 'Tiyatro'
+        },
+        {
+            'title': 'Sahte Festival: Lezzet Festivali',
+            'link': '#',
+            'image': 'https://via.placeholder.com/300x200.png?text=Festival',
+            'date': '2025-07-20',
+            'location': 'Festival Parkı, Yenikapı',
+            'category': 'Festival'
+        },
+        {
+            'title': 'Sahte Sergi: Modern Sanat Sergisi',
+            'link': '#',
+            'image': 'https://via.placeholder.com/300x200.png?text=Sanat+Sergisi',
+            'date': '2025-07-22',
+            'location': 'Sanat Galerisi, Beyoğlu',
+            'category': 'Sergi'
+        }
+    ]
+    
+    print(f"✅ {len(mock_events[:limit])} adet sahte etkinlik başarıyla oluşturuldu.")
+    return mock_events[:limit]
