@@ -144,87 +144,64 @@ def fetch_istanbul_events(driver):
     
 # data_fetchers/web_scrapers.py dosyasında bu fonksiyonu güncelleyin
 
-def fetch_bilet_events(driver, limit=25):
+def fetch_eventmag_events(driver, limit=15):
     """
-    Bubilet'in İstanbul etkinlikleri sayfasından etkinlikleri çeker.
-    Anti-scraping tekniklerini aşmak için BeautifulSoup yerine doğrudan Selenium 
-    element bulucuları kullanır.
+    Eventmag İstanbul etkinlikleri sayfasından etkinlikleri çeker.
+    Bu site, veri çekme işlemlerine daha uygun bir yapıya sahiptir.
     """
-    # URL'yi config dosyasından alıyoruz
-    url = config.BUBILET_URL 
-    print(f"ℹ️ Bubilet etkinlikleri çekiliyor (Doğrudan Selenium Stratejisi): {url}")
+    url = "https://eventmag.co/kategori/istanbul/"
+    print(f"ℹ️ Eventmag etkinlikleri çekiliyor: {url}")
     events = []
     try:
         driver.get(url)
-        time.sleep(2) # Sayfanın oturması için ilk bekleme
-
-        # Çerezleri kabul etme
-        try:
-            cookie_accept_button = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Kabul Et')]"))
-            )
-            cookie_accept_button.click()
-            time.sleep(1)
-        except Exception:
-            pass # Pop-up yoksa devam et
-
-        # Tüm etkinlikleri yüklemek için sayfayı aşağı kaydır
-        last_height = driver.execute_script("return document.body.scrollHeight")
-        for i in range(10): # Maksimum 10 kez kaydırmayı dene
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(2.5)
-            new_height = driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:
-                print("✅ Bubilet: Sayfanın sonuna ulaşıldı.")
-                break
-            last_height = new_height
         
-        print("ℹ️ Etkinlik kartları Selenium ile doğrudan aranıyor...")
-        # YENİ STRATEJİ: Elementleri doğrudan Selenium ile bul
-        event_card_elements = driver.find_elements(By.CSS_SELECTOR, "a.group-box")
+        # Etkinlik kartlarının yüklenmesini bekle
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article.post"))
+        )
+        
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        
+        # Etkinlikleri içeren 'article' etiketlerini bul
+        event_articles = soup.select("article.post")
 
-        if not event_card_elements:
-            print("⚠️ Bubilet: Selenium doğrudan arama ile de etkinlik kartı ('a.group-box') bulamadı.")
-            # Hata ayıklama için debug dosyalarını kaydet
-            project_root = Path(__file__).resolve().parent.parent
-            driver.save_screenshot(str(project_root / "bubilet_debug_screenshot.png"))
+        if not event_articles:
+            print("⚠️ Eventmag: Etkinlik kartları ('article.post') bulunamadı.")
             return []
 
-        # Her bir Selenium elementinden verileri çek
-        for card_element in event_card_elements[:limit]:
+        for article in event_articles[:limit]:
             try:
-                link = card_element.get_attribute('href')
+                title_element = article.select_one("h3.entry-title a")
+                image_element = article.select_one(".td-module-thumb img")
+                date_element = article.select_one(".td-post-date time")
                 
-                image_element = card_element.find_element(By.TAG_NAME, 'img')
-                image_url = image_element.get_attribute('src')
-                
-                title = card_element.find_element(By.TAG_NAME, 'h3').text
-                
-                p_elements = card_element.find_elements(By.TAG_NAME, 'p')
-                location = p_elements[0].text if len(p_elements) > 0 else "Mekan bilgisi yok"
-                date = p_elements[1].text if len(p_elements) > 1 else "Tarih bilgisi yok"
-                
-                category = "Etkinlik"
-                
-                if all([link, image_url, title]):
-                    events.append({
-                        'link': link,
-                        'image': image_url,
-                        'title': title,
-                        'category': category,
-                        'location': location,
-                        'date': date
-                    })
+                if not all([title_element, image_element, date_element]):
+                    continue
+
+                title = title_element.get_text(strip=True)
+                link = title_element.get('href')
+                # 'lazy-load' için 'data-src', normal yükleme için 'src' kullanılır.
+                image_url = image_element.get('data-src') or image_element.get('src')
+                # Datetime formatını temizleyip sadece tarihi alabiliriz.
+                date_str = date_element.get('datetime').split('T')[0]
+
+                events.append({
+                    'title': title,
+                    'link': link,
+                    'image': image_url,
+                    'date': date_str,
+                    'location': 'Detayda belirtilmiştir', # Bu sitede lokasyon detay sayfasında
+                    'category': 'Etkinlik'
+                })
             except Exception as e_item:
-                # Bir kartta hata olursa atla ve diğerine geç
-                print(f"⚠️ Bir etkinlik kartı işlenirken hata oluştu, atlanıyor: {e_item}")
+                print(f"⚠️ Eventmag'de bir etkinlik işlenirken hata oluştu: {e_item}")
                 continue
 
-        print(f"✅ {len(events)} adet etkinlik (Bubilet) başarıyla çekildi.")
+        print(f"✅ {len(events)} adet etkinlik (Eventmag) başarıyla çekildi.")
         return events
 
     except Exception as e:
-        print(f"❌ Bubilet etkinlikleri çekilirken genel bir HATA oluştu: {e}")
+        print(f"❌ Eventmag etkinlikleri çekilirken genel bir HATA OLUŞTU: {e}")
         traceback.print_exc()
         return []
 

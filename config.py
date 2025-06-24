@@ -59,7 +59,7 @@ ZORLU_PSM_URL = "https://www.zorlupsm.com/etkinlikler"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
 SPOTIFY_PLAYLIST_ID = "42QvezcAoVfm9pdUQzM6xy" # Yeni Türkçe Rap
 SPOTIFY_PLAYLIST_TRACKS_URL = f"https://api.spotify.com/v1/playlists/{SPOTIFY_PLAYLIST_ID}/tracks?market=from_token&limit=50"
-BUBILET_URL = "https://www.bubilet.com.tr/istanbul"
+EVENTMAG_URL = "https://eventmag.co/kategori/istanbul/"
 
 
 # 📌 KATEGORİLERE GÖRE RSS ADRESLERİ
