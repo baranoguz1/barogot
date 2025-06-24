@@ -142,19 +142,33 @@ def fetch_istanbul_events(driver):
         print(f"❌ Zorlu PSM etkinlikleri çekilirken genel bir HATA OLUŞTU: {e}\n{traceback.format_exc()}")
         return []
     
-# data_fetchers/web_scrapers.py dosyasında bu fonksiyonu güncelleyin
 
 def fetch_eventmag_events(driver, limit=15):
     """
     Eventmag İstanbul etkinlikleri sayfasından etkinlikleri çeker.
-    Ekran görüntüsünden elde edilen yeni ve doğru seçicilerle güncellenmiştir.
+    Önce çerez onay butonuna tıklar, sonra verileri çeker.
     """
     url = "https://eventmag.co/kategori/istanbul/"
-    print(f"ℹ️ Eventmag etkinlikleri çekiliyor (Yeni Seçiciler): {url}")
+    print(f"ℹ️ Eventmag etkinlikleri çekiliyor (Çerez Onayı Düzeltmesi): {url}")
     events = []
     try:
         driver.get(url)
-        
+
+        # --- YENİ EKLENDİ: ÇEREZ POP-UP'INI KAPATMA ---
+        try:
+            print("ℹ️ Eventmag: Çerez pop-up'ı aranıyor...")
+            # XPath kullanarak "Kabul Et" metnini içeren butonu buluyoruz.
+            accept_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Kabul Et')]"))
+            )
+            accept_button.click()
+            print("✅ Eventmag: Çerez pop-up'ı kapatıldı.")
+            # Pop-up kapandıktan sonra sayfanın toparlanması için kısa bir bekleme.
+            time.sleep(2) 
+        except Exception:
+            print("⚠️ Eventmag: Çerez pop-up'ı bulunamadı veya zaten kapalı, devam ediliyor...")
+
+        # Şimdi etkinlik kartlarının yüklenmesini bekle
         main_event_card_selector = "div.td_module_flex"
         WebDriverWait(driver, 20).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, main_event_card_selector))
@@ -201,15 +215,14 @@ def fetch_eventmag_events(driver, limit=15):
         print(f"✅ {len(events)} adet etkinlik (Eventmag) başarıyla çekildi.")
         return events
 
-    # --- YENİ VE GELİŞTİRİLMİŞ HATA YAKALAMA BLOĞU ---
     except Exception as e:
+        # Geliştirilmiş Hata Raporlaması
         print("\n" + "="*50)
         print("❌ DETAYLI HATA RAPORU (Eventmag)")
         print(f"HATA TÜRÜ: {type(e)}")
         print(f"HATA MESAJI (str): {str(e)}")
         print(f"HATA ARGÜMANLARI: {e.args}")
         print("\n--- TRACEBACK BAŞLANGICI ---")
-        # Traceback'i bir string olarak alıp stdout'a yazdırıyoruz.
         error_traceback = traceback.format_exc()
         print(error_traceback)
         print("--- TRACEBACK SONU ---\n")
