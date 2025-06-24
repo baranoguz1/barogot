@@ -144,21 +144,22 @@ def fetch_istanbul_events(driver):
     
 # data_fetchers/web_scrapers.py dosyasında bu fonksiyonu güncelleyin
 
-def fetch_bilet_events(driver, limit=20): # Limiti artırabilir veya kaldırabilirsiniz
+def fetch_bilet_events(driver, limit=20):
     """
     Bubilet'in İstanbul etkinlikleri sayfasından etkinlikleri çeker.
-    Sayfa aşağı kaydırıldıkça yeni etkinlikler yüklendiği için,
-    önce sayfanın sonuna kadar kaydırma işlemi yapılır.
+    Web sitesinin yeni (Haziran 2025) HTML yapısına göre güncellenmiştir.
+    Önce sayfanın sonuna kadar kaydırma işlemi yapar, sonra verileri çeker.
     """
     url = "https://www.bubilet.com.tr/istanbul"
-    print(f"ℹ️ Bubilet etkinlikleri çekiliyor: {url}")
+    print(f"ℹ️ Bubilet etkinlikleri çekiliyor (Yeni Yapı): {url}")
     events = []
     try:
         driver.get(url)
 
+        # Çerez pop-up'ını kabul etme (eğer varsa)
         try:
             cookie_accept_button = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Kabul Et')] | //div[contains(@class, 'cookie-accept')]"))
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Kabul Et')]"))
             )
             print("ℹ️ Bubilet: Çerez onayı pop-up'ı bulundu ve kapatılıyor.")
             cookie_accept_button.click()
@@ -171,63 +172,69 @@ def fetch_bilet_events(driver, limit=20): # Limiti artırabilir veya kaldırabil
         print("ℹ️ Bubilet: Tüm etkinlikleri yüklemek için sayfa aşağı kaydırılıyor...")
         while True:
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(2)
+            time.sleep(2.5) # Bekleme süresini biraz artırmak daha sağlıklı olabilir
             new_height = driver.execute_script("return document.body.scrollHeight")
             if new_height == last_height:
                 print("✅ Bubilet: Sayfanın sonuna ulaşıldı.")
                 break
             last_height = new_height
 
-        print("ℹ️ Bubilet: Etkinliklerin HTML'de var olması bekleniyor...")
-        WebDriverWait(driver, 20).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.event-item"))
-        )
-        print("✅ Bubilet: Etkinlikler HTML'de bulundu.")
-        time.sleep(1)
-
+        # Verileri çekmek için BeautifulSoup kullan
         soup = BeautifulSoup(driver.page_source, 'html.parser')
-        event_cards = soup.find_all('div', class_='event-item')
+        
+        # YENİ SEÇİCİ: Ekran görüntüsüne göre ana etkinlik kartı 'a.group-box'
+        event_cards = soup.select('a.group-box')
 
         if not event_cards:
-            print("⚠️ Bubilet: Etkinlik kartları bulunamadı.")
+            print("⚠️ Bubilet: Yeni seçici ('a.group-box') ile eşleşen etkinlik kartı bulunamadı.")
             return []
 
-        # --- DÜZELTİLEN KISIM BAŞLANGICI ---
+        # Her bir karttan verileri çek
         for card in event_cards[:limit]:
-            link_tag = card.find('a', class_='event-item-box-link')
-            image_tag = card.find('img', class_='event-image')
-            title_tag = card.find('h3', class_='event-title')
-            category_tag = card.find('p', class_='event-category')
-            location_tag = card.find('p', class_='event-location')
-            date_tag = card.find('p', class_='event-date')
+            link = card.get('href')
+            if link and not link.startswith('http'):
+                link = "https://www.bubilet.com.tr" + link
 
-            if all([link_tag, image_tag, title_tag, location_tag, date_tag]):
+            image_tag = card.select_one('img')
+            image_url = image_tag.get('src') if image_tag else None
+
+            # İçerik konteynerini bul (başlık, mekan, tarih burada)
+            content_container = card.select_one('div.p-2')
+            if not content_container:
+                continue
+
+            title_tag = content_container.select_one('h3')
+            title = title_tag.get_text(strip=True) if title_tag else "Başlık bulunamadı"
+
+            # Mekan ve tarih p etiketleri içinde
+            p_tags = content_container.select('p')
+            location = p_tags[0].get_text(strip=True) if len(p_tags) > 0 else "Mekan bilgisi yok"
+            date = p_tags[1].get_text(strip=True) if len(p_tags) > 1 else "Tarih bilgisi yok"
+
+            # Kategori yeni yapıda görünmüyor, varsayılan bir değer atayalım.
+            category = "Etkinlik"
+
+            if all([link, image_url, title]):
                 events.append({
-                    'link': link_tag['href'],
-                    'image': image_tag.get('data-src') or image_tag.get('src'),
-                    'title': title_tag.get_text(strip=True),
-                    'category': category_tag.get_text(strip=True) if category_tag else "Diğer",
-                    'location': location_tag.get_text(strip=True),
-                    'date': date_tag.get_text(strip=True)
+                    'link': link,
+                    'image': image_url, # Bu 'image' anahtarını kullanıyorduk
+                    'title': title,
+                    'category': category,
+                    'location': location,
+                    'date': date
                 })
-        # --- DÜZELTİLEN KISIM SONU ---
         
         print(f"✅ {len(events)} adet etkinlik (Bubilet) başarıyla çekildi.")
         return events
 
     except Exception as e:
         print(f"❌ Bubilet etkinlikleri çekilirken HATA oluştu: {e}")
-        try:
-            project_root = Path(__file__).resolve().parent.parent
-            screenshot_path = project_root / "bubilet_debug_screenshot.png"
-            page_source_path = project_root / "bubilet_debug_page.html"
-            driver.save_screenshot(str(screenshot_path))
-            with open(page_source_path, "w", encoding="utf-8") as f:
-                f.write(driver.page_source)
-            print(f"🐞 Hata ayıklama için ekran görüntüsü ve sayfa kaynağı kaydedildi.")
-        except Exception as save_error:
-            print(f"❌❌ DEBUG DOSYALARI KAYDEDİLİRKEN HATA OLUŞTU: {save_error}")
-            traceback.print_exc()
+        # Hata ayıklama için debug dosyalarını kaydet
+        project_root = Path(__file__).resolve().parent.parent
+        driver.save_screenshot(str(project_root / "bubilet_debug_screenshot.png"))
+        with open(str(project_root / "bubilet_debug_page.html"), "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        traceback.print_exc()
         return []
 
 
