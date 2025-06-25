@@ -33,7 +33,7 @@ def setup_driver():
         chrome_options.add_argument("--window-size=1920,1080")
 
         print("ℹ️ Tarayıcı sürümü 137 olarak ayarlanıyor.")
-        driver = uc.Chrome(options=options, version_main=137)
+        driver = uc.Chrome(options=chrome_options, version_main=137)
         
         # Tarayıcıyı başlattıktan sonra 'navigator.webdriver' bayrağını silerek ek bir gizleme katmanı ekliyoruz.
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
