@@ -32,10 +32,11 @@ def setup_driver():
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--window-size=1920,1080")
 
-        driver = uc.Chrome(
-            browser_executable_path="/usr/bin/google-chrome",
-            options=chrome_options
-        )
+        print("ℹ️ Tarayıcı sürümü 137 olarak ayarlanıyor.")
+        driver = uc.Chrome(options=options, version_main=137)
+        
+        # Tarayıcıyı başlattıktan sonra 'navigator.webdriver' bayrağını silerek ek bir gizleme katmanı ekliyoruz.
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         print("✅ Undetected Chrome WebDriver başarıyla başlatıldı.")
         return driver
     except Exception as e:
