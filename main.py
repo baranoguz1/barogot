@@ -31,7 +31,11 @@ def setup_driver():
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--window-size=1920,1080")
-        driver = uc.Chrome(options=chrome_options)
+
+        driver = uc.Chrome(
+            browser_executable_path="/usr/bin/google-chrome",
+            options=chrome_options
+        )
         print("✅ Undetected Chrome WebDriver başarıyla başlatıldı.")
         return driver
     except Exception as e:
