@@ -211,7 +211,7 @@ def get_new_turkish_rap_tracks_embed(limit=10):
         return []
     
 
-def fetch_ticketmaster_events(limit=40, keyword=None, city=None, get_popular_and_sort_by_date=False):
+def fetch_ticketmaster_events(limit=20, keyword=None, city=None, get_popular_and_sort_by_date=False):
     """
     Ticketmaster API'sini kullanarak Türkiye'deki etkinlikleri çeker.
 
@@ -236,6 +236,9 @@ def fetch_ticketmaster_events(limit=40, keyword=None, city=None, get_popular_and
         'size': limit,
         'sort': sort_mode
     }
+
+    if city:
+        params['city'] = city
     # ... (keyword ve city filtreleri aynı kalır) ...
 
     try:
