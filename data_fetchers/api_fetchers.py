@@ -9,6 +9,7 @@ from datetime import datetime, timezone, timedelta
 import feedparser
 from bs4 import BeautifulSoup
 import time
+from urllib.parse import urlparse, parse_qs, unquote
 
 # Ana dizindeki config dosyasını import ediyoruz
 import config
@@ -262,33 +263,45 @@ def fetch_ticketmaster_events(limit=20, keyword=None, city=None, get_popular_and
         # Veriyi HTML şablonu için formatlama...
         formatted_events = []
         for event in fetched_events:
-            # --- HATA AYIKLAMA İÇİN EKLENEN SATIR ---
-            print("--- TICKETMASTER EVENT DATA ---")
-            import json
-            print(json.dumps(event, indent=2))
-            print("---------------------------------")
-            # --- BİTİŞ ---
-
             image_url = event['images'][0]['url'] if event.get('images') else ''
             venue_info = event.get('_embedded', {}).get('venues', [{}])[0]
             
-            # Linki hala event.get('url')'den almaya devam ediyoruz, çıktıyı inceleyeceğiz
-            final_link = event.get('url', '#')
+            # API'den gelen yönlendirme linkini al
+            affiliate_link = event.get('url')
+            final_link = '#' # Varsayılan olarak boş link
+
+            # Eğer link varsa, içindeki gerçek Biletix linkini çıkar
+            if affiliate_link:
+                try:
+                    # URL'yi parçalarına ayır
+                    parsed_url = urlparse(affiliate_link)
+                    # 'u' parametresini al
+                    query_params = parse_qs(parsed_url.query)
+                    # 'u' parametresi bir liste olarak döner, ilk elemanını al
+                    biletix_url_encoded = query_params.get('u', [None])[0]
+                    
+                    if biletix_url_encoded:
+                        # URL-encoded string'i normal linke çevir
+                        final_link = unquote(biletix_url_encoded)
+                except Exception as e:
+                    print(f"⚠️ Link ayrıştırılırken hata: {e}. Orijinal link kullanılacak: {affiliate_link}")
+                    # Bir hata olursa, yine de orijinal linki kullanmayı dene
+                    final_link = affiliate_link
 
             formatted_events.append({
                 'title': event.get('name', 'Başlık Yok'),
-                'link': final_link,
+                'link': final_link,  # <-- Ayrıştırılmış ve temizlenmiş Biletix linki
                 'image_url': image_url,
                 'date_str': event.get('dates', {}).get('start', {}).get('localDate', 'Tarih Belirtilmemiş'),
                 'venue': venue_info.get('name', 'Mekan Belirtilmemiş'),
             })
 
-        print(f"✅ Ticketmaster'dan {len(formatted_events)} etkinlik başarıyla çekildi.")
+        print(f"✅ Ticketmaster'dan {len(formatted_events)} etkinlik başarıyla çekildi ve linkler düzeltildi.")
         return formatted_events
-
+    
     except requests.exceptions.RequestException as e:
         print(f"❌ Ticketmaster API isteği sırasında bir HATA oluştu: {e}")
         return []
-    except KeyError as e:
+    except (KeyError, json.JSONDecodeError) as e:
         print(f"❌ Ticketmaster API yanıtı işlenirken bir HATA oluştu: {e}")
         return []
