@@ -2,7 +2,7 @@ name: Haber Botu Sayfasını Oluştur ve Yayınla
 
 on:
   schedule:      
-    - cron: '0 * * * *'
+    - cron: '0 */2 * * *'  # 2 saatte bir otomatik tetiklenmesi çalışması için
   push:
     branches:
       - main
