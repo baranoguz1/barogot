@@ -185,20 +185,17 @@ def gather_all_data():
 # ==============================================================================
 if __name__ == "__main__":
     try:
-        # 1. Gerekli verileri topla
         print("✅ Script başlatıldı, veriler toplanıyor...")
         context = gather_all_data()
 
-        # 2. Toplanan etkinlik verilerini standart bir formata getir (ÇOK ÖNEMLİ)
+        print("🛠️ Veriler standart bir formata getiriliyor...")
         standardized_events = []
-        # 'istanbul_events' anahtarının var olup olmadığını kontrol et
         if 'istanbul_events' in context and context['istanbul_events']:
             for event in context['istanbul_events']:
-                # Her bir etkinlik için tüm anahtarların var olduğundan emin ol
                 standardized_event = {
                     'title': event.get('title', 'Başlık Yok'),
                     'link': event.get('link', '#'),
-                    'image_url': event.get('image_url', 'https://via.placeholder.com/300x200.png?text=Resim+Yok'),
+                    'image_url': event.get('image_url', ''), # Boş bırakmak daha iyi olabilir
                     'date_str': event.get('date_str', 'Tarih Belirtilmemiş'),
                     'venue': event.get('venue', 'Mekan Belirtilmemiş'),
                     'location': event.get('location', 'Şehir Belirtilmemiş'),
@@ -206,20 +203,21 @@ if __name__ == "__main__":
                 }
                 standardized_events.append(standardized_event)
         
-        # Orijinal listeyi standartlaştırılmış olanla değiştir
         context['istanbul_events'] = standardized_events
 
-        # 3. HTML içeriğini oluştur
         print("🎨 HTML şablonu dolduruluyor...")
         html_content = file_operations.render_template(context)
 
-        # 4. Oluşturulan HTML'i dosyaya kaydet
+        print("💾 HTML dosyası kaydediliyor...")
         file_operations.save_html(html_content)
-        print("🎉 index.html dosyası başarıyla oluşturuldu ve güncellendi!")
+        
+        print("🎉 Script başarıyla tamamlandı!")
 
     except Exception as e:
-        # Eğer bir hata olursa, nedenini detaylıca yazdır
+        # Eğer yukarıdaki adımlardan herhangi birinde bir hata olursa, nedenini detaylıca yazdır
         print("\n❌ PROGRAM ÇALIŞIRKEN KRİTİK BİR HATA OLUŞTU!")
-        print(f"Hata Detayı: {e}")
+        print(f"Hata Mesajı: {e}")
         import traceback
         traceback.print_exc()
+        # GitHub Actions'ın başarısız olduğunu anlaması için script'i hata koduyla sonlandır
+        exit(1)
