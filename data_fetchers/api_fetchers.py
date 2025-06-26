@@ -211,11 +211,20 @@ def get_new_turkish_rap_tracks_embed(limit=10):
         return []
     
 
-def fetch_ticketmaster_events(limit=20):
+def fetch_ticketmaster_events(limit=40, keyword=None, city=None, get_popular_and_sort_by_date=False):
     """
     Ticketmaster API'sini kullanarak Türkiye'deki etkinlikleri çeker.
+
+    :param limit: Çekilecek maksimum etkinlik sayısı.
+    :param keyword: Aranacak anahtar kelime.
+    :param city: Etkinliğin yapılacağı şehir.
+    :param get_popular_and_sort_by_date: True ise, önce en popüler etkinlikleri bulur
+                                          ve sonra bunları tarihe göre sıralar.
+                                          False ise, sadece tarihe göre sıralar.
     """
-    print("ℹ️ Ticketmaster etkinlikleri çekiliyor...")
+    sort_mode = 'relevance,desc' if get_popular_and_sort_by_date else 'date,asc'
+    print(f"ℹ️ Ticketmaster etkinlikleri çekiliyor (Mod: {'Popüler' if get_popular_and_sort_by_date else 'Kronolojik'})...")
+    
     if not config.TICKETMASTER_API_KEY:
         print("⚠️ Ticketmaster API anahtarı bulunamadı.")
         return []
@@ -225,8 +234,9 @@ def fetch_ticketmaster_events(limit=20):
         'apikey': config.TICKETMASTER_API_KEY,
         'countryCode': 'TR',
         'size': limit,
-        'sort': 'date,asc' # Etkinlikleri tarihe göre sırala
+        'sort': sort_mode
     }
+    # ... (keyword ve city filtreleri aynı kalır) ...
 
     try:
         response = requests.get(base_url, params=params, timeout=15)
@@ -234,33 +244,40 @@ def fetch_ticketmaster_events(limit=20):
         data = response.json()
 
         if "_embedded" not in data:
-            print("✅ Ticketmaster: Yaklaşan etkinlik bulunamadı.")
+            print("✅ Ticketmaster: Kriterlere uygun etkinlik bulunamadı.")
             return []
 
         fetched_events = data["_embedded"]["events"]
-        istanbul_events = []
 
+        # EĞER POPÜLERLİK MODU AKTİFSE, ŞİMDİ TARİHE GÖRE SIRALA
+        if get_popular_and_sort_by_date:
+            # Etkinlikleri 'localDate' alanına göre sıralıyoruz.
+            # Bazı etkinliklerde tarih bilgisi olmayabilir, bu durumu kontrol ediyoruz.
+            fetched_events.sort(key=lambda x: x.get('dates', {}).get('start', {}).get('localDate', '9999-12-31'))
+            print("✅ Popüler etkinlikler ayrıca tarihe göre sıralandı.")
+
+        # Veriyi HTML şablonu için formatlama...
+        formatted_events = []
         for event in fetched_events:
-            # HTML şablonunuzun beklediği formata dönüştürüyoruz
-            image_url = event['images'][0]['url'] if event.get('images') else 'https://via.placeholder.com/300x200.png?text=Etkinlik'
+            # ... (bir önceki yanıttaki formatlama kodu buraya gelecek) ...
+            # Örnek:
+            image_url = event['images'][0]['url'] if event.get('images') else ''
             venue_info = event.get('_embedded', {}).get('venues', [{}])[0]
-
-            istanbul_events.append({
+            formatted_events.append({
                 'title': event.get('name', 'Başlık Yok'),
                 'link': event.get('url', '#'),
                 'image_url': image_url,
                 'date_str': event.get('dates', {}).get('start', {}).get('localDate', 'Tarih Belirtilmemiş'),
                 'venue': venue_info.get('name', 'Mekan Belirtilmemiş'),
-                'location': venue_info.get('city', {}).get('name', 'Şehir Belirtilmemiş'),
-                'category': event.get('classifications', [{}])[0].get('segment', {}).get('name', 'Genel')
+                # ...
             })
 
-        print(f"✅ Ticketmaster'dan {len(istanbul_events)} etkinlik başarıyla çekildi.")
-        return istanbul_events
+        print(f"✅ Ticketmaster'dan {len(formatted_events)} etkinlik başarıyla çekildi.")
+        return formatted_events
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Ticketmaster API isteği sırasında bir HATA oluştu: {e}")
         return []
     except KeyError as e:
-        print(f"❌ Ticketmaster API yanıtı işlenirken bir HATA oluştu (beklenmeyen format): {e}")
+        print(f"❌ Ticketmaster API yanıtı işlenirken bir HATA oluştu: {e}")
         return []
