@@ -184,13 +184,42 @@ def gather_all_data():
 # `python main.py` komutu verildiğinde bu bölüm çalışır.
 # ==============================================================================
 if __name__ == "__main__":
-    start_time = time.time()
-    
-    # 1. Tüm verileri topla
-    final_context = gather_all_data()
-    
-    # 2. Toplanan verilerle statik HTML dosyasını oluştur
-    generate_output_files(final_context)
-    
-    end_time = time.time()
-    print(f"\n🎉 Tüm statik sayfa oluşturma işlemi {end_time - start_time:.2f} saniyede tamamlandı.")
+    try:
+        # 1. Gerekli verileri topla
+        print("✅ Script başlatıldı, veriler toplanıyor...")
+        context = gather_all_data()
+
+        # 2. Toplanan etkinlik verilerini standart bir formata getir (ÇOK ÖNEMLİ)
+        standardized_events = []
+        # 'istanbul_events' anahtarının var olup olmadığını kontrol et
+        if 'istanbul_events' in context and context['istanbul_events']:
+            for event in context['istanbul_events']:
+                # Her bir etkinlik için tüm anahtarların var olduğundan emin ol
+                standardized_event = {
+                    'title': event.get('title', 'Başlık Yok'),
+                    'link': event.get('link', '#'),
+                    'image_url': event.get('image_url', 'https://via.placeholder.com/300x200.png?text=Resim+Yok'),
+                    'date_str': event.get('date_str', 'Tarih Belirtilmemiş'),
+                    'venue': event.get('venue', 'Mekan Belirtilmemiş'),
+                    'location': event.get('location', 'Şehir Belirtilmemiş'),
+                    'category': event.get('category', 'Genel')
+                }
+                standardized_events.append(standardized_event)
+        
+        # Orijinal listeyi standartlaştırılmış olanla değiştir
+        context['istanbul_events'] = standardized_events
+
+        # 3. HTML içeriğini oluştur
+        print("🎨 HTML şablonu dolduruluyor...")
+        html_content = file_operations.render_template(context)
+
+        # 4. Oluşturulan HTML'i dosyaya kaydet
+        file_operations.save_html(html_content)
+        print("🎉 index.html dosyası başarıyla oluşturuldu ve güncellendi!")
+
+    except Exception as e:
+        # Eğer bir hata olursa, nedenini detaylıca yazdır
+        print("\n❌ PROGRAM ÇALIŞIRKEN KRİTİK BİR HATA OLUŞTU!")
+        print(f"Hata Detayı: {e}")
+        import traceback
+        traceback.print_exc()
