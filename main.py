@@ -102,7 +102,7 @@ def gather_all_data():
                 city='Istanbul',  # <-- SADECE BU SATIRI EKLİYORUZ
                 get_popular_and_sort_by_date=True
             )
-            all_events = zorlu_events + bilet_events
+            all_events = zorlu_events + istanbul_events
             context['istanbul_events'] = all_events
             print(f"✅ Toplam {len(all_events)} adet etkinlik birleştirildi.")
             
