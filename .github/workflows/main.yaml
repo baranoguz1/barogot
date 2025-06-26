@@ -52,6 +52,7 @@ jobs:
           SPOTIFY_USER_ID: ${{ secrets.SPOTIFY_USER_ID }}
           SPOTIFY_TARGET_PLAYLIST_ID: ${{ secrets.SPOTIFY_TARGET_PLAYLIST_ID }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
         run: python main.py
 
       - name: GitHub Pages artifact'ını yükle
