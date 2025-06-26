@@ -1,5 +1,7 @@
 # main.py
+import sys
 import os
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 import time
 import shutil
 from pathlib import Path
@@ -98,12 +100,12 @@ def gather_all_data():
             zorlu_events = web_scrapers.fetch_istanbul_events(driver) or []
             
             print("🔥 İstanbul'daki popüler etkinlikler getiriliyor ve tarihe göre sıralanıyor...")
-            istanbul_events = api_fetchers.fetch_ticketmaster_events(
+            ticketmaster_events = api_fetchers.fetch_ticketmaster_events(
                 limit=10,
                 city='Istanbul',  # <-- SADECE BU SATIRI EKLİYORUZ
                 get_popular_and_sort_by_date=True
             )
-            all_events = zorlu_events + istanbul_events
+            all_events = zorlu_events + ticketmaster_events
             context['istanbul_events'] = all_events
             print(f"✅ Toplam {len(all_events)} adet etkinlik birleştirildi.")
             
@@ -191,19 +193,19 @@ if __name__ == "__main__":
 
         print("🛠️ Veriler standart bir formata getiriliyor...")
         standardized_events = []
-        if 'istanbul_events' in context and context['istanbul_events']:
+        if 'istanbul_events' in context and context.get('istanbul_events'):
             for event in context['istanbul_events']:
                 standardized_event = {
                     'title': event.get('title', 'Başlık Yok'),
                     'link': event.get('link', '#'),
-                    'image_url': event.get('image_url', ''), # Boş bırakmak daha iyi olabilir
+                    'image_url': event.get('image_url', ''), # Boş string, bozuk resim ikonunu önler
                     'date_str': event.get('date_str', 'Tarih Belirtilmemiş'),
                     'venue': event.get('venue', 'Mekan Belirtilmemiş'),
                     'location': event.get('location', 'Şehir Belirtilmemiş'),
                     'category': event.get('category', 'Genel')
                 }
                 standardized_events.append(standardized_event)
-        
+
         context['istanbul_events'] = standardized_events
 
         print("🎨 HTML şablonu dolduruluyor...")
@@ -211,14 +213,12 @@ if __name__ == "__main__":
 
         print("💾 HTML dosyası kaydediliyor...")
         file_operations.save_html(html_content)
-        
+
         print("🎉 Script başarıyla tamamlandı!")
 
     except Exception as e:
-        # Eğer yukarıdaki adımlardan herhangi birinde bir hata olursa, nedenini detaylıca yazdır
         print("\n❌ PROGRAM ÇALIŞIRKEN KRİTİK BİR HATA OLUŞTU!")
         print(f"Hata Mesajı: {e}")
         import traceback
         traceback.print_exc()
-        # GitHub Actions'ın başarısız olduğunu anlaması için script'i hata koduyla sonlandır
-        exit(1)
+        exit(1) # Hata durumunda script'i hata koduyla sonlandır
