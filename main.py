@@ -96,8 +96,8 @@ def gather_all_data():
             print("ℹ️ Etkinlikler çekiliyor (Zorlu PSM)...")
             zorlu_events = web_scrapers.fetch_istanbul_events(driver) or []
             
-            print("ℹ️ Etkinlikler çekiliyor (Eventmag)...")
-            bilet_events = api_fetchers.fetch_mock_istanbul_events()
+            print("ℹ️ Etkinlikler çekiliyor (Ticketmaster)...")
+            bilet_events = api_fetchers.fetch_ticketmaster_events()
             all_events = zorlu_events + bilet_events
             context['istanbul_events'] = all_events
             print(f"✅ Toplam {len(all_events)} adet etkinlik birleştirildi.")

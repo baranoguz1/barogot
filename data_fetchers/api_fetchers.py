@@ -211,47 +211,56 @@ def get_new_turkish_rap_tracks_embed(limit=10):
         return []
     
 
-def fetch_mock_istanbul_events(limit=5):
+def fetch_ticketmaster_events(limit=20):
     """
-    API anahtarı beklenirken geliştirme ve test amacıyla sahte etkinlik verisi üretir.
-    API'den dönen veriyle aynı yapıyı kullanır.
+    Ticketmaster API'sini kullanarak Türkiye'deki etkinlikleri çeker.
     """
-    print("ℹ️ GEÇİCİ: API yanıtı beklenirken sahte etkinlik verisi kullanılıyor...")
-    
-    mock_events = [
-        {
-            'title': 'Sahte Konser: Pop Grubu',
-            'link': '#',
-            'image': 'https://via.placeholder.com/300x200.png?text=Konser+Afisi',
-            'date': '2025-07-15',
-            'location': 'Hayali Sahne, Beşiktaş',
-            'category': 'Pop Müzik'
-        },
-        {
-            'title': 'Sahte Tiyatro: Bir Yaz Gecesi Rüyası',
-            'link': '#',
-            'image': 'https://via.placeholder.com/300x200.png?text=Tiyatro+Oyunu',
-            'date': '2025-07-18',
-            'location': 'Kültür Merkezi, Kadıköy',
-            'category': 'Tiyatro'
-        },
-        {
-            'title': 'Sahte Festival: Lezzet Festivali',
-            'link': '#',
-            'image': 'https://via.placeholder.com/300x200.png?text=Festival',
-            'date': '2025-07-20',
-            'location': 'Festival Parkı, Yenikapı',
-            'category': 'Festival'
-        },
-        {
-            'title': 'Sahte Sergi: Modern Sanat Sergisi',
-            'link': '#',
-            'image': 'https://via.placeholder.com/300x200.png?text=Sanat+Sergisi',
-            'date': '2025-07-22',
-            'location': 'Sanat Galerisi, Beyoğlu',
-            'category': 'Sergi'
-        }
-    ]
-    
-    print(f"✅ {len(mock_events[:limit])} adet sahte etkinlik başarıyla oluşturuldu.")
-    return mock_events[:limit]
+    print("ℹ️ Ticketmaster etkinlikleri çekiliyor...")
+    if not config.TICKETMASTER_API_KEY:
+        print("⚠️ Ticketmaster API anahtarı bulunamadı.")
+        return []
+
+    base_url = "https://app.ticketmaster.com/discovery/v2/events.json"
+    params = {
+        'apikey': config.TICKETMASTER_API_KEY,
+        'countryCode': 'TR',
+        'size': limit,
+        'sort': 'date,asc' # Etkinlikleri tarihe göre sırala
+    }
+
+    try:
+        response = requests.get(base_url, params=params, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+
+        if "_embedded" not in data:
+            print("✅ Ticketmaster: Yaklaşan etkinlik bulunamadı.")
+            return []
+
+        fetched_events = data["_embedded"]["events"]
+        istanbul_events = []
+
+        for event in fetched_events:
+            # HTML şablonunuzun beklediği formata dönüştürüyoruz
+            image_url = event['images'][0]['url'] if event.get('images') else 'https://via.placeholder.com/300x200.png?text=Etkinlik'
+            venue_info = event.get('_embedded', {}).get('venues', [{}])[0]
+
+            istanbul_events.append({
+                'title': event.get('name', 'Başlık Yok'),
+                'link': event.get('url', '#'),
+                'image_url': image_url,
+                'date_str': event.get('dates', {}).get('start', {}).get('localDate', 'Tarih Belirtilmemiş'),
+                'venue': venue_info.get('name', 'Mekan Belirtilmemiş'),
+                'location': venue_info.get('city', {}).get('name', 'Şehir Belirtilmemiş'),
+                'category': event.get('classifications', [{}])[0].get('segment', {}).get('name', 'Genel')
+            })
+
+        print(f"✅ Ticketmaster'dan {len(istanbul_events)} etkinlik başarıyla çekildi.")
+        return istanbul_events
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Ticketmaster API isteği sırasında bir HATA oluştu: {e}")
+        return []
+    except KeyError as e:
+        print(f"❌ Ticketmaster API yanıtı işlenirken bir HATA oluştu (beklenmeyen format): {e}")
+        return []
