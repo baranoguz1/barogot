@@ -290,7 +290,7 @@ def fetch_ticketmaster_events(limit=20, keyword=None, city=None, get_popular_and
 
             formatted_events.append({
                 'title': event.get('name', 'Başlık Yok'),
-                'link': final_link,  # <-- Ayrıştırılmış ve temizlenmiş Biletix linki
+                'link': final_link,  # <- Ayrıştırılmış ve temizlenmiş Biletix linki
                 'image_url': image_url,
                 'date_str': event.get('dates', {}).get('start', {}).get('localDate', 'Tarih Belirtilmemiş'),
                 'venue': venue_info.get('name', 'Mekan Belirtilmemiş'),
