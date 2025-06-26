@@ -1,11 +1,12 @@
 # main.py
-
+import os
 import time
 import shutil
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
+from utils import file_operations, webdriver_setup
 import undetected_chromedriver as uc
 
 # Proje modüllerini import et
