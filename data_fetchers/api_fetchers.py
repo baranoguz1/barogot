@@ -262,24 +262,22 @@ def fetch_ticketmaster_events(limit=20, keyword=None, city=None, get_popular_and
         # Veriyi HTML şablonu için formatlama...
         formatted_events = []
         for event in fetched_events:
+            # --- HATA AYIKLAMA İÇİN EKLENEN SATIR ---
+            print("--- TICKETMASTER EVENT DATA ---")
+            import json
+            print(json.dumps(event, indent=2))
+            print("---------------------------------")
+            # --- BİTİŞ ---
+
             image_url = event['images'][0]['url'] if event.get('images') else ''
             venue_info = event.get('_embedded', {}).get('venues', [{}])[0]
             
-            # API'den gelen URL'yi al
-            event_link = event.get('url')
-            
-            # URL'nin geçerli ve tam olduğundan emin ol. Değilse, boş bırak.
-            if not event_link or not event_link.startswith('http'):
-                # Eğer link hatalıysa, bu etkinliği atlayabilir veya linki '#' yapabilirsiniz.
-                # Genellikle en güvenlisi, geçersiz linkli etkinliği hiç göstermemektir.
-                # Ama şimdilik sadece linki boş bırakalım ki hata vermesin.
-                final_link = '#'
-            else:
-                final_link = event_link
+            # Linki hala event.get('url')'den almaya devam ediyoruz, çıktıyı inceleyeceğiz
+            final_link = event.get('url', '#')
 
             formatted_events.append({
                 'title': event.get('name', 'Başlık Yok'),
-                'link': final_link,  # <-- Düzeltilmiş ve güvenli hale getirilmiş link
+                'link': final_link,
                 'image_url': image_url,
                 'date_str': event.get('dates', {}).get('start', {}).get('localDate', 'Tarih Belirtilmemiş'),
                 'venue': venue_info.get('name', 'Mekan Belirtilmemiş'),
