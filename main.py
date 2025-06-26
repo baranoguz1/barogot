@@ -1,14 +1,11 @@
 # main.py
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 import time
 import shutil
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
-from utils import file_operations, webdriver_setup
 import undetected_chromedriver as uc
 
 # Proje modüllerini import et
@@ -187,34 +184,16 @@ def gather_all_data():
 # `python main.py` komutu verildiğinde bu bölüm çalışır.
 # ==============================================================================
 if __name__ == "__main__":
+    start_time = time.time()
     try:
-        print("✅ Script başlatıldı, veriler toplanıyor...")
-        context = gather_all_data()
-
-        print("🛠️ Veriler standart bir formata getiriliyor...")
-        standardized_events = []
-        if 'istanbul_events' in context and context.get('istanbul_events'):
-            for event in context['istanbul_events']:
-                standardized_event = {
-                    'title': event.get('title', 'Başlık Yok'),
-                    'link': event.get('link', '#'),
-                    'image_url': event.get('image_url', ''), # Boş string, bozuk resim ikonunu önler
-                    'date_str': event.get('date_str', 'Tarih Belirtilmemiş'),
-                    'venue': event.get('venue', 'Mekan Belirtilmemiş'),
-                    'location': event.get('location', 'Şehir Belirtilmemiş'),
-                    'category': event.get('category', 'Genel')
-                }
-                standardized_events.append(standardized_event)
-
-        context['istanbul_events'] = standardized_events
-
-        print("🎨 HTML şablonu dolduruluyor...")
-        html_content = file_operations.render_template(context)
-
-        print("💾 HTML dosyası kaydediliyor...")
-        file_operations.save_html(html_content)
-
-        print("🎉 Script başarıyla tamamlandı!")
+        # 1. Tüm verileri topla
+        final_context = gather_all_data()
+        
+        # 2. Toplanan verilerle statik HTML dosyasını ve diğer dosyaları oluştur
+        generate_output_files(final_context)
+        
+        end_time = time.time()
+        print(f"\n🎉 Tüm statik sayfa oluşturma işlemi {end_time - start_time:.2f} saniyede tamamlandı.")
 
     except Exception as e:
         print("\n❌ PROGRAM ÇALIŞIRKEN KRİTİK BİR HATA OLUŞTU!")
