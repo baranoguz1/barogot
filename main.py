@@ -141,32 +141,54 @@ def gather_all_data():
                 print(f"⚠️ RSS görevi hatası: {e}")
     context['news'] = news_results
     
-    # --- Yapay Zeka ile İçerik Üretimi (Bu bölüm değişmedi) ---
-    print("\n--- Yapay Zeka ile İçerik Üretimi Başladı ---")
-    if context.get('weather'):
-        context['weather_commentary'] = generate_weather_commentary(context['weather'])
-    if context.get('twitter_trends'):
-        context['twitter_headline'] = generate_dynamic_headline_for_trends(context.get('twitter_trends'))
-    all_news_flat = [item for sublist in news_results.values() for item in sublist]
-    sorted_news = sorted(all_news_flat, key=lambda x: x['pub_date_parsed'], reverse=True)[:20]
-    news_for_summary = []
-    print(f"Özetleme için en yeni {len(sorted_news)} haberin içeriği çekiliyor...")
-    for news_item in sorted_news:
-        snippet = fetch_article_snippet(news_item['link'])
-        if snippet:
-            news_for_summary.append({"title": news_item['title'], "content": snippet})
-    if news_for_summary:
-        summary_data = generate_abstractive_summary(news_for_summary)
-        if summary_data:
-            context['top_headlines'] = summary_data
-        else:
-            context['top_headlines'] = []
-    else:
-        context['top_headlines'] = []
-    context['contextual_suggestion'] = generate_contextual_activity_suggestion(context.get('weather_commentary'), context.get('istanbul_events'))
-    context['daily_briefing'] = generate_daily_briefing(context)
+    # --- Yapay Zeka ile İçerik Üretimi (Önbellek Kontrolü Aktif) ---
+    print("\n--- Yapay Zeka ile İçerik Üretimi Başladı (Önbellek Kontrolü Aktif) ---")
+
+    # Hava durumu yorumu: 120 dakika (2 saat) önbellek
+    weather_commentary_fetcher = lambda: generate_weather_commentary(context.get('weather'))
+    context['weather_commentary'] = get_cached_data("ai_weather_commentary.json", weather_commentary_fetcher, expiry_minutes=120)
+
+    # Twitter başlığı: 60 dakika önbellek
+    twitter_headline_fetcher = lambda: generate_dynamic_headline_for_trends(context.get('twitter_trends'))
+    context['twitter_headline'] = get_cached_data("ai_twitter_headline.json", twitter_headline_fetcher, expiry_minutes=60)
+
+    # Aktivite Önerisi: 120 dakika önbellek
+    activity_suggestion_fetcher = lambda: generate_contextual_activity_suggestion(context.get('weather_commentary'), context.get('istanbul_events'))
+    context['contextual_suggestion'] = get_cached_data("ai_activity_suggestion.json", activity_suggestion_fetcher, expiry_minutes=120)
+
+    # Günlük Haber Özeti: 180 dakika (3 saat) önbellek
+    def fetch_daily_summary():
+        """Haber içeriklerini çekip özetleyen ve sadece sonucu döndüren yardımcı fonksiyon."""
+        # API isteğini azaltmak için özetlenecek haber sayısını 20'den 5'e düşürelim.
+        all_news_flat = [item for sublist in news_results.values() for item in sublist]
+        sorted_news = sorted(all_news_flat, key=lambda x: x['pub_date_parsed'], reverse=True)[:5]
+        
+        news_for_summary = []
+        print(f"Özetleme için en yeni {len(sorted_news)} haberin içeriği çekiliyor...")
+        for news_item in sorted_news:
+            snippet = fetch_article_snippet(news_item['link'])
+            if snippet:
+                news_for_summary.append({"title": news_item['title'], "content": snippet})
+                
+        if news_for_summary:
+            summary_data = generate_abstractive_summary(news_for_summary)
+            return summary_data # Özetin tamamını döndür
+        return None
+
+    # Haber özetini önbellekten al veya yeniden oluştur
+    summary_data = get_cached_data("ai_summary.json", fetch_daily_summary, expiry_minutes=180)
+    context['top_headlines'] = summary_data if summary_data else []
+
+
+    # Günlük Brifing: 180 dakika önbellek
+    # Bu fonksiyon, diğer AI çıktılarından (hava durumu yorumu vb.) beslendiği için en sona koyuyoruz.
+    daily_briefing_fetcher = lambda: generate_daily_briefing(context)
+    context['daily_briefing'] = get_cached_data("ai_daily_briefing.json", daily_briefing_fetcher, expiry_minutes=180)
+
+
+    # Son güncelleme zamanını ekle
     context['last_update'] = datetime.now(config.TZ).strftime('%d %B %Y, %H:%M:%S')
-    
+
     print("--- Tüm Veri Toplama ve İşleme Adımları Tamamlandı ---")
     return context
 
