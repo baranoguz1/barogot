@@ -98,9 +98,10 @@ def gather_all_data():
             
             print("🔥 İstanbul'daki popüler etkinlikler getiriliyor ve tarihe göre sıralanıyor...")
             ticketmaster_events = api_fetchers.fetch_ticketmaster_events(
-                limit=10,
-                city='Istanbul',  # <-- SADECE BU SATIRI EKLİYORUZ
-                get_popular_and_sort_by_date=True
+                limit=1,
+                city='Istanbul',
+                keyword='Justin Timberlake', # Sadece bu anahtar kelimeyi ara
+                get_popular_and_sort_by_date=False # Puanlamayı şimdilik kapat
             )
             all_events = zorlu_events + ticketmaster_events
             context['istanbul_events'] = all_events
