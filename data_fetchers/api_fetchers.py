@@ -214,107 +214,113 @@ def get_new_turkish_rap_tracks_embed(limit=10):
     
 
 
-def fetch_ticketmaster_events(limit=10, keyword=None, city=None, get_popular_and_sort_by_date=False):
-    """
-    Ticketmaster API'sini kullanarak Türkiye'deki etkinlikleri çeker.
-    Popülerlik modu aktifse, kendi kriterlerimize göre puanlama ve sıralama yapar.
-    """
-    sort_mode = 'relevance,desc'
-    print(f"ℹ️ Ticketmaster etkinlikleri çekiliyor (Mod: {'Popüler (Özel Puanlama)' if get_popular_and_sort_by_date else 'Kronolojik'})...")
 
+def fetch_ticketmaster_events(limit=10, city=None, get_popular_and_sort_by_date=False):
+    """
+    Ticketmaster API'sini kullanarak hibrit bir strateji ile etkinlikleri çeker.
+    Hem genel popülerlik sorgusu yapar hem de kritik anahtar kelimeleri arar.
+    """
     if not config.TICKETMASTER_API_KEY:
         print("⚠️ Ticketmaster API anahtarı bulunamadı.")
         return []
 
+    print("ℹ️ Ticketmaster etkinlikleri çekiliyor (Hibrit Strateji)...")
     base_url = "https://app.ticketmaster.com/discovery/v2/events.json"
     
-    # Adım 1: Popülerlik analizi için geniş bir havuz çekiyoruz.
-    fetch_size = 200 if get_popular_and_sort_by_date else limit
+    # --- HİBRİT STRATEJİ ---
+    all_fetched_events = {} # Tekrarları önlemek için dictionary kullanıyoruz (event_id: event_data)
 
-    params = {
-        'apikey': config.TICKETMASTER_API_KEY,
-        'countryCode': 'TR',
-        'size': fetch_size,
-        'sort': sort_mode
+    # 1. Genel Popülerlik Çağrısı (Geniş havuz)
+    print("➡️ Adım 1: Genel popüler etkinlikler çekiliyor...")
+    general_params = {
+        'apikey': config.TICKETMASTER_API_KEY, 'countryCode': 'TR',
+        'size': 200, 'sort': 'relevance,desc'
     }
-    if city: params['city'] = city
-    if keyword: params['keyword'] = keyword
-
+    if city: general_params['city'] = city
+    
     try:
-        response = requests.get(base_url, params=params, timeout=15)
+        response = requests.get(base_url, params=general_params, timeout=15)
         response.raise_for_status()
         data = response.json()
-
-        if "_embedded" not in data:
-            print("✅ Ticketmaster: Kriterlere uygun etkinlik bulunamadı.")
-            return []
-
-        fetched_events = data["_embedded"]["events"]
-
-        # Adım 2 & 3: Popülerlik modu aktifse, özel puanlama ve yeniden sıralama yap.
-        if get_popular_and_sort_by_date:
-            print(f"⚙️  {len(fetched_events)} etkinlik üzerinden özel popülerlik analizi yapılıyor...")
-            for event in fetched_events:
-                score = 0
-                venue_name = event.get('_embedded', {}).get('venues', [{}])[0].get('name', '').lower()
-                
-                # Puanlama Kriteri 1: Mekan büyüklüğü/önemi
-                if any(k in venue_name for k in ['stadyum', 'arena', 'park', 'psm', 'maximum uniq', 'santral', 'kültür merkezi']):
-                    score += 100
-                
-                # Puanlama Kriteri 2: Etkinlik türü
-                classification = event.get('classifications', [{}])[0]
-                if classification.get('segment', {}).get('name') == 'Music':
-                    score += 20
-                
-                event['popularity_score'] = score
-            
-            # Puanı en yüksek olanı en başa al, eşitlik durumunda tarihi yakın olanı öne al.
-            fetched_events.sort(key=lambda x: x.get('dates', {}).get('start', {}).get('localDate', '9999-12-31'))
-            fetched_events.sort(key=lambda x: x.get('popularity_score', 0), reverse=True)
-            print("✅ Etkinlikler özel popülerlik puanına göre yeniden sıralandı.")
-
-
-        # Adım 4: Veriyi formatla ve istenen limitte geri döndür.
-        formatted_events = []
-        # Not: Döngüyü en baştan alıp, istenen limite göre içeride kırpıyoruz.
-        for event in fetched_events:
-            if len(formatted_events) >= limit:
-                break
-
-            image_url = event['images'][0]['url'] if event.get('images') else ''
-            venue_info = event.get('_embedded', {}).get('venues', [{}])[0]
-            
-            affiliate_link = event.get('url')
-            final_link = '#' 
-
-            if affiliate_link:
-                try:
-                    parsed_url = urlparse(affiliate_link)
-                    query_params = parse_qs(parsed_url.query)
-                    biletix_url_encoded = query_params.get('u', [None])[0]
-                    
-                    if biletix_url_encoded:
-                        final_link = unquote(biletix_url_encoded)
-                except Exception as e:
-                    print(f"⚠️ Link ayrıştırılırken hata: {e}. Orijinal link kullanılacak: {affiliate_link}")
-                    final_link = affiliate_link
-
-            formatted_events.append({
-                'title': event.get('name', 'Başlık Yok'),
-                'link': final_link,
-                'image_url': image_url,
-                'date_str': event.get('dates', {}).get('start', {}).get('localDate', 'Tarih Belirtilmemiş'),
-                'venue': venue_info.get('name', 'Mekan Belirtilmemiş'),
-            })
-
-        print(f"✅ Ticketmaster'dan {len(formatted_events)} etkinlik başarıyla işlendi.")
-        return formatted_events
-    
+        if "_embedded" in data:
+            for event in data["_embedded"]["events"]:
+                all_fetched_events[event['id']] = event
     except requests.exceptions.RequestException as e:
-        print(f"❌ Ticketmaster API isteği sırasında bir HATA oluştu: {e}")
-        return []
-    # json import edildiği için artık bu hata kontrolü çalışacaktır.
-    except (KeyError, json.JSONDecodeError) as e:
-        print(f"❌ Ticketmaster API yanıtı işlenirken bir HATA oluştu: {e}")
-        return []
+        print(f"⚠️ Genel etkinlik çekme hatası: {e}")
+
+    # 2. Özel Anahtar Kelime Çağrıları (Garanti Liste)
+    print("➡️ Adım 2: Kritik etkinlikler anahtar kelime ile aranıyor...")
+    must_have_keywords = ['Justin Timberlake', 'Black Eyed Peas'] # Burayı istediğiniz gibi genişletebilirsiniz
+    
+    for keyword in must_have_keywords:
+        print(f"   - Aranıyor: '{keyword}'")
+        keyword_params = {
+            'apikey': config.TICKETMASTER_API_KEY, 'countryCode': 'TR',
+            'keyword': keyword, 'size': 5
+        }
+        if city: keyword_params['city'] = city
+
+        try:
+            response = requests.get(base_url, params=keyword_params, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            if "_embedded" in data:
+                for event in data["_embedded"]["events"]:
+                    all_fetched_events[event['id']] = event
+        except requests.exceptions.RequestException as e:
+            print(f"⚠️ '{keyword}' arama hatası: {e}")
+
+    
+    # --- SIRALAMA VE FORMATLAMA ---
+    
+    # Dictionary'den listeye çeviriyoruz
+    final_event_list = list(all_fetched_events.values())
+
+    # 3. Özel Puanlama ve Sıralama
+    print(f"➡️ Adım 3: Toplam {len(final_event_list)} benzersiz etkinlik üzerinden popülerlik analizi yapılıyor...")
+    for event in final_event_list:
+        score = 0
+        venue_name = event.get('_embedded', {}).get('venues', [{}])[0].get('name', '').lower()
+        
+        if any(k in venue_name for k in ['stadyum', 'arena', 'park', 'psm', 'maximum uniq', 'santral', 'kültür merkezi']):
+            score += 100
+        
+        classification = event.get('classifications', [{}])[0]
+        if classification.get('segment', {}).get('name') == 'Music':
+            score += 20
+        
+        event['popularity_score'] = score
+    
+    final_event_list.sort(key=lambda x: x.get('dates', {}).get('start', {}).get('localDate', '9999-12-31'))
+    final_event_list.sort(key=lambda x: x.get('popularity_score', 0), reverse=True)
+    print("✅ Etkinlikler nihai popülerlik puanına göre sıralandı.")
+
+    # 4. Veriyi Formatlama
+    formatted_events = []
+    for event in final_event_list[:limit]: # Listeyi istenen limite göre kırp
+        image_url = event['images'][0]['url'] if event.get('images') else ''
+        venue_info = event.get('_embedded', {}).get('venues', [{}])[0]
+        
+        affiliate_link = event.get('url')
+        final_link = '#' 
+
+        if affiliate_link:
+            try:
+                parsed_url = urlparse(affiliate_link)
+                query_params = parse_qs(parsed_url.query)
+                biletix_url_encoded = query_params.get('u', [None])[0]
+                if biletix_url_encoded:
+                    final_link = unquote(biletix_url_encoded)
+            except Exception as e:
+                final_link = affiliate_link
+
+        formatted_events.append({
+            'title': event.get('name', 'Başlık Yok'),
+            'link': final_link,
+            'image_url': image_url,
+            'date_str': event.get('dates', {}).get('start', {}).get('localDate', 'Tarih Belirtilmemiş'),
+            'venue': venue_info.get('name', 'Mekan Belirtilmemiş'),
+        })
+
+    print(f"✅ Sonuç: {len(formatted_events)} popüler etkinlik başarıyla listelendi.")
+    return formatted_events
