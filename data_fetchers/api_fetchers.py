@@ -252,7 +252,7 @@ def get_popular_artists_from_spotify(playlist_id, limit=50):
         return []
 
 
-# api_fetchers.py dosyasındaki fonksiyonun son hali
+# api_fetchers.py dosyasındaki fonksiyonun olması gereken son hali
 
 def fetch_ticketmaster_events(limit=10, city=None, get_popular_and_sort_by_date=False):
     """
@@ -264,9 +264,40 @@ def fetch_ticketmaster_events(limit=10, city=None, get_popular_and_sort_by_date=
         print("⚠️ Ticketmaster API anahtarı bulunamadı.")
         return []
 
-    print("ℹ️ Ticketmaster etkinlikleri çekiliyor (Gelişmiş Puanlama + Tekrar Engelleme)...")
+    print("ℹ️ Ticketmaster etkinlikleri çekiliyor (Gelişmiş Puanlama + Tekrar Engelleme v2)...")
     base_url = "https://app.ticketmaster.com/discovery/v2/events.json"
     all_fetched_events = {} # Tekrarları isme göre temizlemek için {event_name: event_data}
+
+    # --- VERİ TOPLAMA ADIMLARI ---
+
+    # Adım 0: Aranacak anahtar kelime listelerini oluştur
+    final_keywords = set()
+    if get_popular_and_sort_by_date:
+        # Statik Garanti Listesi
+        guaranteed_keywords = {'Justin Timberlake', 'Metallica', 'Black Eyed Peas'}
+        final_keywords.update(guaranteed_keywords)
+        
+        # Dinamik Liste
+        dynamic_keywords = get_popular_artists_from_spotify(playlist_id='37i9dQZEVXbIVYVBNw9D5K')
+        if dynamic_keywords:
+            final_keywords.update(dynamic_keywords)
+        print(f"➡️ Adım 0: Toplam {len(final_keywords)} benzersiz anahtar kelime ile arama yapılacak.")
+
+    # Birleşik Arama Fonksiyonu (Kodu tekrarlamamak için)
+    def search_and_add(params):
+        try:
+            response = requests.get(base_url, params=params, timeout=15)
+            if response.status_code == 200:
+                data = response.json()
+                if "_embedded" in data:
+                    for event in data["_embedded"]["events"]:
+                        # *** EN ÖNEMLİ DÜZELTME BURADA ***
+                        # Etkinliğin adı varsa ve daha önce eklenmemişse listeye ekle
+                        event_name = event.get('name')
+                        if event_name and event_name not in all_fetched_events:
+                            all_fetched_events[event_name] = event
+        except requests.exceptions.RequestException as e:
+            print(f"⚠️ Arama hatası: {e}")
 
     # Adım 1: Genel Popülerlik Çağrısı
     print("➡️ Adım 1: Genel popüler etkinlikler çekiliyor...")
@@ -275,36 +306,20 @@ def fetch_ticketmaster_events(limit=10, city=None, get_popular_and_sort_by_date=
         'size': 200, 'sort': 'relevance,desc', 'classificationName': 'Music'
     }
     if city: general_params['city'] = city
-    try:
-        response = requests.get(base_url, params=general_params, timeout=15)
-        response.raise_for_status()
-        data = response.json()
-        if "_embedded" in data:
-            for event in data["_embedded"]["events"]:
-                if event.get('name') and event['name'] not in all_fetched_events:
-                    all_fetched_events[event['name']] = event
-    except requests.exceptions.RequestException as e:
-        print(f"⚠️ Genel etkinlik çekme hatası: {e}")
+    search_and_add(general_params)
 
-    # Adım 2: Kritik anahtar kelimeleri arama
-    guaranteed_keywords = {'Justin Timberlake', 'Metallica', 'Black Eyed Peas'}
-    if get_popular_and_sort_by_date and guaranteed_keywords:
-        print(f"➡️ Adım 2: {len(guaranteed_keywords)} garanti anahtar kelime aranıyor...")
-        for keyword in guaranteed_keywords:
+    # Adım 2: Birleştirilmiş Anahtar Kelime Listesini Arama
+    if final_keywords:
+        print(f"➡️ Adım 2: Anahtar kelimeler Ticketmaster'da aranıyor...")
+        for keyword in final_keywords:
             keyword_params = {'apikey': config.TICKETMASTER_API_KEY, 'countryCode': 'TR', 'keyword': keyword, 'size': 5}
-            try:
-                response = requests.get(base_url, params=keyword_params, timeout=10)
-                if response.status_code == 200:
-                    data = response.json()
-                    if "_embedded" in data:
-                        for event in data["_embedded"]["events"]:
-                            if event.get('name') and event['name'] not in all_fetched_events:
-                                all_fetched_events[event['name']] = event
-            except requests.exceptions.RequestException:
-                continue
+            if city: keyword_params['city'] = city
+            search_and_add(keyword_params)
 
-    # Adım 3: Gelişmiş Popülerlik Puanlaması ve Sıralama
+    # --- PUANLAMA, SIRALAMA VE FORMATLAMA ---
     final_event_list = list(all_fetched_events.values())
+    
+    # Adım 3: Gelişmiş Popülerlik Puanlaması ve Sıralama
     if get_popular_and_sort_by_date:
         print(f"➡️ Adım 3: {len(final_event_list)} benzersiz etkinlik için gelişmiş popülerlik analizi yapılıyor...")
         for event in final_event_list:
