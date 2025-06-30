@@ -212,7 +212,7 @@ def get_new_turkish_rap_tracks_embed(limit=10):
         print("⚠️ Spotify API yanıt formatı beklenmedik.")
         return []
     
-    
+
 
 def get_popular_artists_from_spotify(playlist_id, limit=50):
     """
@@ -252,28 +252,38 @@ def get_popular_artists_from_spotify(playlist_id, limit=50):
         return []
 
 
+# api_fetchers.py dosyasındaki fonksiyonun son hali
+
 def fetch_ticketmaster_events(limit=10, city=None, get_popular_and_sort_by_date=False):
     """
     Ticketmaster API'sini kullanarak hibrit ve dinamik bir strateji ile etkinlikleri çeker.
-    Popüler sanatçıları Spotify'dan öğrenir, genel etkinliklerle birleştirir ve özel puanlama ile sıralar.
+    Tekrarlanan etkinlikleri etkinliğin ismine göre temizler.
     """
     if not config.TICKETMASTER_API_KEY:
         print("⚠️ Ticketmaster API anahtarı bulunamadı.")
         return []
 
-    print("ℹ️ Ticketmaster etkinlikleri çekiliyor (Dinamik Hibrit Strateji)...")
+    print("ℹ️ Ticketmaster etkinlikleri çekiliyor (Nihai Hibrit Strateji v2)...")
     base_url = "https://app.ticketmaster.com/discovery/v2/events.json"
-    all_fetched_events = {} # Tekrarları önlemek için {event_id: event_data} yapısı
+    # DÜZELTME: Tekrarları isimle kontrol etmek için dictionary yapısını değiştiriyoruz.
+    # {event_name: event_data}
+    all_fetched_events = {}
 
-    # --- HİBRİT STRATEJİNİN UYGULANMASI ---
+    # --- HİBRİT STRATEJİ ---
 
-    # Adım 0: Spotify'dan popüler sanatçıları dinamik olarak öğren
-    dynamic_keywords = []
+    # Adım 0: Aranacak anahtar kelime listelerini oluştur
+    final_keywords = set()
     if get_popular_and_sort_by_date:
-        # Spotify'ın "Top 50 - Turkey" listesinin ID'si: '37i9dQZEVXbIVYVBNw9D5K'
+        guaranteed_keywords = {'Justin Timberlake', 'Ed Sheeran', 'Metallica', 'Black Eyed Peas'}
+        final_keywords.update(guaranteed_keywords)
+        
         dynamic_keywords = get_popular_artists_from_spotify(playlist_id='37i9dQZEVXbIVYVBNw9D5K')
+        if dynamic_keywords:
+            final_keywords.update(dynamic_keywords)
+        print(f"➡️ Adım 0: Toplam {len(final_keywords)} benzersiz anahtar kelime ile arama yapılacak.")
 
-    # Adım 1: Genel Popülerlik Çağrısı (Geniş havuz)
+
+    # Adım 1: Genel Popülerlik Çağrısı
     print("➡️ Adım 1: Genel popüler etkinlikler çekiliyor...")
     general_params = {
         'apikey': config.TICKETMASTER_API_KEY, 'countryCode': 'TR',
@@ -287,46 +297,43 @@ def fetch_ticketmaster_events(limit=10, city=None, get_popular_and_sort_by_date=
         data = response.json()
         if "_embedded" in data:
             for event in data["_embedded"]["events"]:
-                all_fetched_events[event['id']] = event
+                # DÜZELTME: Etkinliği ID yerine İSME göre sözlüğe ekle.
+                # Eğer aynı isimde bir etkinlik zaten varsa, üzerine yazma (ilk bulunan kalsın).
+                if event['name'] not in all_fetched_events:
+                    all_fetched_events[event['name']] = event
     except requests.exceptions.RequestException as e:
         print(f"⚠️ Genel etkinlik çekme hatası: {e}")
 
-    # Adım 2: Spotify'dan Gelen Dinamik Anahtar Kelimeleri Arama
-    if dynamic_keywords:
-        print(f"➡️ Adım 2: {len(dynamic_keywords)} popüler sanatçı Ticketmaster'da aranıyor...")
-        for keyword in dynamic_keywords:
-            keyword_params = {
-                'apikey': config.TICKETMASTER_API_KEY, 'countryCode': 'TR',
-                'keyword': keyword, 'size': 5 # Her sanatçı için en fazla 5 etkinlik yeterli
-            }
+    # Adım 2: Birleştirilmiş Anahtar Kelime Listesini Arama
+    if final_keywords:
+        print(f"➡️ Adım 2: Anahtar kelimeler Ticketmaster'da aranıyor...")
+        for keyword in final_keywords:
+            keyword_params = {'apikey': config.TICKETMASTER_API_KEY, 'countryCode': 'TR', 'keyword': keyword, 'size': 5}
             if city: keyword_params['city'] = city
             try:
-                # Bu çağrılar kritik olmadığı için daha kısa timeout ve hata durumunda devam etme
                 response = requests.get(base_url, params=keyword_params, timeout=10)
                 if response.status_code == 200:
                     data = response.json()
                     if "_embedded" in data:
                         for event in data["_embedded"]["events"]:
-                            all_fetched_events[event['id']] = event
+                             # DÜZELTME: Burada da ID yerine İSME göre kontrol et.
+                            if event['name'] not in all_fetched_events:
+                                all_fetched_events[event['name']] = event
             except requests.exceptions.RequestException:
-                continue # Bir sanatçı aramasında hata olursa diğerleriyle devam et
+                continue
 
-    # --- SIRALAMA VE FORMATLAMA ---
+    # --- SIRALAMA VE FORMATLAMA (Bu kısımlar değişmedi) ---
     final_event_list = list(all_fetched_events.values())
-
+    
     # Adım 3: Özel Puanlama ve Nihai Sıralama
     if get_popular_and_sort_by_date:
         print(f"➡️ Adım 3: Toplam {len(final_event_list)} benzersiz etkinlik üzerinden popülerlik analizi yapılıyor...")
         for event in final_event_list:
             score = 0
             venue_name = event.get('_embedded', {}).get('venues', [{}])[0].get('name', '').lower()
-            
-            # Puanlama Kriteri: Mekan büyüklüğü/önemi
             if any(k in venue_name for k in ['stadyum', 'arena', 'park', 'psm', 'maximum uniq', 'santral', 'kültür merkezi']):
                 score += 100
             event['popularity_score'] = score
-        
-        # Önce puana göre (büyükten küçüğe), sonra tarihe göre (yakından uzağa) sırala
         final_event_list.sort(key=lambda x: x.get('dates', {}).get('start', {}).get('localDate', '9999-12-31'))
         final_event_list.sort(key=lambda x: x.get('popularity_score', 0), reverse=True)
         print("✅ Etkinlikler nihai popülerlik puanına göre sıralandı.")
@@ -338,7 +345,6 @@ def fetch_ticketmaster_events(limit=10, city=None, get_popular_and_sort_by_date=
         venue_info = event.get('_embedded', {}).get('venues', [{}])[0]
         affiliate_link = event.get('url')
         final_link = '#'
-
         if affiliate_link:
             try:
                 parsed_url = urlparse(affiliate_link)
@@ -348,14 +354,11 @@ def fetch_ticketmaster_events(limit=10, city=None, get_popular_and_sort_by_date=
                     final_link = unquote(biletix_url_encoded)
             except (IndexError, TypeError):
                 final_link = affiliate_link
-
         formatted_events.append({
-            'title': event.get('name', 'Başlık Yok'),
-            'link': final_link,
-            'image_url': image_url,
-            'date_str': event.get('dates', {}).get('start', {}).get('localDate', 'Tarih Belirtilmemiş'),
+            'title': event.get('name', 'Başlık Yok'), 'link': final_link,
+            'image_url': image_url, 'date_str': event.get('dates', {}).get('start', {}).get('localDate', 'Tarih Belirtilmemiş'),
             'venue': venue_info.get('name', 'Mekan Belirtilmemiş'),
         })
-
+    
     print(f"✅ Sonuç: {len(formatted_events)} popüler etkinlik başarıyla listelendi.")
     return formatted_events
