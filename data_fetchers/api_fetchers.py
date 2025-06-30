@@ -290,7 +290,7 @@ def fetch_ticketmaster_events(limit=10, city=None, get_popular_and_sort_by_date=
                         event_name = event.get('name')
                         if not event_name: continue
                         
-                        # ANAHTAR DÜZELTME: Normalleştirilmiş ismi anahtar olarak kullan
+                        # ANAHTAR DÜZELTME: Normalleştirilmiş ismi anahtar olarak kullan.
                         normalized_name = normalize_event_name(event_name)
                         if normalized_name not in all_fetched_events:
                             all_fetched_events[normalized_name] = event
