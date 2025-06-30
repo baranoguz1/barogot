@@ -10,6 +10,7 @@ import feedparser
 from bs4 import BeautifulSoup
 import time
 from urllib.parse import urlparse, parse_qs, unquote
+import json
 
 # Ana dizindeki config dosyasını import ediyoruz
 import config
@@ -213,7 +214,7 @@ def get_new_turkish_rap_tracks_embed(limit=10):
     
 
 
-def fetch_ticketmaster_events(limit=20, keyword=None, city=None, get_popular_and_sort_by_date=False):
+def fetch_ticketmaster_events(limit=10, keyword=None, city=None, get_popular_and_sort_by_date=False):
     """
     Ticketmaster API'sini kullanarak Türkiye'deki etkinlikleri çeker.
     Popülerlik modu aktifse, kendi kriterlerimize göre puanlama ve sıralama yapar.
@@ -252,13 +253,13 @@ def fetch_ticketmaster_events(limit=20, keyword=None, city=None, get_popular_and
 
         # Adım 2 & 3: Popülerlik modu aktifse, özel puanlama ve yeniden sıralama yap.
         if get_popular_and_sort_by_date:
-            print(f"⚙️ {len(fetched_events)} etkinlik üzerinden özel popülerlik analizi yapılıyor...")
+            print(f"⚙️  {len(fetched_events)} etkinlik üzerinden özel popülerlik analizi yapılıyor...")
             for event in fetched_events:
                 score = 0
                 venue_name = event.get('_embedded', {}).get('venues', [{}])[0].get('name', '').lower()
-
+                
                 # Puanlama Kriteri 1: Mekan büyüklüğü/önemi
-                if any(k in venue_name for k in ['stadyum', 'arena', 'park', 'psm', 'maximum unıq', 'santral']):
+                if any(k in venue_name for k in ['stadyum', 'arena', 'park', 'psm', 'maximum uniq', 'santral', 'kültür merkezi']):
                     score += 100
                 
                 # Puanlama Kriteri 2: Etkinlik türü
@@ -276,16 +277,32 @@ def fetch_ticketmaster_events(limit=20, keyword=None, city=None, get_popular_and
 
         # Adım 4: Veriyi formatla ve istenen limitte geri döndür.
         formatted_events = []
-        for event in fetched_events[:limit]: # Listeyi istenen limite göre kırp
-            # ... (Mevcut formatlama kodunuz burada aynı kalabilir) ...
+        # Not: Döngüyü en baştan alıp, istenen limite göre içeride kırpıyoruz.
+        for event in fetched_events:
+            if len(formatted_events) >= limit:
+                break
+
             image_url = event['images'][0]['url'] if event.get('images') else ''
             venue_info = event.get('_embedded', {}).get('venues', [{}])[0]
+            
             affiliate_link = event.get('url')
-            # ... (Link ayrıştırma kodunuz aynı kalabilir) ...
+            final_link = '#' 
+
+            if affiliate_link:
+                try:
+                    parsed_url = urlparse(affiliate_link)
+                    query_params = parse_qs(parsed_url.query)
+                    biletix_url_encoded = query_params.get('u', [None])[0]
+                    
+                    if biletix_url_encoded:
+                        final_link = unquote(biletix_url_encoded)
+                except Exception as e:
+                    print(f"⚠️ Link ayrıştırılırken hata: {e}. Orijinal link kullanılacak: {affiliate_link}")
+                    final_link = affiliate_link
 
             formatted_events.append({
                 'title': event.get('name', 'Başlık Yok'),
-                'link': final_link, # Bu değişkeni kendi kodunuzdan almanız gerekecek
+                'link': final_link,
                 'image_url': image_url,
                 'date_str': event.get('dates', {}).get('start', {}).get('localDate', 'Tarih Belirtilmemiş'),
                 'venue': venue_info.get('name', 'Mekan Belirtilmemiş'),
@@ -297,6 +314,7 @@ def fetch_ticketmaster_events(limit=20, keyword=None, city=None, get_popular_and
     except requests.exceptions.RequestException as e:
         print(f"❌ Ticketmaster API isteği sırasında bir HATA oluştu: {e}")
         return []
+    # json import edildiği için artık bu hata kontrolü çalışacaktır.
     except (KeyError, json.JSONDecodeError) as e:
         print(f"❌ Ticketmaster API yanıtı işlenirken bir HATA oluştu: {e}")
         return []
