@@ -254,11 +254,11 @@ def fetch_ticketmaster_events(limit=20, keyword=None, city=None, get_popular_and
         fetched_events = data["_embedded"]["events"]
 
         # EĞER POPÜLERLİK MODU AKTİFSE, ŞİMDİ TARİHE GÖRE SIRALA
-        if get_popular_and_sort_by_date:
+        #if get_popular_and_sort_by_date:
             # Etkinlikleri 'localDate' alanına göre sıralıyoruz.
             # Bazı etkinliklerde tarih bilgisi olmayabilir, bu durumu kontrol ediyoruz.
-            fetched_events.sort(key=lambda x: x.get('dates', {}).get('start', {}).get('localDate', '9999-12-31'))
-            print("✅ Popüler etkinlikler ayrıca tarihe göre sıralandı.")
+        #    fetched_events.sort(key=lambda x: x.get('dates', {}).get('start', {}).get('localDate', '9999-12-31'))
+        #    print("✅ Popüler etkinlikler ayrıca tarihe göre sıralandı.") ## -------------------- popülerlik sıralaması istediğimiz için tarih sıralamasını yoruma aldık
 
         # Veriyi HTML şablonu için formatlama...
         formatted_events = []
