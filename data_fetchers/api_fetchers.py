@@ -256,32 +256,17 @@ def get_popular_artists_from_spotify(playlist_id, limit=50):
 
 def fetch_ticketmaster_events(limit=10, city=None, get_popular_and_sort_by_date=False):
     """
-    Ticketmaster API'sini kullanarak hibrit ve dinamik bir strateji ile etkinlikleri çeker.
+    Ticketmaster API'sini hibrit bir strateji ile kullanır.
+    Popülerliği belirlemek için MEKAN BÜYÜKLÜĞÜ ve BİLET FİYATINI baz alan gelişmiş bir puanlama sistemi kullanır.
     Tekrarlanan etkinlikleri etkinliğin ismine göre temizler.
     """
     if not config.TICKETMASTER_API_KEY:
         print("⚠️ Ticketmaster API anahtarı bulunamadı.")
         return []
 
-    print("ℹ️ Ticketmaster etkinlikleri çekiliyor (Nihai Hibrit Strateji v2)...")
+    print("ℹ️ Ticketmaster etkinlikleri çekiliyor (Gelişmiş Puanlama + Tekrar Engelleme)...")
     base_url = "https://app.ticketmaster.com/discovery/v2/events.json"
-    # DÜZELTME: Tekrarları isimle kontrol etmek için dictionary yapısını değiştiriyoruz.
-    # {event_name: event_data}
-    all_fetched_events = {}
-
-    # --- HİBRİT STRATEJİ ---
-
-    # Adım 0: Aranacak anahtar kelime listelerini oluştur
-    final_keywords = set()
-    if get_popular_and_sort_by_date:
-        guaranteed_keywords = {'Justin Timberlake', 'Ed Sheeran', 'Metallica', 'Black Eyed Peas'}
-        final_keywords.update(guaranteed_keywords)
-        
-        dynamic_keywords = get_popular_artists_from_spotify(playlist_id='37i9dQZEVXbIVYVBNw9D5K')
-        if dynamic_keywords:
-            final_keywords.update(dynamic_keywords)
-        print(f"➡️ Adım 0: Toplam {len(final_keywords)} benzersiz anahtar kelime ile arama yapılacak.")
-
+    all_fetched_events = {} # Tekrarları isme göre temizlemek için {event_name: event_data}
 
     # Adım 1: Genel Popülerlik Çağrısı
     print("➡️ Adım 1: Genel popüler etkinlikler çekiliyor...")
@@ -290,55 +275,59 @@ def fetch_ticketmaster_events(limit=10, city=None, get_popular_and_sort_by_date=
         'size': 200, 'sort': 'relevance,desc', 'classificationName': 'Music'
     }
     if city: general_params['city'] = city
-
     try:
         response = requests.get(base_url, params=general_params, timeout=15)
         response.raise_for_status()
         data = response.json()
         if "_embedded" in data:
             for event in data["_embedded"]["events"]:
-                # DÜZELTME: Etkinliği ID yerine İSME göre sözlüğe ekle.
-                # Eğer aynı isimde bir etkinlik zaten varsa, üzerine yazma (ilk bulunan kalsın).
-                if event['name'] not in all_fetched_events:
+                if event.get('name') and event['name'] not in all_fetched_events:
                     all_fetched_events[event['name']] = event
     except requests.exceptions.RequestException as e:
         print(f"⚠️ Genel etkinlik çekme hatası: {e}")
 
-    # Adım 2: Birleştirilmiş Anahtar Kelime Listesini Arama
-    if final_keywords:
-        print(f"➡️ Adım 2: Anahtar kelimeler Ticketmaster'da aranıyor...")
-        for keyword in final_keywords:
+    # Adım 2: Kritik anahtar kelimeleri arama
+    guaranteed_keywords = {'Justin Timberlake', 'Metallica', 'Black Eyed Peas'}
+    if get_popular_and_sort_by_date and guaranteed_keywords:
+        print(f"➡️ Adım 2: {len(guaranteed_keywords)} garanti anahtar kelime aranıyor...")
+        for keyword in guaranteed_keywords:
             keyword_params = {'apikey': config.TICKETMASTER_API_KEY, 'countryCode': 'TR', 'keyword': keyword, 'size': 5}
-            if city: keyword_params['city'] = city
             try:
                 response = requests.get(base_url, params=keyword_params, timeout=10)
                 if response.status_code == 200:
                     data = response.json()
                     if "_embedded" in data:
                         for event in data["_embedded"]["events"]:
-                             # DÜZELTME: Burada da ID yerine İSME göre kontrol et.
-                            if event['name'] not in all_fetched_events:
+                            if event.get('name') and event['name'] not in all_fetched_events:
                                 all_fetched_events[event['name']] = event
             except requests.exceptions.RequestException:
                 continue
 
-    # --- SIRALAMA VE FORMATLAMA (Bu kısımlar değişmedi) ---
+    # Adım 3: Gelişmiş Popülerlik Puanlaması ve Sıralama
     final_event_list = list(all_fetched_events.values())
-    
-    # Adım 3: Özel Puanlama ve Nihai Sıralama
     if get_popular_and_sort_by_date:
-        print(f"➡️ Adım 3: Toplam {len(final_event_list)} benzersiz etkinlik üzerinden popülerlik analizi yapılıyor...")
+        print(f"➡️ Adım 3: {len(final_event_list)} benzersiz etkinlik için gelişmiş popülerlik analizi yapılıyor...")
         for event in final_event_list:
-            score = 0
+            venue_score, price_score = 0, 0
+            
             venue_name = event.get('_embedded', {}).get('venues', [{}])[0].get('name', '').lower()
-            if any(k in venue_name for k in ['stadyum', 'arena', 'park', 'psm', 'maximum uniq', 'santral', 'kültür merkezi']):
-                score += 100
-            event['popularity_score'] = score
+            if any(k in venue_name for k in ['stadyum', 'arena', 'park', 'psm', 'maximum uniq']):
+                venue_score = 100
+
+            price_ranges = event.get('priceRanges', [])
+            if price_ranges:
+                max_price = max((pr.get('max', 0) for pr in price_ranges), default=0)
+                if max_price > 5000: price_score = 200
+                elif max_price > 2000: price_score = 100
+                elif max_price > 1000: price_score = 50
+
+            event['popularity_score'] = venue_score + price_score
+        
         final_event_list.sort(key=lambda x: x.get('dates', {}).get('start', {}).get('localDate', '9999-12-31'))
         final_event_list.sort(key=lambda x: x.get('popularity_score', 0), reverse=True)
-        print("✅ Etkinlikler nihai popülerlik puanına göre sıralandı.")
+        print("✅ Etkinlikler nihai popülerlik (mekan + fiyat) puanına göre sıralandı.")
 
-    # Adım 4: Veriyi İstenen Limitte Formatlama
+    # Adım 4: Formatlama
     formatted_events = []
     for event in final_event_list[:limit]:
         image_url = event['images'][0]['url'] if event.get('images') else ''
