@@ -80,11 +80,54 @@ def gather_all_data():
     context = {}
     print("--- Veri Toplama İşlemi Başladı (Önbellek Kontrolü Aktif) ---")
     
-    # ... (Selenium ve API veri toplama işlemleri aynı kalıyor)
+    # --- Selenium ile çekilen ve önbelleğe alınan veriler ---
+    # Olası hatalara karşı varsayılan boş değerler eklendi (örneğin or [])
+    
+    # Kitaplar: 120 dakika (2 saat) önbellek
+    books_fetcher = lambda: web_scrapers.fetch_books(setup_driver())
+    context['books'] = get_cached_data("books.json", books_fetcher, expiry_minutes=120) or []
+
+    # Reytingler: 180 dakika (3 saat) önbellek
+    ratings_fetcher = lambda: web_scrapers.get_daily_ratings(setup_driver())
+    context['ratings'] = get_cached_data("ratings.json", ratings_fetcher, expiry_minutes=180) or []
+
+    # Zorlu PSM Etkinlikleri: 60 dakika önbellek
+    zorlu_events_fetcher = lambda: web_scrapers.fetch_istanbul_events(setup_driver())
+    zorlu_events = get_cached_data("zorlu_events.json", zorlu_events_fetcher, expiry_minutes=60) or []
+
+    # Fikstürler: 120 dakika (2 saat) önbellek
+    def fetch_all_fixtures():
+        driver = setup_driver()
+        fixtures_all = {}
+        if driver:
+            try:
+                for path, name in config.SPORT_LEAGUES_CONFIG:
+                    _, fixtures = web_scrapers.get_flashscore_sport_fixtures(driver, path, name)
+                    fixtures_all[name] = fixtures
+            finally:
+                driver.quit()
+        return fixtures_all
+    context['fixtures'] = get_cached_data("fixtures.json", fetch_all_fixtures, expiry_minutes=120) or {}
+
+    # --- API ve Diğer Veriler (Önbellekli) ---
+    print("\n--- API ve Diğer Veriler Çekiliyor (Önbellek Kontrolü Aktif) ---")
+    
+    # Popüler Ticketmaster Etkinlikleri: 20 dakika önbellek
+    ticketmaster_fetcher = lambda: api_fetchers.fetch_ticketmaster_events(limit=10, city='Istanbul', get_popular_and_sort_by_date=True)
+    ticketmaster_events = get_cached_data("ticketmaster_events.json", ticketmaster_fetcher, expiry_minutes=20) or []
+    
+    context['istanbul_events'] = zorlu_events + ticketmaster_events
+    print(f"✅ Toplam {len(context['istanbul_events'])} adet etkinlik birleştirildi.")
+    
+    # Basit API çağrıları (Hata durumları için varsayılan değerler eklendi)
+    context['weather'] = get_cached_data("weather.json", api_fetchers.get_hourly_weather, expiry_minutes=15) or {}
+    context['exchange_rates'] = get_cached_data("exchange_rates.json", api_fetchers.get_exchange_rates, expiry_minutes=30) or {}
+    context['movies'] = get_cached_data("movies.json", api_fetchers.fetch_movies, expiry_minutes=60) or []
+    context['spotify_tracks'] = get_cached_data("spotify.json", api_fetchers.get_new_turkish_rap_tracks_embed, expiry_minutes=60) or []
+    context['twitter_trends'] = get_cached_data("trends.json", web_scrapers.get_trending_topics_trends24, expiry_minutes=10) or []
 
     # --- RSS Akışları (Genellikle önbelleksiz veya çok kısa süreli) ---
     print("\n--- RSS Akışları Paralel Olarak Çekiliyor ---")
-    # Bu bölümü önbelleksiz bırakarak her zaman en taze haberlerin gelmesini sağlıyoruz.
     news_results = {category: [] for category in config.RSS_FEEDS}
     with ThreadPoolExecutor(max_workers=10) as executor:
         future_to_url = {executor.submit(api_fetchers.fetch_rss_feed, url): category for category, urls in config.RSS_FEEDS.items() for url in urls}
@@ -102,59 +145,42 @@ def gather_all_data():
 
     # Hava durumu yorumu: 120 dakika (2 saat) önbellek
     weather_commentary_fetcher = lambda: generate_weather_commentary(context.get('weather'))
-    context['weather_commentary'] = get_cached_data("ai_weather_commentary.json", weather_commentary_fetcher, expiry_minutes=120)
+    context['weather_commentary'] = get_cached_data("ai_weather_commentary.json", weather_commentary_fetcher, expiry_minutes=120) or "Hava durumu yorumu alınamadı."
 
     # Twitter başlığı: 60 dakika önbellek
     twitter_headline_fetcher = lambda: generate_dynamic_headline_for_trends(context.get('twitter_trends'))
-    context['twitter_headline'] = get_cached_data("ai_twitter_headline.json", twitter_headline_fetcher, expiry_minutes=60)
+    context['twitter_headline'] = get_cached_data("ai_twitter_headline.json", twitter_headline_fetcher, expiry_minutes=60) or "Gündem başlığı oluşturulamadı."
 
     # Aktivite Önerisi: 120 dakika önbellek
     activity_suggestion_fetcher = lambda: generate_contextual_activity_suggestion(context.get('weather_commentary'), context.get('istanbul_events'))
-    context['contextual_suggestion'] = get_cached_data("ai_activity_suggestion.json", activity_suggestion_fetcher, expiry_minutes=120)
+    context['contextual_suggestion'] = get_cached_data("ai_activity_suggestion.json", activity_suggestion_fetcher, expiry_minutes=120) or "Aktivite önerisi alınamadı."
 
-    # Günlük Haber Özeti için yardımcı fonksiyon tanımı
     def fetch_daily_summary():
-        """Haber içeriklerini çekip özetleyen ve sadece sonucu döndüren yardımcı fonksiyon."""
         all_news_flat = [item for sublist in news_results.values() for item in sublist]
         sorted_news = sorted(all_news_flat, key=lambda x: x['pub_date_parsed'], reverse=True)[:5]
-        
         news_for_summary = []
+        if not sorted_news: return None
         print(f"Özetleme için en yeni {len(sorted_news)} haberin içeriği çekiliyor...")
         for news_item in sorted_news:
             snippet = fetch_article_snippet(news_item['link'])
-            if snippet:
-                news_for_summary.append({"title": news_item['title'], "content": snippet})
-                
-        if news_for_summary:
-            summary_data = generate_abstractive_summary(news_for_summary)
-            return summary_data
+            if snippet: news_for_summary.append({"title": news_item['title'], "content": snippet})
+        if news_for_summary: return generate_abstractive_summary(news_for_summary)
         return None
 
-    # --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
-
     # Günlük Haber Özeti (ÖNBELLEKSİZ)
-    # Bu fonksiyon her zaman en güncel haber akışından (RSS) beslendiği için
-    # tutarlılığı sağlamak amacıyla önbellek kullanılmamalıdır.
     print("🔄 Günlük haber özeti (önemli başlıklar) oluşturuluyor...")
     summary_data = fetch_daily_summary()
     context['top_headlines'] = summary_data if summary_data else []
-    if context['top_headlines']:
-        print("✅ Günlük haber özeti başarıyla oluşturuldu.")
-    else:
-        print("⚠️ Günlük haber özeti oluşturulamadı veya veri bulunamadı.")
-
+    if context['top_headlines']: print("✅ Günlük haber özeti başarıyla oluşturuldu.")
+    else: print("⚠️ Günlük haber özeti oluşturulamadı veya veri bulunamadı.")
 
     # Günlük Brifing (ÖNBELLEKSİZ)
-    # Bu fonksiyon, 'top_headlines' gibi anlık oluşturulan verilere dayandığı için
-    # her seferinde yeniden oluşturulmalıdır.
     print("🔄 Günlük brifing metni (günün özeti) oluşturuluyor...")
     context['daily_briefing'] = generate_daily_briefing(context)
     if context.get('daily_briefing') and "yeterli veri bulunamadı" not in context['daily_briefing']:
          print("✅ Günlük brifing metni başarıyla oluşturuldu.")
     else:
         print("⚠️ Günlük brifing için yeterli veri bulunamadı.")
-
-    # --- DEĞİŞİKLİK BURADA BİTİYOR ---
 
     # Son güncelleme zamanını ekle
     context['last_update'] = datetime.now(config.TZ).strftime('%d %B %Y, %H:%M:%S')
