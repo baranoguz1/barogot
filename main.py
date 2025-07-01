@@ -178,16 +178,3 @@ if __name__ == "__main__":
         exit(1)
 
 
-# ANA ÇALIŞTIRMA BÖLÜMÜ (Bu bölüm değişmedi)
-if __name__ == "__main__":
-    start_time = time.time()
-    try:
-        final_context = gather_all_data()
-        generate_output_files(final_context)
-        end_time = time.time()
-        print(f"\n🎉 Tüm statik sayfa oluşturma işlemi {end_time - start_time:.2f} saniyede tamamlandı.")
-    except Exception as e:
-        print("\n❌ PROGRAM ÇALIŞIRKEN KRİTİK BİR HATA OLUŞTU!")
-        import traceback
-        traceback.print_exc()
-        exit(1)
