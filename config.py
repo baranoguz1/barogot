@@ -66,9 +66,9 @@ SPOTIFY_PLAYLIST_TRACKS_URL = f"https://api.spotify.com/v1/playlists/{SPOTIFY_PL
 # 📌 KATEGORİLERE GÖRE RSS ADRESLERİ
 RSS_FEEDS = {
     "Gündem": [
-        "https://www.cnnturk.com/feed/rss/turkiye/news",
-        "https://www.ntv.com.tr/turkiye.rss",
-        "http://www.hurriyet.com.tr/rss/gundem",
+        "https://www.cnnturk.com/feed/rss/gundem/news",  # 'turkiye' yerine 'gundem'
+        "https://www.ntv.com.tr/gundem.rss",             # 'turkiye' yerine 'gundem'
+        "https://www.hurriyet.com.tr/rss/anasayfa"       # Tamamen yeni ve güvenli (https) adres
     ],
     "Yabancı Kaynak": [
         "https://feeds.bbci.co.uk/news/world/rss.xml",
