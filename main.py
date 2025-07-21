@@ -10,6 +10,7 @@ import undetected_chromedriver as uc
 
 # Proje modüllerini import et
 import config
+from analysis.news_analyzer import group_similar_news
 from data_fetchers import api_fetchers, web_scrapers
 from data_fetchers.web_scrapers import fetch_article_snippet
 from analysis.summarizer import (
@@ -181,6 +182,26 @@ def gather_all_data():
          print("✅ Günlük brifing metni başarıyla oluşturuldu.")
     else:
         print("⚠️ Günlük brifing için yeterli veri bulunamadı.")
+
+
+    haberler = web_scrapers.scrape_google_news()
+    if haberler:
+        context['haberler'] = haberler
+
+        # YENİ EKLENEN KISIM: Haberleri grupla ve sonucu yazdır
+        print("\n--- HABER GRUPLAMA TESTİ BAŞLIYOR ---")
+        haber_gruplari = group_similar_news(haberler)
+
+        # Sonucu daha anlaşılır görmek için konsola yazdıralım
+        for i, grup in enumerate(haber_gruplari):
+            # Sadece birden fazla haber içeren grupları yazdıralım ki sonucu görelim
+            if len(grup) > 1:
+                print(f"\n--- Grup {i+1} ---")
+                for haber in grup:
+                    print(f" - {haber['source']}: {haber['title']}")
+        print("--- HABER GRUPLAMA TESTİ BİTTİ ---\n")
+        # Şimdilik sonucu sadece test ediyoruz, context'e eklemiyoruz.
+
 
     # Son güncelleme zamanını ekle
     context['last_update'] = datetime.now(config.TZ).strftime('%d %B %Y, %H:%M:%S')
