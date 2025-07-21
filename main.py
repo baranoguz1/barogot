@@ -1,4 +1,4 @@
-# main.py (Önbellekleme Mantığı Eklenmiş Son Hali)
+# main.py (Test kodu doğru yere taşınmış ve düzeltilmiş hali)
 
 import time
 import shutil
@@ -20,13 +20,11 @@ from analysis.summarizer import (
     generate_dynamic_headline_for_trends,
     generate_contextual_activity_suggestion
 )
-# YENİ: Önbellek yöneticisini import ediyoruz
 from cache_manager import get_cached_data
 
 
 def setup_driver():
     """Paylaşılan ve tespit edilemeyen Selenium WebDriver'ı kurar."""
-    # ... (Bu fonksiyonun içeriği aynı kalıyor, değişiklik yok)
     print("ℹ️ Undetected Chrome WebDriver kuruluyor...")
     try:
         chrome_options = uc.ChromeOptions()
@@ -48,7 +46,6 @@ def setup_driver():
 
 def generate_output_files(context):
     """Toplanan verileri ve statik dosyaları kullanarak 'output' klasörünü oluşturur."""
-    # ... (Bu fonksiyonun içeriği aynı kalıyor, değişiklik yok)
     print("\n--- Çıktı Dosyaları Oluşturuluyor ---")
     try:
         root_dir = Path(__file__).resolve().parent
@@ -82,21 +79,15 @@ def gather_all_data():
     print("--- Veri Toplama İşlemi Başladı (Önbellek Kontrolü Aktif) ---")
     
     # --- Selenium ile çekilen ve önbelleğe alınan veriler ---
-    # Olası hatalara karşı varsayılan boş değerler eklendi (örneğin or [])
-    
-    # Kitaplar: 120 dakika (2 saat) önbellek
     books_fetcher = lambda: web_scrapers.fetch_books(setup_driver())
     context['books'] = get_cached_data("books.json", books_fetcher, expiry_minutes=120) or []
 
-    # Reytingler: 180 dakika (3 saat) önbellek
     ratings_fetcher = lambda: web_scrapers.get_daily_ratings(setup_driver())
     context['ratings'] = get_cached_data("ratings.json", ratings_fetcher, expiry_minutes=180) or []
 
-    # Zorlu PSM Etkinlikleri: 60 dakika önbellek
     zorlu_events_fetcher = lambda: web_scrapers.fetch_istanbul_events(setup_driver())
     zorlu_events = get_cached_data("zorlu_events.json", zorlu_events_fetcher, expiry_minutes=60) or []
 
-    # Fikstürler: 120 dakika (2 saat) önbellek
     def fetch_all_fixtures():
         driver = setup_driver()
         fixtures_all = {}
@@ -113,14 +104,12 @@ def gather_all_data():
     # --- API ve Diğer Veriler (Önbellekli) ---
     print("\n--- API ve Diğer Veriler Çekiliyor (Önbellek Kontrolü Aktif) ---")
     
-    # Popüler Ticketmaster Etkinlikleri: 20 dakika önbellek
     ticketmaster_fetcher = lambda: api_fetchers.fetch_ticketmaster_events(limit=10, city='Istanbul', get_popular_and_sort_by_date=True)
     ticketmaster_events = get_cached_data("ticketmaster_events.json", ticketmaster_fetcher, expiry_minutes=20) or []
     
     context['istanbul_events'] = zorlu_events + ticketmaster_events
     print(f"✅ Toplam {len(context['istanbul_events'])} adet etkinlik birleştirildi.")
     
-    # Basit API çağrıları (Hata durumları için varsayılan değerler eklendi)
     context['weather'] = get_cached_data("weather.json", api_fetchers.get_hourly_weather, expiry_minutes=15) or {}
     context['exchange_rates'] = get_cached_data("exchange_rates.json", api_fetchers.get_exchange_rates, expiry_minutes=30) or {}
     context['movies'] = get_cached_data("movies.json", api_fetchers.fetch_movies, expiry_minutes=60) or []
@@ -144,15 +133,12 @@ def gather_all_data():
     # --- Yapay Zeka ile İçerik Üretimi (Önbellek Kontrolü Aktif) ---
     print("\n--- Yapay Zeka ile İçerik Üretimi Başladı ---")
 
-    # Hava durumu yorumu: 120 dakika (2 saat) önbellek
     weather_commentary_fetcher = lambda: generate_weather_commentary(context.get('weather'))
     context['weather_commentary'] = get_cached_data("ai_weather_commentary.json", weather_commentary_fetcher, expiry_minutes=120) or "Hava durumu yorumu alınamadı."
 
-    # Twitter başlığı: 60 dakika önbellek
     twitter_headline_fetcher = lambda: generate_dynamic_headline_for_trends(context.get('twitter_trends'))
     context['twitter_headline'] = get_cached_data("ai_twitter_headline.json", twitter_headline_fetcher, expiry_minutes=60) or "Gündem başlığı oluşturulamadı."
 
-    # Aktivite Önerisi: 120 dakika önbellek
     activity_suggestion_fetcher = lambda: generate_contextual_activity_suggestion(context.get('weather_commentary'), context.get('istanbul_events'))
     context['contextual_suggestion'] = get_cached_data("ai_activity_suggestion.json", activity_suggestion_fetcher, expiry_minutes=120) or "Aktivite önerisi alınamadı."
 
@@ -168,14 +154,12 @@ def gather_all_data():
         if news_for_summary: return generate_abstractive_summary(news_for_summary)
         return None
 
-    # Günlük Haber Özeti (ÖNBELLEKSİZ)
     print("🔄 Günlük haber özeti (önemli başlıklar) oluşturuluyor...")
     summary_data = fetch_daily_summary()
     context['top_headlines'] = summary_data if summary_data else []
     if context['top_headlines']: print("✅ Günlük haber özeti başarıyla oluşturuldu.")
     else: print("⚠️ Günlük haber özeti oluşturulamadı veya veri bulunamadı.")
 
-    # Günlük Brifing (ÖNBELLEKSİZ)
     print("🔄 Günlük brifing metni (günün özeti) oluşturuluyor...")
     context['daily_briefing'] = generate_daily_briefing(context)
     if context.get('daily_briefing') and "yeterli veri bulunamadı" not in context['daily_briefing']:
@@ -183,25 +167,30 @@ def gather_all_data():
     else:
         print("⚠️ Günlük brifing için yeterli veri bulunamadı.")
 
+    # --------------------------------------------------------------------
+    # HABER GRUPLAMA TEST KISMI (DÜZELTİLDİ VE DOĞRU YERE TAŞINDI)
+    # --------------------------------------------------------------------
+    # 1. RSS'ten gelen ve kategorilere ayrılmış tüm haberleri tek bir listeye topla.
+    all_news_list = [item for category_news in context.get('news', {}).values() for item in category_news]
 
-    haberler = web_scrapers.scrape_google_news()
-    if haberler:
-        context['haberler'] = haberler
-
-        # YENİ EKLENEN KISIM: Haberleri grupla ve sonucu yazdır
+    if all_news_list:
         print("\n--- HABER GRUPLAMA TESTİ BAŞLIYOR ---")
-        haber_gruplari = group_similar_news(haberler)
-
-        # Sonucu daha anlaşılır görmek için konsola yazdıralım
+        # 2. Gruplama fonksiyonunu bu birleştirilmiş liste ile çağır.
+        haber_gruplari = group_similar_news(all_news_list)
+        
+        # 3. Sonucu daha anlaşılır görmek için konsola yazdır.
+        #    Birden fazla haber içeren grupları listeleyerek testin sonucunu görelim.
         for i, grup in enumerate(haber_gruplari):
-            # Sadece birden fazla haber içeren grupları yazdıralım ki sonucu görelim
             if len(grup) > 1:
-                print(f"\n--- Grup {i+1} ---")
+                print(f"\n--- Grup {i+1} (Benzer Haberler Bulundu) ---")
                 for haber in grup:
-                    print(f" - {haber['source']}: {haber['title']}")
-        print("--- HABER GRUPLAMA TESTİ BİTTİ ---\n")
-        # Şimdilik sonucu sadece test ediyoruz, context'e eklemiyoruz.
-
+                    # 'source' anahtarı RSS verisinde 'kaynak' veya 'feed_title' olabilir, kontrol edelim.
+                    source = haber.get('source') or haber.get('kaynak') or haber.get('feed_title', 'Bilinmeyen Kaynak')
+                    print(f" - [{source}] {haber.get('title', 'Başlık Yok')}")
+        print("\n--- HABER GRUPLAMA TESTİ BİTTİ ---\n")
+        # Bu aşamada sonucu sadece test ediyoruz, bir sonraki adımda işleyeceğiz.
+        # context['haber_gruplari'] = haber_gruplari # Bir sonraki adımda bunu ekleyeceğiz.
+    # --------------------------------------------------------------------
 
     # Son güncelleme zamanını ekle
     context['last_update'] = datetime.now(config.TZ).strftime('%d %B %Y, %H:%M:%S')
@@ -210,7 +199,7 @@ def gather_all_data():
     return context
 
 
-# ANA ÇALIŞTIRMA BÖLÜMÜ (Bu bölüm değişmedi)
+# ANA ÇALIŞTIRMA BÖLÜMÜ
 if __name__ == "__main__":
     start_time = time.time()
     try:
@@ -223,5 +212,3 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         exit(1)
-
-
