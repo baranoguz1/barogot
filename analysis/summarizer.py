@@ -186,3 +186,71 @@ def answer_user_query(context, user_question):
     except Exception as e:
         logging.error(f"Kullanıcı sorusu cevaplanırken hata oluştu: {e}")
         return f"Cevap üretirken bir hata oluştu. Lütfen tekrar deneyin."
+    
+
+def generate_comparative_news_analysis(news_groups):
+    """
+    Gruplanmış haber listelerini alıp her bir grup için karşılaştırmalı 
+    bir yapay zeka analizi üretir.
+
+    Args:
+        news_groups (list): İçinde haber listeleri olan bir liste 
+                           (group_similar_news fonksiyonunun çıktısı).
+
+    Returns:
+        list: Her bir öğesi analiz edilmiş bir grup olan sözlük listesi.
+              Örnek: [{'topic': 'Olayın konusu', 'analysis': 'Analiz metni...', 'original_news': [...]}]
+    """
+    # Gemini modelini import ettiğiniz satırı bu fonksiyonun içinde de çağırabilirsiniz
+    # veya dosyanın en üstünde tanımlıysa doğrudan kullanabilirsiniz.
+    # Örnek olarak: from . import model (varsayımsal)
+
+    analysis_results = []
+    print("\n--- Karşılaştırmalı Haber Analizi Başladı ---")
+    
+    # Sadece birden fazla haber içeren grupları analiz etmek daha anlamlı
+    groups_to_analyze = [g for g in news_groups if len(g) > 1]
+    
+    print(f"Analiz edilecek {len(groups_to_analyze)} adet haber grubu bulundu.")
+
+    for i, group in enumerate(groups_to_analyze):
+        # Gemini için özel bir prompt (istek metni) oluşturalım
+        
+        # Haber başlıklarını ve kaynaklarını güzel bir formatta listeleyelim
+        headlines_text = "\n".join([f"- {item.get('source') or item.get('feed_title', 'Bilinmeyen Kaynak')}: {item.get('title')}" for item in group])
+        
+        prompt = f"""
+        Sen bir uzman haber analistisin. Görevin, farklı haber kaynaklarından gelen ve aynı olayla ilgili görünen aşağıdaki haber başlıklarını analiz etmektir.
+
+        İşte analiz etmen gereken başlıklar:
+        {headlines_text}
+
+        Bu başlıklara dayanarak senden istediğim analiz şu şekilde olmalı:
+        1.  **Ana Konu:** Bu haberlerin ortak konusunu tek ve net bir cümleyle belirt.
+        2.  **Karşılaştırmalı Analiz:** Kaynakların haberi sunuş biçimindeki olası farkları veya benzerlikleri vurgula. Örneğin, bir kaynak daha resmi bir dil kullanırken diğeri daha dikkat çekici bir başlık mı atmış? Vurgulanan farklı detaylar var mı?
+        3.  **Genel Özet:** Tüm bu bilgileri birleştirerek olayı özetleyen, tarafsız ve bilgilendirici, 2-3 cümlelik bir paragraf yaz.
+
+        Lütfen cevabını sadece ve sadece Markdown formatında, başlıkları kullanarak (`### Ana Konu`, `### Karşılaştırmalı Analiz`, `### Genel Özet`) yapılandır. Başka hiçbir ek açıklama yapma.
+        """
+        
+        try:
+            print(f"Grup {i+1}/{len(groups_to_analyze)} Gemini'ye analiz için gönderiliyor...")
+            
+            # BURASI ÖNEMLİ: Kendi Gemini API model değişkeninizi ve çağrınızı kullanın.
+            # config.py dosyanızdaki model = genai.GenerativeModel(...) satırını hatırlayın.
+            from config import model # Modelinizi buradan import edebilirsiniz.
+            response = model.generate_content(prompt)
+            analysis_text = response.text
+            
+            # Sonucu daha sonra kullanmak üzere saklayalım
+            analysis_results.append({
+                'analysis': analysis_text,
+                'original_news': group
+            })
+            print(f"✅ Grup {i+1} analizi başarıyla tamamlandı.")
+
+        except Exception as e:
+            print(f"❌ Grup {i+1} analizi sırasında bir hata oluştu: {e}")
+
+    print("--- Karşılaştırmalı Haber Analizi Tamamlandı ---")
+    return analysis_results

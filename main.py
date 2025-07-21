@@ -167,30 +167,28 @@ def gather_all_data():
     else:
         print("⚠️ Günlük brifing için yeterli veri bulunamadı.")
 
-    # --------------------------------------------------------------------
-    # HABER GRUPLAMA TEST KISMI (DÜZELTİLDİ VE DOĞRU YERE TAŞINDI)
-    # --------------------------------------------------------------------
-    # 1. RSS'ten gelen ve kategorilere ayrılmış tüm haberleri tek bir listeye topla.
     all_news_list = [item for category_news in context.get('news', {}).values() for item in category_news]
+    context['haber_analizleri'] = [] # Varsayılan olarak boş liste ekleyelim
 
     if all_news_list:
-        print("\n--- HABER GRUPLAMA TESTİ BAŞLIYOR ---")
-        # 2. Gruplama fonksiyonunu bu birleştirilmiş liste ile çağır.
+        print("\n--- Benzer Haberler Gruplanıyor ve Analiz Ediliyor ---")
+        
+        # 1. Adım: Haberleri grupla
         haber_gruplari = group_similar_news(all_news_list)
         
-        # 3. Sonucu daha anlaşılır görmek için konsola yazdır.
-        #    Birden fazla haber içeren grupları listeleyerek testin sonucunu görelim.
-        for i, grup in enumerate(haber_gruplari):
-            if len(grup) > 1:
-                print(f"\n--- Grup {i+1} (Benzer Haberler Bulundu) ---")
-                for haber in grup:
-                    # 'source' anahtarı RSS verisinde 'kaynak' veya 'feed_title' olabilir, kontrol edelim.
-                    source = haber.get('source') or haber.get('kaynak') or haber.get('feed_title', 'Bilinmeyen Kaynak')
-                    print(f" - [{source}] {haber.get('title', 'Başlık Yok')}")
-        print("\n--- HABER GRUPLAMA TESTİ BİTTİ ---\n")
-        # Bu aşamada sonucu sadece test ediyoruz, bir sonraki adımda işleyeceğiz.
-        # context['haber_gruplari'] = haber_gruplari # Bir sonraki adımda bunu ekleyeceğiz.
-    # --------------------------------------------------------------------
+        # 2. Adım: Grupları analiz etmesi için yeni fonksiyona gönder
+        if haber_gruplari:
+            # ÖNEMLİ: Bu satırı dosyanın en üstündeki importlara ekleyin
+            # from analysis.summarizer import generate_comparative_news_analysis
+            from analysis.summarizer import generate_comparative_news_analysis
+            
+            haber_analizleri = generate_comparative_news_analysis(haber_gruplari)
+            context['haber_analizleri'] = haber_analizleri
+        
+        if context['haber_analizleri']:
+            print(f"✅ Toplam {len(context['haber_analizleri'])} adet olay analizi başarıyla oluşturuldu.")
+        else:
+            print("⚠️ Analiz edilecek yeterli haber grubu bulunamadı.")
 
     # Son güncelleme zamanını ekle
     context['last_update'] = datetime.now(config.TZ).strftime('%d %B %Y, %H:%M:%S')
