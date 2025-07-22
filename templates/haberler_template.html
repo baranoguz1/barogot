@@ -46,31 +46,35 @@
         {% endif %}
 
         {% if haber_analizleri %}
-        <section class="analysis-section">
-            <h2>Günün Öne Çıkan Olayları: Derinlemesine Analiz</h2>
-            <p class="section-description">
-                Farklı haber kaynaklarının aynı konuyu nasıl ele aldığını gösteren yapay zeka destekli karşılaştırmalı analizler.
-            </p>
-
-            {% for analiz in haber_analizleri %}
-            <div class="analysis-card">
-                <div class="analysis-content">
-                    {{ analiz.analysis | safe }}
+        <div id="analiz" class="container my-4">
+            <div class="analysis-section">
+                <h2 class="section-title"><i class="fas fa-magnifying-glass-chart"></i> Günün Öne Çıkan Olayları: Derinlemesine Analiz</h2>
+                
+                {% for analiz in haber_analizleri %}
+                <div class="analysis-card">
+                    <div class="analysis-content">
+                        <h3>{{ analiz.olay_basligi }}</h3>
+                        {{ analiz.analiz_metni | safe }}
+                    </div>
+                    
+                    {% if analiz.orijinal_haberler %}
+                    <div class="original-news">
+                        <small>Bu Analizin Kaynaklandığı Haberler:</small>
+                        <ul>
+                            {% for haber in analiz.orijinal_haberler %}
+                            <li>
+                                <a href="{{ haber.link }}" target="_blank" rel="noopener noreferrer">
+                                    {{ haber.title }} ({{ haber.source }})
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
                 </div>
-                <div class="original-news">
-                    <small>Bu analiz aşağıdaki haber başlıkları kullanılarak yapılmıştır:</small>
-                    <ul>
-                        {% for haber in analiz.original_news %}
-                        <li>
-                            <strong>{{ haber.get('source') or haber.get('feed_title', 'Bilinmeyen') }}:</strong> 
-                            <a href="{{ haber.link }}" target="_blank">{{ haber.title }}</a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </section>
+        </div>
         {% endif %}
 
         <h2 id="hava" class="section-title">📍 İstanbul Saatlik Hava Durumu</h2>
