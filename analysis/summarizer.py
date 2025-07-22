@@ -40,7 +40,6 @@ def generate_abstractive_summary(news_content):
     try:
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
         response = model.generate_content(prompt)
-        # Bazen model, JSON'u markdown kod bloğu içinde döndürebilir, bunu temizleyelim.
         cleaned_response = response.text.strip().replace('```json', '').replace('```', '')
         return json.loads(cleaned_response)
     except Exception as e:
@@ -78,10 +77,8 @@ def generate_daily_briefing(context):
         return "Günün özeti için yeterli veri bulunamadı."
 
     weather = context.get('weather_commentary', 'Hava durumu bilgisi yok.')
-    # DEĞİŞİKLİK BURADA: 'title' yerine 'baslik' kullanıyoruz.
     main_headline = context['top_headlines'][0]['baslik'] if context.get('top_headlines') else "gündemde önemli bir gelişme yok."
     
-    # Döviz kuru bilgisini alalım
     exchange_rate_info = ""
     rates = context.get('exchange_rates')
     if rates and 'USDTRY' in rates:
@@ -105,15 +102,12 @@ def generate_daily_briefing(context):
         logging.error(f"Gemini API ile günlük brifing oluşturulurken hata: {e}")
         return "Günün özetini hazırlarken bir sorun oluştu."
 
-
 def generate_dynamic_headline_for_trends(trends):
     """
     Twitter trend listesinden en baskın temayı bularak dinamik bir başlık oluşturur.
     """
     if not trends:
         return "🔥 Türkiye Gündemi"
-
-    # Hatalı satırı kaldırıyoruz ve 'trends' değişkenini doğrudan kullanıyoruz.
     
     prompt = f"""
     Aşağıdaki Twitter trend listesini analiz et. Bu listeyi özetleyen, emoji içeren, merak uyandırıcı ve kısa tek bir başlık oluştur.
@@ -121,7 +115,7 @@ def generate_dynamic_headline_for_trends(trends):
     
     Trendler:
     {', '.join(trends)} 
-    """ # <--- DEĞİŞİKLİK BURADA
+    """
     try:
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
         response = model.generate_content(prompt)
@@ -130,34 +124,24 @@ def generate_dynamic_headline_for_trends(trends):
         logging.error(f"Gemini API ile trend başlığı oluşturulurken hata: {e}")
         return "🔥 Türkiye Gündemi"
 
+# --- DÜZELTİLMİŞ FONKSİYON ---
 def generate_comparative_news_analysis(news_groups):
     """
-    Gruplanmış haber listelerini alıp her bir grup için karşılaştırmalı 
-    bir yapay zeka analizi üretir.
-
-    Args:
-        news_groups (list): İçinde haber listeleri olan bir liste 
-                           (group_similar_news fonksiyonunun çıktısı).
-
-    Returns:
-        list: Her bir öğesi analiz edilmiş bir grup olan sözlük listesi.
-              Örnek: [{'topic': 'Olayın konusu', 'analysis': 'Analiz metni...', 'original_news': [...]}]
+    Gruplanmış haber listelerini alıp her bir grup için karşılaştırmalı bir yapay zeka analizi üretir.
+    Analiz metnini, HTML şablonuyla uyumlu olacak şekilde başlık ve içerik olarak ayırır.
     """
-    # Gerekli kütüphaneyi fonksiyon içinde import ediyoruz
-    import google.generativeai as genai 
-    
     analysis_results = []
-    print("\n--- Karşılaştırmalı Haber Analizi Başladı ---")
+    logging.info("--- Karşılaştırmalı Haber Analizi Başladı ---")
     
-    # Sadece birden fazla haber içeren grupları analiz et
     groups_to_analyze = [g for g in news_groups if len(g) > 1]
     
     if not groups_to_analyze:
-        print("⚠️ Analiz edilecek yeterli haber grubu bulunamadı.")
-        print("--- Karşılaştırmalı Haber Analizi Tamamlandı ---")
+        logging.warning("Analiz edilecek yeterli haber grubu bulunamadı.")
+        logging.info("--- Karşılaştırmalı Haber Analizi Tamamlandı ---")
         return []
 
-    print(f"Analiz edilecek {len(groups_to_analyze)} adet haber grubu bulundu.")
+    logging.info(f"Analiz edilecek {len(groups_to_analyze)} adet haber grubu bulundu.")
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
     for i, group in enumerate(groups_to_analyze):
         headlines_text = "\n".join([f"- {item.get('source') or item.get('feed_title', 'Bilinmeyen Kaynak')}: {item.get('title')}" for item in group])
@@ -169,32 +153,36 @@ def generate_comparative_news_analysis(news_groups):
         {headlines_text}
 
         Bu başlıklara dayanarak senden istediğim analiz şu şekilde olmalı:
-        1.  **Ana Konu:** Bu haberlerin ortak konusunu tek ve net bir cümleyle belirt.
-        2.  **Karşılaştırmalı Analiz:** Kaynakların haberi sunuş biçimindeki olası farkları veya benzerlikleri vurgula. Örneğin, bir kaynak daha resmi bir dil kullanırken diğeri daha dikkat çekici bir başlık mı atmış? Vurgulanan farklı detaylar var mı?
-        3.  **Genel Özet:** Tüm bu bilgileri birleştirerek olayı özetleyen, tarafsız ve bilgilendirici, 2-3 cümlelik bir paragraf yaz.
+        1.  **Ana Konu:** Bu haberlerin ortak konusunu tek ve net bir cümleyle belirt. Bu satır '###' ile başlamalı ve başlık olarak kullanılacak.
+        2.  **Karşılaştırmalı Analiz ve Genel Özet:** Kaynakların haberi sunuş biçimindeki farkları, benzerlikleri vurgula ve olayı özetleyen, tarafsız, 2-3 cümlelik bir paragraf yaz.
 
-        Lütfen cevabını sadece ve sadece Markdown formatında, başlıkları kullanarak (`### Ana Konu`, `### Karşılaştırmalı Analiz`, `### Genel Özet`) yapılandır. Başka hiçbir ek açıklama yapma.
+        Lütfen cevabını sadece ve sadece Markdown formatında, '### Ana Konu' başlığını kullanarak yapılandır. Başka hiçbir ek açıklama yapma.
         """
         
         try:
-            print(f"Grup {i+1}/{len(groups_to_analyze)} Gemini'ye analiz için gönderiliyor...")
-            
-            # --- DÜZELTME BURADA YAPILDI ---
-            # Hatalı 'from config import model' satırı kaldırıldı.
-            # Model, doğrudan burada, ihtiyaç anında tanımlanıyor.
-            model = genai.GenerativeModel('gemini-1.5-flash-latest') 
+            logging.info(f"Grup {i+1}/{len(groups_to_analyze)} Gemini'ye analiz için gönderiliyor...")
             response = model.generate_content(prompt)
-            analysis_text = response.text
+            analysis_text = response.text.strip()
             
+            # Gemini'den gelen metni başlık ve içerik olarak ayır
+            lines = analysis_text.split('\n')
+            title = "Genel Analiz"  # Varsayılan başlık
+            content = analysis_text # Varsayılan içerik
+
+            # Eğer metin '###' ile başlayan bir başlık içeriyorsa, onu ayır
+            if lines and lines[0].strip().startswith("###"):
+                title = lines[0].replace("###", "").strip()
+                content = '\n'.join(lines[1:]).strip()
+
             analysis_results.append({
-                'analysis': analysis_text,
+                'olay_basligi': title,
+                'analiz_metni': content,
                 'original_news': group
             })
-            print(f"✅ Grup {i+1} analizi başarıyla tamamlandı.")
+            logging.info(f"✅ Grup {i+1} analizi başarıyla tamamlandı.")
 
         except Exception as e:
-            # Hata mesajını daha anlaşılır hale getiriyoruz
-            print(f"❌ Grup {i+1} analizi sırasında bir hata oluştu: {e}")
+            logging.error(f"❌ Grup {i+1} analizi sırasında bir hata oluştu: {e}")
 
-    print("--- Karşılaştırmalı Haber Analizi Tamamlandı ---")
+    logging.info("--- Karşılaştırmalı Haber Analizi Tamamlandı ---")
     return analysis_results
