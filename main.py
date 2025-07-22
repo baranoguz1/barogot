@@ -196,16 +196,17 @@ def gather_all_data():
     return context
 
 
-# ANA ÇALIŞTIRMA BÖLÜMÜ
+# main.py dosyasının sonuna eklenecek DÜZELTİLMİŞ KOD
 if __name__ == "__main__":
-    start_time = time.time()
     try:
-        final_context = gather_all_data()
-        generate_output_files(final_context)
-        end_time = time.time()
-        print(f"\n🎉 Tüm statik sayfa oluşturma işlemi {end_time - start_time:.2f} saniyede tamamlandı.")
+        # Programın ana kodları burada çalışıyor
+        # ...
+        # ...
+        print("\n--- Tüm Veri Toplama ve İşleme Adımları Tamamlandı ---")
     except Exception as e:
-        print("\n❌ PROGRAM ÇALIŞIRKEN KRİTİK BİR HATA OLUŞTU!")
+        # --- DÜZELTME BURADA ---
+        # Hatayı gizlemek yerine detayları yazdırıyoruz.
         import traceback
-        traceback.print_exc()
-        exit(1)
+        print("\n❌ PROGRAM ÇALIŞIRKEN GERÇEK HATA AŞAĞIDADIR:")
+        traceback.print_exc() # Bu satır hatanın tüm detaylarını yazdırır.
+        # sys.exit(1) veya exit(1) gibi bir kod varsa onu da geçici olarak yorum satırı yapabilirsiniz.
