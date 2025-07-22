@@ -130,64 +130,6 @@ def generate_dynamic_headline_for_trends(trends):
         logging.error(f"Gemini API ile trend başlığı oluşturulurken hata: {e}")
         return "🔥 Türkiye Gündemi"
 
-def generate_contextual_activity_suggestion(weather_commentary, events):
-    """
-    Hava durumuna ve mevcut etkinliklere göre kişisel bir aktivite önerisi sunar.
-    """
-    if not weather_commentary or not events:
-        return "" # Eğer veri yoksa bu bölümü boş bırakmak daha iyi olabilir.
-
-    event_list = [f"'{event['title']}' ({event.get('type', 'Etkinlik')})" for event in events[:3]] # İlk 3 etkinlik yeterli
-
-    prompt = f"""
-    Bir kullanıcıya gün için aktivite önereceksin. Aşağıdaki bilgileri kullan:
-    - Güncel Hava Durumu Yorumu: "{weather_commentary}"
-    - Şehirdeki Bazı Etkinlikler: {', '.join(event_list)}
-
-    Bu bilgilere dayanarak, hava durumuyla etkinlikleri mantıklı bir şekilde birleştiren samimi bir öneri cümlesi yaz.
-    Örnek: 'Hava bugün güneşli görünüyor, bu fırsatı değerlendirip 'Açık Hava Konseri' gibi bir etkinliğe katılmaya ne dersin?'
-    ya da 'Yağmurlu bir gün kapıda, belki de 'Sanat Galerisi' gezmek için harika bir zamandır.'
-    """
-    try:
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        response = model.generate_content(prompt)
-        return response.text.strip()
-    except Exception as e:
-        logging.error(f"Gemini API ile aktivite önerisi oluşturulurken hata: {e}")
-        return "Günün keyfini çıkarın!"
-    
-
-def answer_user_query(context, user_question):
-    """
-    Kullanıcı sorusunu ve mevcut veri bağlamını alıp AI'dan cevap üreten fonksiyon.
-    """
-    import json
-    import logging
-    import google.generativeai as genai
-
-    try:
-        # Not: genai.configure() çağrısının app.py'de yapıldığını varsayıyoruz.
-        prompt = f"""
-        Sen bir günlük asistan botusun. Yalnızca ve yalnızca sana verdiğim aşağıdaki JSON formatındaki bağlam verilerini kullanarak kullanıcının sorusunu cevapla.
-        Cevabın kısa, net ve anlaşılır olsun. Farklı veri noktalarını birleştirebilirsin.
-        Eğer cevap bu verilerde yoksa veya çıkarım yapılamıyorsa, 'Bu bilgi bugünkü verilerimde mevcut değil.' de.
-
-        Bağlam Verileri:
-        {json.dumps(context, indent=2, ensure_ascii=False)}
-
-        Kullanıcı Sorusu:
-        "{user_question}"
-        """
-        
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        response = model.generate_content(prompt)
-        return response.text.strip()
-
-    except Exception as e:
-        logging.error(f"Kullanıcı sorusu cevaplanırken hata oluştu: {e}")
-        return f"Cevap üretirken bir hata oluştu. Lütfen tekrar deneyin."
-    
-
 def generate_comparative_news_analysis(news_groups):
     """
     Gruplanmış haber listelerini alıp her bir grup için karşılaştırmalı 
@@ -201,22 +143,23 @@ def generate_comparative_news_analysis(news_groups):
         list: Her bir öğesi analiz edilmiş bir grup olan sözlük listesi.
               Örnek: [{'topic': 'Olayın konusu', 'analysis': 'Analiz metni...', 'original_news': [...]}]
     """
-    # Gemini modelini import ettiğiniz satırı bu fonksiyonun içinde de çağırabilirsiniz
-    # veya dosyanın en üstünde tanımlıysa doğrudan kullanabilirsiniz.
-    # Örnek olarak: from . import model (varsayımsal)
-
+    # Gerekli kütüphaneyi fonksiyon içinde import ediyoruz
+    import google.generativeai as genai 
+    
     analysis_results = []
     print("\n--- Karşılaştırmalı Haber Analizi Başladı ---")
     
-    # Sadece birden fazla haber içeren grupları analiz etmek daha anlamlı
+    # Sadece birden fazla haber içeren grupları analiz et
     groups_to_analyze = [g for g in news_groups if len(g) > 1]
     
+    if not groups_to_analyze:
+        print("⚠️ Analiz edilecek yeterli haber grubu bulunamadı.")
+        print("--- Karşılaştırmalı Haber Analizi Tamamlandı ---")
+        return []
+
     print(f"Analiz edilecek {len(groups_to_analyze)} adet haber grubu bulundu.")
 
     for i, group in enumerate(groups_to_analyze):
-        # Gemini için özel bir prompt (istek metni) oluşturalım
-        
-        # Haber başlıklarını ve kaynaklarını güzel bir formatta listeleyelim
         headlines_text = "\n".join([f"- {item.get('source') or item.get('feed_title', 'Bilinmeyen Kaynak')}: {item.get('title')}" for item in group])
         
         prompt = f"""
@@ -236,13 +179,13 @@ def generate_comparative_news_analysis(news_groups):
         try:
             print(f"Grup {i+1}/{len(groups_to_analyze)} Gemini'ye analiz için gönderiliyor...")
             
-            # BURASI ÖNEMLİ: Kendi Gemini API model değişkeninizi ve çağrınızı kullanın.
-            # config.py dosyanızdaki model = genai.GenerativeModel(...) satırını hatırlayın.
-            from config import model # Modelinizi buradan import edebilirsiniz.
+            # --- DÜZELTME BURADA YAPILDI ---
+            # Hatalı 'from config import model' satırı kaldırıldı.
+            # Model, doğrudan burada, ihtiyaç anında tanımlanıyor.
+            model = genai.GenerativeModel('gemini-1.5-flash-latest') 
             response = model.generate_content(prompt)
             analysis_text = response.text
             
-            # Sonucu daha sonra kullanmak üzere saklayalım
             analysis_results.append({
                 'analysis': analysis_text,
                 'original_news': group
@@ -250,6 +193,7 @@ def generate_comparative_news_analysis(news_groups):
             print(f"✅ Grup {i+1} analizi başarıyla tamamlandı.")
 
         except Exception as e:
+            # Hata mesajını daha anlaşılır hale getiriyoruz
             print(f"❌ Grup {i+1} analizi sırasında bir hata oluştu: {e}")
 
     print("--- Karşılaştırmalı Haber Analizi Tamamlandı ---")
