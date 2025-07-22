@@ -18,7 +18,6 @@ from analysis.summarizer import (
     generate_weather_commentary,
     generate_daily_briefing,
     generate_dynamic_headline_for_trends,
-    generate_contextual_activity_suggestion
 )
 from cache_manager import get_cached_data
 
