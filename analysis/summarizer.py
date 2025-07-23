@@ -1,188 +1,165 @@
+import os
 import google.generativeai as genai
-import json
 import logging
+from dotenv import load_dotenv
 
-# Hataları loglamak için temel yapılandırma
+# Temel yapılandırma
+load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def generate_abstractive_summary(news_content):
-    """
-    Verilen haber içeriklerinden Gemini API kullanarak özet bir JSON çıktısı oluşturur.
-    Özet, günün en önemli olaylarını içerir.
-    """
-    if not news_content:
-        logging.warning("Özetlenecek haber içeriği bulunamadı.")
+# Gemini API anahtarını al ve yapılandır
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+else:
+    logging.warning("GEMINI_API_KEY ortam değişkeni bulunamadı. Yapay zeka fonksiyonları çalışmayabilir.")
+
+# Güvenlik ayarları - Daha az kısıtlayıcı
+safety_settings = [
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+]
+
+def get_gemini_model():
+    """Gemini modelini döndürür, anahtar yoksa None döner."""
+    if not GEMINI_API_KEY:
+        return None
+    return genai.GenerativeModel('gemini-1.5-flash-latest')
+
+# ... (dosyanın geri kalan fonksiyonları aynı kalabilir)
+
+def generate_abstractive_summary(news_content_for_prompt):
+    model = get_gemini_model()
+    if not model or not news_content_for_prompt:
+        return None
+    try:
+        prompt = f"""Aşağıdaki haber başlıkları ve özetlerinden yola çıkarak, günün en önemli 5 olayını maddeler halinde (en önemliden başlayarak) ve her birinin altına tek cümlelik bir açıklama ekleyerek özetle. Cevabın sadece bu 5 maddeden oluşsun, başka hiçbir ek metin, başlık veya giriş cümlesi içermesin:
+
+{news_content_for_prompt}
+"""
+        response = model.generate_content(prompt, safety_settings=safety_settings)
+        return response.text.strip()
+    except Exception as e:
+        logging.error(f"Soyut özet oluşturulurken hata: {e}")
         return None
 
-    prompt = f"""
-    Aşağıdaki haber içeriklerini analiz et. Bu içeriklerden günün en önemli 5 olayını belirle.
-    Her olay için bir başlık (baslik), olayın kısa bir özeti (ozet) ve olayın geçtiği zaman dilimini (zaman, örneğin 'Sabah', 'Öğle', 'Akşam' veya 'Günün Gelişmesi') belirle.
-    Sonucu, yalnızca ve yalnızca aşağıdaki JSON formatında bir liste olarak ver. Başka hiçbir metin ekleme.
-
-    Format:
-    [
-      {{
-        "baslik": "Örnek Başlık 1",
-        "ozet": "Örnek özet 1",
-        "zaman": "Örnek Zaman Dilimi 1"
-      }},
-      {{
-        "baslik": "Örnek Başlık 2",
-        "ozet": "Örnek özet 2",
-        "zaman": "Örnek Zaman Dilimi 2"
-      }}
-    ]
-
-    Haber İçerikleri:
-    {news_content}
-    """
-
+def generate_weather_commentary(weather_data):
+    model = get_gemini_model()
+    if not model or not weather_data:
+        return "Hava durumu verisi alınamadı."
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        response = model.generate_content(prompt)
-        cleaned_response = response.text.strip().replace('```json', '').replace('```', '')
-        return json.loads(cleaned_response)
+        prompt = f"""Aşağıdaki saatlik hava durumu verilerine bakarak, bir spikerin sunacağı şekilde, sade ve anlaşılır bir dille önümüzdeki 8 saati özetleyen kısa (2-3 cümlelik) bir metin oluştur. Vurgulanması gerekenler: hissedilen sıcaklık, yağış ihtimali ve rüzgar durumu.
+Veri: {weather_data}"""
+        response = model.generate_content(prompt, safety_settings=safety_settings)
+        return response.text.strip()
     except Exception as e:
-        logging.error(f"Gemini API ile özet oluşturulurken hata oluştu: {e}")
-        return None
-
-def generate_weather_commentary(hourly_data):
-    """
-    Saatlik hava durumu verilerinden yola çıkarak gün için kısa, sohbet havasında bir yorum oluşturur.
-    """
-    if not hourly_data:
-        return "Hava durumu verileri alınamadı."
-
-    prompt = f"""
-    Aşağıdaki saatlik hava durumu verilerine bakarak gün için kısa, samimi ve bilgilendirici bir hava durumu yorumu yap.
-    Sıcaklık, hissedilen sıcaklık ve hava durumunu (örneğin, 'Parçalı Bulutlu') dikkate al.
-    Örnek: 'Bugün hava parçalı bulutlu ve sıcaklıklar 25°C civarında seyredecek. Akşama doğru serinleyebilir, yanınıza bir hırka almayı unutmayın!'
-    
-    Veriler:
-    {json.dumps(hourly_data, indent=2, ensure_ascii=False)}
-    """
-    try:
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        logging.error(f"Gemini API ile hava durumu yorumu oluşturulurken hata oluştu: {e}")
-        return "Bugün için hava durumu yorumu yapılamadı."
+        logging.error(f"Hava durumu yorumu oluşturulurken hata: {e}")
+        return "Hava durumu yorumu oluşturulurken bir sorun oluştu."
 
 def generate_daily_briefing(context):
-    """
-    Günün ana bağlamını (hava durumu, ana haber, döviz) kullanarak spiker tadında bir açılış metni oluşturur.
-    """
-    if not context.get('weather_commentary') or not context.get('top_headlines'):
-        return "Günün özeti için yeterli veri bulunamadı."
-
-    weather = context.get('weather_commentary', 'Hava durumu bilgisi yok.')
-    main_headline = context['top_headlines'][0]['baslik'] if context.get('top_headlines') else "gündemde önemli bir gelişme yok."
+    model = get_gemini_model()
+    if not model:
+        return "Yapay zeka modeli başlatılamadığı için günlük brifing oluşturulamadı."
     
-    exchange_rate_info = ""
-    rates = context.get('exchange_rates')
-    if rates and 'USDTRY' in rates:
-        usd_rate_value = rates['USDTRY']
-        if usd_rate_value:
-             exchange_rate_info = f"dolar kuru {usd_rate_value:.2f} seviyelerinden işlem görüyor."
-
-    prompt = f"""
-    Aşağıdaki bilgileri kullanarak bir haber bülteni sunucusu gibi güne başlangıç için kısa ve etkileyici bir açılış paragrafı oluştur.
-    - Hava Durumu Yorumu: "{weather}"
-    - Günün Ana Başlığı: "{main_headline}"
-    - Döviz Bilgisi: "{exchange_rate_info}"
+    weather_commentary = context.get('weather_commentary', 'bilgi yok')
+    top_headlines = context.get('top_headlines', 'bilgi yok')
+    exchange_rates = context.get('exchange_rates', {})
     
-    Paragraf bilgilendirici ve akıcı olsun.
-    """
+    # Sadece mevcut verilerle bir prompt oluştur
+    prompt_parts = [
+        "Bir radyo spikeri gibi, aşağıdaki bilgileri kullanarak akıcı ve enerjik bir "
+        "dille gün başlangıcı için kısa bir anons metni hazırla. Her bölümü doğal geçişlerle birbirine bağla."
+    ]
+    if weather_commentary and weather_commentary != 'bilgi yok':
+        prompt_parts.append(f"\n\nHava Durumu Bilgisi:\n{weather_commentary}")
+    if top_headlines and top_headlines != 'bilgi yok':
+        prompt_parts.append(f"\n\nGünün Öne Çıkan Gelişmeleri:\n{top_headlines}")
+    if exchange_rates:
+        rates_text = ", ".join([f"{k.replace('TRY','')} {v}" for k, v in exchange_rates.items()])
+        prompt_parts.append(f"\n\Piyasalarda son durum:\n{rates_text}")
+        
+    if len(prompt_parts) <= 1:
+        return "Günlük brifing için yeterli veri bulunamadı."
+        
+    prompt = "".join(prompt_parts)
+    
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        response = model.generate_content(prompt)
+        response = model.generate_content(prompt, safety_settings=safety_settings)
         return response.text.strip()
     except Exception as e:
-        logging.error(f"Gemini API ile günlük brifing oluşturulurken hata: {e}")
-        return "Günün özetini hazırlarken bir sorun oluştu."
+        logging.error(f"Günlük brifing oluşturulurken hata: {e}")
+        return "Günlük brifing oluşturulurken bir hata meydana geldi."
 
-def generate_dynamic_headline_for_trends(trends):
+def generate_comparative_news_analysis(group):
     """
-    Twitter trend listesinden en baskın temayı bularak dinamik bir başlık oluşturur.
+    Benzer haber başlıklarını karşılaştırarak tek bir olay analizi metni oluşturur.
     """
-    if not trends:
-        return "🔥 Türkiye Gündemi"
-    
-    prompt = f"""
-    Aşağıdaki Twitter trend listesini analiz et. Bu listeyi özetleyen, emoji içeren, merak uyandırıcı ve kısa tek bir başlık oluştur.
-    Örnek: 'Gündem siyaset ve spor arasında gidip geliyor ⚽🗳️'
-    
-    Trendler:
-    {', '.join(trends)} 
-    """
-    try:
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        response = model.generate_content(prompt)
-        return response.text.strip()
-    except Exception as e:
-        logging.error(f"Gemini API ile trend başlığı oluşturulurken hata: {e}")
-        return "🔥 Türkiye Gündemi"
+    # =========================================================================
+    # ===== HATAYI KAYNAĞINDA ENGELLEYEN YENİ GÜVENLİK KONTROLÜ =====
+    # =========================================================================
+    # Eğer 'group' boşsa veya grubun ilk elemanı bir metin (string) ise, bu, 
+    # fonksiyonun yanlış veri ile çağrıldığı anlamına gelir. Hata vermeden boş dön.
+    if not group or isinstance(group[0], str):
+        logging.warning("generate_comparative_news_analysis, hatalı veri türüyle çağrıldı. İşlem atlanıyor.")
+        return []
+    # =================== GÜVENLİK KONTROLÜ SONU ===================
 
-# --- DÜZELTİLMİŞ FONKSİYON ---
-def generate_comparative_news_analysis(news_groups):
-    """
-    Gruplanmış haber listelerini alıp her bir grup için karşılaştırmalı bir yapay zeka analizi üretir.
-    Analiz metnini, HTML şablonuyla uyumlu olacak şekilde başlık ve içerik olarak ayırır.
-    """
-    analysis_results = []
-    logging.info("--- Karşılaştırmalı Haber Analizi Başladı ---")
-    
-    groups_to_analyze = [g for g in news_groups if len(g) > 1]
-    
-    if not groups_to_analyze:
-        logging.warning("Analiz edilecek yeterli haber grubu bulunamadı.")
-        logging.info("--- Karşılaştırmalı Haber Analizi Tamamlandı ---")
+    model = get_gemini_model()
+    if not model:
         return []
 
-    logging.info(f"Analiz edilecek {len(groups_to_analyze)} adet haber grubu bulundu.")
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    logging.info(f"--- Karşılaştırmalı Haber Analizi Başladı ---")
+    logging.info(f"Analiz edilecek {len(group)} adet haber grubu bulundu.")
+    
+    analysis_results = []
 
-    for i, group in enumerate(groups_to_analyze):
+    try:
+        # Gelen grubun, her bir haberin bir sözlük olduğu bir liste olduğunu varsayıyoruz.
         headlines_text = "\n".join([f"- {item.get('source') or item.get('feed_title', 'Bilinmeyen Kaynak')}: {item.get('title')}" for item in group])
         
-        prompt = f"""
-        Sen bir uzman haber analistisin. Görevin, farklı haber kaynaklarından gelen ve aynı olayla ilgili görünen aşağıdaki haber başlıklarını analiz etmektir.
+        prompt = f"""Aşağıda aynı konu hakkında farklı kaynaklardan gelen haber başlıkları listelenmiştir. Bu başlıkları analiz ederek:
+1. Bu olayın ne olduğunu tek ve kısa bir cümle ile özetle.
+2. Olaydaki anahtar kişi, kurum veya konseptleri (en fazla 3 adet) virgülle ayırarak belirt.
+3. Tüm başlıkları göz önünde bulundurarak, olayı en iyi yansıtan, dikkat çekici ve SEO uyumlu tek bir ana başlık oluştur.
 
-        İşte analiz etmen gereken başlıklar:
-        {headlines_text}
+Cevabını, aşağıdaki gibi '|||' ayıracını kullanarak formatla. Başka hiçbir açıklama ekleme.
+Özet Cümle ||| Anahtar Kelimeler ||| SEO Uyumlu Başlık
 
-        Bu başlıklara dayanarak senden istediğim analiz şu şekilde olmalı:
-        1.  **Ana Konu:** Bu haberlerin ortak konusunu tek ve net bir cümleyle belirt. Bu satır '###' ile başlamalı ve başlık olarak kullanılacak.
-        2.  **Karşılaştırmalı Analiz ve Genel Özet:** Kaynakların haberi sunuş biçimindeki farkları, benzerlikleri vurgula ve olayı özetleyen, tarafsız, 2-3 cümlelik bir paragraf yaz.
-
-        Lütfen cevabını sadece ve sadece Markdown formatında, '### Ana Konu' başlığını kullanarak yapılandır. Başka hiçbir ek açıklama yapma.
-        """
+Haber Başlıkları:
+{headlines_text}
+"""
+        response = model.generate_content(prompt, safety_settings=safety_settings)
         
-        try:
-            logging.info(f"Grup {i+1}/{len(groups_to_analyze)} Gemini'ye analiz için gönderiliyor...")
-            response = model.generate_content(prompt)
-            analysis_text = response.text.strip()
-            
-            # Gemini'den gelen metni başlık ve içerik olarak ayır
-            lines = analysis_text.split('\n')
-            title = "Genel Analiz"  # Varsayılan başlık
-            content = analysis_text # Varsayılan içerik
-
-            # Eğer metin '###' ile başlayan bir başlık içeriyorsa, onu ayır
-            if lines and lines[0].strip().startswith("###"):
-                title = lines[0].replace("###", "").strip()
-                content = '\n'.join(lines[1:]).strip()
-
+        # Yanıtı işle ve sözlük olarak biçimlendir
+        parts = response.text.strip().split('|||')
+        if len(parts) == 3:
             analysis_results.append({
-                'olay_basligi': title,
-                'analiz_metni': content,
-                'original_news': group
+                'olay_ozeti': parts[0].strip(),
+                'anahtar_kelimeler': [k.strip() for k in parts[1].split(',')],
+                'seo_baslik': parts[2].strip(),
+                'haberler': group
             })
-            logging.info(f"✅ Grup {i+1} analizi başarıyla tamamlandı.")
+        else:
+            logging.warning(f"Model yanıtı beklenmedik formatta: {response.text.strip()}")
 
-        except Exception as e:
-            logging.error(f"❌ Grup {i+1} analizi sırasında bir hata oluştu: {e}")
+    except Exception as e:
+        logging.error(f"Karşılaştırmalı analiz sırasında bir hata oluştu: {e}")
 
-    logging.info("--- Karşılaştırmalı Haber Analizi Tamamlandı ---")
     return analysis_results
+
+def generate_dynamic_headline_for_trends(trends_list):
+    model = get_gemini_model()
+    if not model or not trends_list:
+        return "Gündem" # Varsayılan başlık
+    try:
+        trends_text = ", ".join(trends_list)
+        prompt = f"""Aşağıdaki gündemdeki kelimelere bakarak, "İşte Gündemdeki En Çok Konuşulanlar" gibi genel bir ifade yerine, bu kelimelerin ortak temasını yansıtan daha yaratıcı ve ilgi çekici tek bir başlık cümlesi oluştur. Sadece başlığı yaz.
+
+Kelimeler: {trends_text}"""
+        response = model.generate_content(prompt, safety_settings=safety_settings)
+        return response.text.strip().replace('"', '')
+    except Exception as e:
+        logging.error(f"Trend başlığı oluşturulurken hata: {e}")
+        return "Gündem"
