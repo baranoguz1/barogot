@@ -11,7 +11,7 @@ except Exception as e:
     print("Modelin indirilmesi için internet bağlantısı gerekebilir.")
     model = None
 
-def group_similar_news(news_list, similarity_threshold=0.70):
+def group_similar_news(news_list, similarity_threshold=0.80):
     """
     Haber listesindeki başlıkları anlamsal benzerliklerine göre gruplar.
 

@@ -1,4 +1,4 @@
-# main.py (Test kodu doğru yere taşınmış ve düzeltilmiş hali)
+# main.py (Sizin orijinal kodunuzun üzerine caching eklenmiş hali)
 
 import time
 import shutil
@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
 import undetected_chromedriver as uc
+import hashlib # <- BURAYI EKLEDİK
 
 # Proje modüllerini import et
 import config
@@ -171,22 +172,53 @@ def gather_all_data():
         else:
             print("⚠️ Günlük brifing için yeterli veri bulunamadı.")
 
+        # =========================================================================
+        # ===== KOTA SORUNUNU ÇÖZEN ÖNBELLEKLEME (CACHING) DEĞİŞİKLİĞİ =====
+        # =========================================================================
         all_news_list = [item for category_news in context.get('news', {}).values() for item in category_news]
-        context['haber_analizleri'] = [] # Varsayılan olarak boş liste ekleyelim
+        context['haber_analizleri'] = [] 
 
         if all_news_list:
-            print("\n--- Benzer Haberler Gruplanıyor ve Analiz Ediliyor ---")
+            print("\n--- Benzer Haberler Gruplanıyor ve Analiz Ediliyor (Önbellek Aktif) ---")
             
             haber_gruplari = group_similar_news(all_news_list)
             
             if haber_gruplari:
-                haber_analizleri = generate_comparative_news_analysis(haber_gruplari)
-                context['haber_analizleri'] = haber_analizleri
+                # Bu listeyi, önbelleğe alınmış analiz sonuçlarıyla dolduracağız.
+                cached_haber_analizleri = []
+                
+                # Her bir haber grubu için döngüye gir
+                for group in haber_gruplari:
+                    # Sadece birden fazla haber içeren grupları analiz et
+                    if len(group) > 1:
+                        # --- ÖNBELLEKLEME MANTIĞI ---
+                        # 1. Grubun içeriğine göre değişmeyen, kararlı bir cache anahtarı oluştur.
+                        #    Bunun için başlıklari sıralayıp birleştirmek en güvenli yoldur.
+                        group_headlines = sorted([haber['title'] for haber in group])
+                        headlines_str = "".join(group_headlines)
+                        cache_key = f"analysis_{hashlib.md5(headlines_str.encode()).hexdigest()}.json"
+
+                        # 2. Önbellekten veriyi çekmeyi dene, yoksa API'yi çağır ve sonucu 180 dakikalığına önbelleğe al.
+                        #    lambda fonksiyonu, get_cached_data'nın sadece gerektiğinde API çağrısı yapmasını sağlar.
+                        analysis_result = get_cached_data(
+                            cache_key,
+                            lambda g=group: generate_comparative_news_analysis(g),
+                            expiry_minutes=180 
+                        )
+                        
+                        # Analiz sonucu başarıyla alındıysa listeye ekle
+                        if analysis_result:
+                            # generate_comparative_news_analysis tek bir analiz sonucu döndürdüğü için,
+                            # bunu listeye eklerken extend değil append kullanmalıyız.
+                            cached_haber_analizleri.extend(analysis_result)
+
+                context['haber_analizleri'] = cached_haber_analizleri
             
             if context['haber_analizleri']:
-                print(f"✅ Toplam {len(context['haber_analizleri'])} adet olay analizi başarıyla oluşturuldu.")
+                print(f"✅ Toplam {len(context['haber_analizleri'])} adet olay analizi başarıyla oluşturuldu (önbellek kullanıldı).")
             else:
                 print("⚠️ Analiz edilecek yeterli haber grubu bulunamadı.")
+        # =================== DEĞİŞİKLİĞİN SONU ===================
 
         # Son güncelleme zamanını ekle
         context['last_update'] = datetime.now(config.TZ).strftime('%d %B %Y, %H:%M:%S')
