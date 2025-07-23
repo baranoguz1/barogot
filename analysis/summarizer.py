@@ -1,6 +1,7 @@
 import os
 import google.generativeai as genai
 import logging
+import json
 from dotenv import load_dotenv
 
 # Temel yapılandırma
@@ -31,19 +32,40 @@ def get_gemini_model():
 # ... (dosyanın geri kalan fonksiyonları aynı kalabilir)
 
 def generate_abstractive_summary(news_content_for_prompt):
+    """
+    Verilen haber içeriklerinden Gemini API kullanarak yapılandırılmış 
+    bir JSON formatında günün önemli başlıklarını ve özetlerini oluşturur.
+    """
     model = get_gemini_model()
     if not model or not news_content_for_prompt:
-        return None
-    try:
-        prompt = f"""Aşağıdaki haber başlıkları ve özetlerinden yola çıkarak, günün en önemli 5 olayını maddeler halinde (en önemliden başlayarak) ve her birinin altına tek cümlelik bir açıklama ekleyerek özetle. Cevabın sadece bu 5 maddeden oluşsun, başka hiçbir ek metin, başlık veya giriş cümlesi içermesin:
+        return [] # Hata durumunda veya veri yoksa boş bir liste döndür
 
+    # Yapay zekadan JSON formatında bir çıktı istiyoruz
+    prompt = f"""Aşağıdaki haber başlıkları ve özetlerinden yola çıkarak günün en önemli 5 olayını belirle.
+Sonucu, başka hiçbir açıklama veya metin eklemeden, yalnızca ve yalnızca aşağıdaki JSON formatında bir liste olarak ver:
+[
+  {{
+    "baslik": "Olayın Başlığı 1",
+    "ozet": "Olayın tek cümlelik net özeti."
+  }},
+  {{
+    "baslik": "Olayın Başlığı 2",
+    "ozet": "Olayın tek cümlelik net özeti."
+  }}
+]
+
+Haber İçerikleri:
 {news_content_for_prompt}
 """
+    try:
         response = model.generate_content(prompt, safety_settings=safety_settings)
-        return response.text.strip()
-    except Exception as e:
-        logging.error(f"Soyut özet oluşturulurken hata: {e}")
-        return None
+        # Modelin üretebileceği ```json markdown etiketlerini temizle
+        cleaned_response = response.text.strip().replace('```json', '').replace('```', '')
+        # Metni JSON'a çevirerek yapılandırılmış bir liste elde et
+        return json.loads(cleaned_response)
+    except (json.JSONDecodeError, Exception) as e:
+        logging.error(f"Soyut özet JSON'u işlenirken hata: {e}")
+        return [] # Hata durumunda boş bir liste döndür
 
 def generate_weather_commentary(weather_data):
     model = get_gemini_model()
