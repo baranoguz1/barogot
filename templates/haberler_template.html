@@ -48,20 +48,20 @@
         {% if haber_analizleri %}
         <div id="analiz" class="container my-4">
             <div class="analysis-section">
-                <h2 class="section-title"><i class="fas fa-magnifying-glass-chart"></i> Günün Öne Çıkan Olayları: Derinlemesine Analiz</h2>
+                <h2 class="section-title">Günün Öne Çıkan Olayları: Derinlemesine Analiz</h2>
                 
                 {% for analiz in haber_analizleri %}
                 <div class="analysis-card">
                     <div class="analysis-content">
-                        <h3>{{ analiz.olay_basligi }}</h3>
-                        {{ analiz.analiz_metni | safe }}
+                        <h3>{{ analiz.seo_baslik }}</h3> 
+                        <p>{{ analiz.olay_ozeti }}</p> 
                     </div>
                     
-                    {% if analiz.orijinal_haberler %}
+                    {% if analiz.haberler %} 
                     <div class="original-news">
                         <small>Bu Analizin Kaynaklandığı Haberler:</small>
                         <ul>
-                            {% for haber in analiz.orijinal_haberler %}
+                            {% for haber in analiz.haberler %}
                             <li>
                                 <a href="{{ haber.link }}" target="_blank" rel="noopener noreferrer">
                                     {{ haber.title }} ({{ haber.source }})
