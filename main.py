@@ -173,7 +173,7 @@ def gather_all_data():
             print("⚠️ Günlük brifing için yeterli veri bulunamadı.")
 
         # =========================================================================
-        # ===== KOTA SORUNUNU ÇÖZEN DÜZELTİLMİŞ ÖNBELLEKLEME (CACHING) BLOĞU =====
+        # ===== KOTA SORUNUNU ÇÖZEN DOĞRU VE NİHAİ BLOK =====
         # =========================================================================
         all_news_list = [item for category_news in context.get('news', {}).values() for item in category_news]
         context['haber_analizleri'] = [] 
@@ -188,17 +188,16 @@ def gather_all_data():
                 
                 for group in haber_gruplari:
                     if len(group) > 1:
-                        # Önbellek anahtarı için haber başlıklarını kullanmaya devam ediyoruz
+                        # Önbellek anahtarı için haber başlıklarını kullanıyoruz
                         group_headlines = sorted([haber['title'] for haber in group])
                         headlines_str = "".join(group_headlines)
                         cache_key = f"analysis_{hashlib.md5(headlines_str.encode()).hexdigest()}.json"
 
-                        # ÖNEMLİ DÜZELTME:
-                        # Yapay zeka fonksiyonuna, haberlerin tam künyesini içeren 'group' değişkenini
-                        # gönderiyoruz. 'group_headlines' değişkenini DEĞİL.
+                        # === DOĞRU ÇAĞRI BURADA ===
+                        # Yapay zeka fonksiyonuna, haberlerin tam künyesini içeren 'group' değişkenini gönderiyoruz.
                         analysis_result = get_cached_data(
                             cache_key,
-                            lambda g=group: generate_comparative_news_analysis(g),
+                            lambda g=group: generate_comparative_news_analysis(g), # Bu satırın doğruluğu kritik!
                             expiry_minutes=180 
                         )
                         
