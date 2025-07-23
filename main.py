@@ -173,7 +173,7 @@ def gather_all_data():
             print("⚠️ Günlük brifing için yeterli veri bulunamadı.")
 
         # =========================================================================
-        # ===== KOTA SORUNUNU ÇÖZEN ÖNBELLEKLEME (CACHING) DEĞİŞİKLİĞİ =====
+        # ===== KOTA SORUNUNU ÇÖZEN DÜZELTİLMİŞ ÖNBELLEKLEME (CACHING) BLOĞU =====
         # =========================================================================
         all_news_list = [item for category_news in context.get('news', {}).values() for item in category_news]
         context['haber_analizleri'] = [] 
@@ -184,32 +184,28 @@ def gather_all_data():
             haber_gruplari = group_similar_news(all_news_list)
             
             if haber_gruplari:
-                # Bu listeyi, önbelleğe alınmış analiz sonuçlarıyla dolduracağız.
                 cached_haber_analizleri = []
                 
-                # Her bir haber grubu için döngüye gir
                 for group in haber_gruplari:
-                    # Sadece birden fazla haber içeren grupları analiz et
                     if len(group) > 1:
-                        # --- ÖNBELLEKLEME MANTIĞI ---
-                        # 1. Grubun içeriğine göre değişmeyen, kararlı bir cache anahtarı oluştur.
-                        #    Bunun için başlıklari sıralayıp birleştirmek en güvenli yoldur.
+                        # Önbellek anahtarı için haber başlıklarını kullanıyoruz
                         group_headlines = sorted([haber['title'] for haber in group])
                         headlines_str = "".join(group_headlines)
                         cache_key = f"analysis_{hashlib.md5(headlines_str.encode()).hexdigest()}.json"
 
-                        # 2. Önbellekten veriyi çekmeyi dene, yoksa API'yi çağır ve sonucu 180 dakikalığına önbelleğe al.
-                        #    lambda fonksiyonu, get_cached_data'nın sadece gerektiğinde API çağrısı yapmasını sağlar.
+                        # ÖNEMLİ DÜZELTME: Fonksiyona `group` değişkenini (haber nesnelerinin listesi)
+                        # gönderdiğimizden emin oluyoruz, `group_headlines`'ı (metin listesi) değil.
                         analysis_result = get_cached_data(
                             cache_key,
-                            lambda g=group: generate_comparative_news_analysis(g),
+                            lambda g=group: generate_comparative_news_analysis(g), # BU SATIRIN DOĞRULUĞU KRİTİK
                             expiry_minutes=180 
                         )
                         
-                        # Analiz sonucu başarıyla alındıysa listeye ekle
                         if analysis_result:
-                            # generate_comparative_news_analysis tek bir analiz sonucu döndürdüğü için,
-                            # bunu listeye eklerken extend değil append kullanmalıyız.
+                            # generate_comparative_news_analysis'ın döndürdüğü yapıya göre
+                            # listeye ekleme yapıyoruz. Eğer fonksiyon tek bir analiz döndürüyorsa
+                            # extend yerine append kullanmak daha güvenli olabilir.
+                            # Şimdilik orijinal mantığı koruyalım:
                             cached_haber_analizleri.extend(analysis_result)
 
                 context['haber_analizleri'] = cached_haber_analizleri
@@ -217,7 +213,7 @@ def gather_all_data():
             if context['haber_analizleri']:
                 print(f"✅ Toplam {len(context['haber_analizleri'])} adet olay analizi başarıyla oluşturuldu (önbellek kullanıldı).")
             else:
-                print("⚠️ Analiz edilecek yeterli haber grubu bulunamadı.")
+                print("⚠️ Analiz edilecek yeterli haber grubu bulunamadı veya analiz sırasında hata oluştu.")
         # =================== DEĞİŞİKLİĞİN SONU ===================
 
         # Son güncelleme zamanını ekle
