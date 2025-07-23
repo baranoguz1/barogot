@@ -198,7 +198,7 @@ def gather_all_data():
                         # gönderiyoruz. 'group_headlines' değişkenini DEĞİL.
                         analysis_result = get_cached_data(
                             cache_key,
-                            lambda g=group: generate_comparative_news_analysis(g), # Bu satırın doğruluğu kritik!
+                            lambda g=group: generate_comparative_news_analysis(g),
                             expiry_minutes=180 
                         )
                         
