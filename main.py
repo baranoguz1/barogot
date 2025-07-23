@@ -188,24 +188,21 @@ def gather_all_data():
                 
                 for group in haber_gruplari:
                     if len(group) > 1:
-                        # Önbellek anahtarı için haber başlıklarını kullanıyoruz
+                        # Önbellek anahtarı için haber başlıklarını kullanmaya devam ediyoruz
                         group_headlines = sorted([haber['title'] for haber in group])
                         headlines_str = "".join(group_headlines)
                         cache_key = f"analysis_{hashlib.md5(headlines_str.encode()).hexdigest()}.json"
 
-                        # ÖNEMLİ DÜZELTME: Fonksiyona `group` değişkenini (haber nesnelerinin listesi)
-                        # gönderdiğimizden emin oluyoruz, `group_headlines`'ı (metin listesi) değil.
+                        # ÖNEMLİ DÜZELTME:
+                        # Yapay zeka fonksiyonuna, haberlerin tam künyesini içeren 'group' değişkenini
+                        # gönderiyoruz. 'group_headlines' değişkenini DEĞİL.
                         analysis_result = get_cached_data(
                             cache_key,
-                            lambda g=group: generate_comparative_news_analysis(g), # BU SATIRIN DOĞRULUĞU KRİTİK
+                            lambda g=group: generate_comparative_news_analysis(g), # Bu satırın doğruluğu kritik!
                             expiry_minutes=180 
                         )
                         
                         if analysis_result:
-                            # generate_comparative_news_analysis'ın döndürdüğü yapıya göre
-                            # listeye ekleme yapıyoruz. Eğer fonksiyon tek bir analiz döndürüyorsa
-                            # extend yerine append kullanmak daha güvenli olabilir.
-                            # Şimdilik orijinal mantığı koruyalım:
                             cached_haber_analizleri.extend(analysis_result)
 
                 context['haber_analizleri'] = cached_haber_analizleri
