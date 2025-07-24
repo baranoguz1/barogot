@@ -31,10 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // --- "YUKARI ÇIK" BUTONU LOGIĞI ---
     const scrollToTopBtn = document.getElementById("scrollToTopBtn");
 
-    // Butonun HTML'de var olup olmadığını kontrol et
     if (scrollToTopBtn) {
-
-        // Butonu gösterecek veya gizleyecek fonksiyon
         function handleScroll() {
             if (window.scrollY > 100) {
                 scrollToTopBtn.style.display = "block";
@@ -42,32 +39,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 scrollToTopBtn.style.display = "none";
             }
         }
-
-        // Butona tıklandığında sayfanın en üstüne gitme fonksiyonu
         function scrollToTop() {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth' // Yumuşak kaydırma efekti için
-            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
-        // Gerekli olay dinleyicilerini ekle
         window.addEventListener('scroll', handleScroll);
         scrollToTopBtn.addEventListener('click', scrollToTop);
     }
-});
+    
+    // --- SCROLL SPY - KATEGORİ TAKİPÇİSİ (DÜZELTİLMİŞ VERSİYON) ---
+    const navLinks = document.querySelectorAll('nav.sticky-nav a');
+    const sections = document.querySelectorAll('.section-title[id]');
 
-/**
- * SCROLL SPY - KATEGORİ TAKİPÇİSİ (Otomatik Yatay Kaydırma Özellikli)
- * Sayfa kaydırıldığında, görünüm alanındaki kategoriye göre üst navigasyon
- * çubuğundaki ilgili linki aktif hale getirir ve görünür alana kaydırır.
- */
-document.addEventListener('DOMContentLoaded', () => {
-    const navLinks = document.querySelectorAll('.kategori-link');
-    const sections = document.querySelectorAll('.category-title');
-    const kategoriNav = document.querySelector('.kategori-nav'); // Kapsayıcıyı seç
-
-    if (navLinks.length === 0 || sections.length === 0 || !kategoriNav) {
+    if (navLinks.length === 0 || sections.length === 0) {
         return;
     }
 
@@ -75,32 +58,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function changeLinkState() {
         let currentSectionId = '';
+        const pageTop = window.scrollY;
 
         sections.forEach(section => {
-            const sectionTop = section.getBoundingClientRect().top;
-            
-            if (sectionTop <= offset) {
+            if (section.offsetTop <= pageTop + offset) {
                 currentSectionId = section.getAttribute('id');
             }
         });
 
         navLinks.forEach(link => {
             link.classList.remove('active');
-        });
-
-        if (currentSectionId) {
-            const activeLink = document.querySelector(`.kategori-link[href="#${currentSectionId}"]`);
-            if (activeLink) {
-                activeLink.classList.add('active');
-
-                // *** YENİ EKLENEN KISIM: AKTİF LİNKİ GÖRÜNÜME KAYDIRMA ***
-                activeLink.scrollIntoView({
-                    behavior: 'smooth', // Animasyonlu geçiş için
-                    inline: 'center',    // Yatayda ortalamaya çalışır
-                    block: 'nearest'     // Dikeyde hizalamayı bozmaz
+            if (link.getAttribute('href') === `#${currentSectionId}`) {
+                link.classList.add('active');
+                
+                // Aktif linki görünüme kaydır
+                link.scrollIntoView({
+                    behavior: 'smooth',
+                    inline: 'center',
+                    block: 'nearest'
                 });
             }
-        }
+        });
     }
 
     window.addEventListener('scroll', changeLinkState);

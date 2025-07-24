@@ -31,36 +31,46 @@ def get_gemini_model():
 
 def generate_abstractive_summary(news_content_for_prompt):
     """
-    Verilen haber içeriklerinden Gemini API kullanarak yapılandırılmış 
-    bir JSON formatında günün önemli başlıklarını ve özetlerini oluşturur.
+    Tüm bağlamı kullanarak gün başlangıcı için bir brifing metni oluşturur.
+    Eksik bilgilere karşı daha dayanıklıdır.
     """
     model = get_gemini_model()
-    if not model or not news_content_for_prompt:
-        return [] 
+    if not model: 
+        return "Yapay zeka modeli başlatılamadığı için günlük brifing oluşturulamadı."
 
-    prompt = f"""Aşağıdaki haber başlıkları ve özetlerinden yola çıkarak günün en önemli 5 olayını belirle.
-Sonucu, başka hiçbir açıklama veya metin eklemeden, yalnızca ve yalnızca aşağıdaki JSON formatında bir liste olarak ver:
-[
-  {{
-    "baslik": "Olayın Başlığı 1",
-    "ozet": "Olayın tek cümlelik net özeti."
-  }},
-  {{
-    "baslik": "Olayın Başlığı 2",
-    "ozet": "Olayın tek cümlelik net özeti."
-  }}
-]
+    # --- Verileri Güvenli Bir Şekilde Al ---
+    weather_commentary = context.get('weather_commentary')
+    top_headlines_data = context.get('top_headlines', [])
+    exchange_rates = context.get('exchange_rates', {})
 
-Haber İçerikleri:
-{news_content_for_prompt}
-"""
+    # --- Prompt Parçalarını Oluştur ---
+    prompt_parts = ["Bir radyo spikeri gibi, aşağıdaki bilgileri kullanarak akıcı ve enerjik bir dille gün başlangıcı için kısa bir anons metni hazırla. Her bölümü doğal geçişlerle birbirine bağla.\n"]
+
+    if weather_commentary and "alınamadı" not in weather_commentary:
+        prompt_parts.append(f"\nHava Durumu Bilgisi:\n{weather_commentary}\n")
+
+    # DÜZELTME: top_headlines boş olsa bile prompt'u bozmayacak yapı
+    if top_headlines_data:
+        top_headlines_text = "\n".join([f"- {h['baslik']}: {h['ozet']}" for h in top_headlines_data])
+        prompt_parts.append(f"\nGünün Öne Çıkan Gelişmeleri:\n{top_headlines_text}\n")
+    else:
+        # Eğer başlık yoksa, bunu açıkça belirt. Bu, AI'ın hata vermesini önler.
+        prompt_parts.append("\nBugün için henüz öne çıkan bir gelişme bildirilmedi.\n")
+
+    if exchange_rates:
+        exchange_text = ", ".join([f"{k.replace('TRY','')} {v}" for k, v in exchange_rates.items()])
+        prompt_parts.append(f"\nPiyasalarda son durum:\n{exchange_text}\n")
+
+    # Tüm parçaları birleştir
+    prompt = "".join(prompt_parts)
+    
     try:
         response = model.generate_content(prompt, safety_settings=safety_settings)
-        cleaned_response = response.text.strip().replace('```json', '').replace('```', '')
-        return json.loads(cleaned_response)
-    except (json.JSONDecodeError, Exception) as e:
-        logging.error(f"Soyut özet JSON'u işlenirken hata: {e}")
-        return []
+        return response.text.strip()
+    except Exception as e:
+        logging.error(f"Günlük brifing oluşturulurken hata: {e}")
+        # Hata mesajını doğrudan döndür
+        return "Günün Özeti: Günlük brifing oluşturulurken bir hata meydana geldi."
 
 def generate_weather_commentary(weather_data):
     model = get_gemini_model()
