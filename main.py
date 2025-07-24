@@ -173,31 +173,50 @@ def gather_all_data():
             print("⚠️ Günlük brifing için yeterli veri bulunamadı.")
 
         # =========================================================================
-        # ===== KOTA SORUNUNU ÇÖZEN DOĞRU VE NİHAİ BLOK =====
+        # ===== KOTA SORUNUNU ÇÖZEN VE HABERLERİ FİLTRELEYEN NİHAİ BLOK =====
         # =========================================================================
         all_news_list = [item for category_news in context.get('news', {}).values() for item in category_news]
         context['haber_analizleri'] = [] 
 
         if all_news_list:
-            print("\n--- Benzer Haberler Gruplanıyor ve Analiz Ediliyor (Önbellek Aktif) ---")
+            print("\n--- Benzer Haberler Gruplanıyor ve Analiz Ediliyor (Tekilleştirme ve Filtreleme Aktif) ---")
             
-            haber_gruplari = group_similar_news(all_news_list)
+            # YENİ ADIM 1: Haberleri linklerine göre tekilleştirme
+            seen_links = set()
+            unique_news_list = []
+            for news_item in all_news_list:
+                if news_item['link'] not in seen_links:
+                    unique_news_list.append(news_item)
+                    seen_links.add(news_item['link'])
+            print(f"✅ Mükerrer kayıtlar temizlendi. {len(all_news_list)} haberden {len(unique_news_list)} tekil habere düşüldü.")
+
+            # YENİ ADIM 2: İstenmeyen konuları (yemek tarifi, astroloji vb.) filtreleme
+            BLACKLISTED_KEYWORDS = (
+                'tarifi', 'yemek', 'mutfak', 'malzemeler', 'nasıl yapılır',
+                'burç', 'astroloji', 'fal', 'günlük yorum', 'burçlar',
+                'magazin', 'dedikodu', 'ünlü'
+            )
+            filtered_news_list = [
+                news for news in unique_news_list
+                if not any(keyword in news['title'].lower() for keyword in BLACKLISTED_KEYWORDS)
+            ]
+            print(f"✅ İstenmeyen konular filtrelendi. Analiz için {len(filtered_news_list)} haber kaldı.")
+            
+            # Eski `group_similar_news` fonksiyonunu filtrelenmiş liste ile çağırıyoruz
+            haber_gruplari = group_similar_news(filtered_news_list)
             
             if haber_gruplari:
                 cached_haber_analizleri = []
                 
                 for group in haber_gruplari:
                     if len(group) > 1:
-                        # Önbellek anahtarı için haber başlıklarını kullanıyoruz
                         group_headlines = sorted([haber['title'] for haber in group])
                         headlines_str = "".join(group_headlines)
                         cache_key = f"analysis_{hashlib.md5(headlines_str.encode()).hexdigest()}.json"
 
-                        # === DOĞRU ÇAĞRI BURADA ===
-                        # Yapay zeka fonksiyonuna, haberlerin tam künyesini içeren 'group' değişkenini gönderiyoruz.
                         analysis_result = get_cached_data(
                             cache_key,
-                            lambda g=group: generate_comparative_news_analysis(g), # Bu satırın doğruluğu kritik!
+                            lambda g=group: generate_comparative_news_analysis(g),
                             expiry_minutes=180 
                         )
                         
