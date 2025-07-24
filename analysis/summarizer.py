@@ -79,7 +79,7 @@ Veri: {weather_data}"""
 def generate_daily_briefing(context):
     """
     Tüm bağlamı kullanarak gün başlangıcı için bir brifing metni oluşturur.
-    Eksik bilgilere karşı daha dayanıklıdır. (DÜZELTİLMİŞ FONKSİYON)
+    Eksik bilgilere karşı daha dayanıklıdır.
     """
     model = get_gemini_model()
     if not model: 
@@ -113,7 +113,8 @@ def generate_daily_briefing(context):
         return response.text.strip()
     except Exception as e:
         logging.error(f"Günlük brifing oluşturulurken hata: {e}")
-        return "Günün Özeti: Günlük brifing oluşturulurken bir hata meydana geldi."
+        # DÜZELTME: Başlıktaki tekrarı önlemek için metin buradan kaldırıldı.
+        return "Günlük brifing oluşturulurken bir hata meydana geldi."
 
 def generate_comparative_news_analysis(group):
     """
