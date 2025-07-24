@@ -113,7 +113,7 @@ def generate_daily_briefing(context):
         return response.text.strip()
     except Exception as e:
         logging.error(f"Günlük brifing oluşturulurken hata: {e}")
-        # DÜZELTME: Başlıktaki tekrarı önlemek için metin buradan kaldırıldı.
+        # DÜZELTME: Başlıktaki tekrarı önlemek için metin buradan kaldırıldı..
         return "Günlük brifing oluşturulurken bir hata meydana geldi."
 
 def generate_comparative_news_analysis(group):

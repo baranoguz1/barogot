@@ -4,7 +4,7 @@ import json
 import os
 from datetime import datetime, timedelta
 
-CACHE_DIR = "cache" # Önbellek dosyalarını saklamak için bir klasör
+CACHE_DIR = "cache" # Önbellek dosyalarını saklamak için bir klasör.
 
 # Cache klasörünün var olduğundan emin ol
 if not os.path.exists(CACHE_DIR):
