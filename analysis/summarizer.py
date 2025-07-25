@@ -60,7 +60,7 @@ Haber İçerikleri:
         return json.loads(cleaned_response)
     except (json.JSONDecodeError, Exception) as e:
         logging.error(f"Soyut özet JSON'u işlenirken hata: {e}")
-        return []
+        return None # Hata durumunda None dönmeli
 
 def generate_weather_commentary(weather_data):
     """Hava durumu verilerinden bir yorum metni oluşturur."""
@@ -83,7 +83,7 @@ def generate_daily_briefing(context):
     """
     model = get_gemini_model()
     if not model: 
-        return "Yapay zeka modeli başlatılamadığı için günlük brifing oluşturulamadı."
+        return None
 
     # --- Verileri Güvenli Bir Şekilde Al ---
     weather_commentary = context.get('weather_commentary')
@@ -113,8 +113,7 @@ def generate_daily_briefing(context):
         return response.text.strip()
     except Exception as e:
         logging.error(f"Günlük brifing oluşturulurken hata: {e}")
-        # DÜZELTME: Başlıktaki tekrarı önlemek için metin buradan kaldırıldı..
-        return "Günlük brifing oluşturulurken bir hata meydana geldi."
+        return None # Hata durumunda None dönmeli
 
 def generate_comparative_news_analysis(group):
     """
@@ -159,11 +158,10 @@ Cevabını formatlarken, ilk satıra SADECE başlığı yaz, ardından bir satı
             'olay_ozeti': olay_ozeti,
             'haberler': group
         })
+        return analysis_results
     except Exception as e:
         logging.error(f"Karşılaştırmalı analiz sırasında bir hata oluştu: {e}")
-
-    return analysis_results
-
+        return None 
 def generate_dynamic_headline_for_trends(trends_list):
     """Gündem kelimelerinden yaratıcı bir başlık oluşturur."""
     model = get_gemini_model()

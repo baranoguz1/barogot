@@ -166,11 +166,17 @@ def gather_all_data():
         else: print("⚠️ Günlük haber özeti oluşturulamadı veya veri bulunamadı.")
 
         print("🔄 Günlük brifing metni (günün özeti) oluşturuluyor...")
-        context['daily_briefing'] = generate_daily_briefing(context)
-        if context.get('daily_briefing') and "yeterli veri bulunamadı" not in context['daily_briefing']:
-            print("✅ Günlük brifing metni başarıyla oluşturuldu.")
+        briefing_fetcher = lambda: generate_daily_briefing(context)
+        context['daily_briefing'] = get_cached_data(
+            "ai_daily_briefing.json",
+            briefing_fetcher,
+            expiry_minutes=120
+        ) or "Günün özeti alınamadı." # Önbellek boşsa ve API de çalışmazsa gösterilecek mesaj.
+
+        if context.get('daily_briefing') and "alınamadı" not in context['daily_briefing']:
+            print("✅ Günlük brifing metni başarıyla oluşturuldu (önbellek kullanıldı).")
         else:
-            print("⚠️ Günlük brifing için yeterli veri bulunamadı.")
+            print("⚠️ Günlük brifing oluşturulamadı veya veri bulunamadı.")
 
         # =========================================================================
         # ===== KOTA SORUNUNU ÇÖZEN VE HABERLERİ FİLTRELEYEN NİHAİ BLOK =====
