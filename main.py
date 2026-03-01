@@ -36,8 +36,9 @@ def setup_driver():
         chrome_options.add_argument("--window-size=1920,1080")
         # GitHub Actions ortamında belirli bir sürüm belirtmek stabiliteyi artırabilir.
         # Eğer yerel makinede çalışıyorsanız bu satırı yorum satırı yapabilirsiniz.
-        print("ℹ️ Tarayıcı sürümü 137 olarak ayarlanıyor.")
-        driver = uc.Chrome(options=chrome_options, version_main=137)
+        # print("ℹ️ Tarayıcı sürümü 137 olarak ayarlanıyor.")
+        # driver = uc.Chrome(options=chrome_options, version_main=137) CHROME ESKİ SÜRÜME GERİ DÖNMEK GEREKİRSE VERSİYON 137
+        driver = uc.Chrome(options=chrome_options)
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         print("✅ Undetected Chrome WebDriver başarıyla başlatıldı.")
         return driver
