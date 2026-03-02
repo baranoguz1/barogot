@@ -38,7 +38,7 @@ def setup_driver():
         # Eğer yerel makinede çalışıyorsanız bu satırı yorum satırı yapabilirsiniz.
         # print("ℹ️ Tarayıcı sürümü 137 olarak ayarlanıyor.")
         # driver = uc.Chrome(options=chrome_options, version_main=137) CHROME ESKİ SÜRÜME GERİ DÖNMEK GEREKİRSE VERSİYON 137
-        driver = uc.Chrome(options=chrome_options)
+        driver = uc.Chrome(options=chrome_options, version_main=145)
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         print("✅ Undetected Chrome WebDriver başarıyla başlatıldı.")
         return driver
