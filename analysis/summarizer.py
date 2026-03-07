@@ -27,7 +27,7 @@ def get_gemini_model():
     """Gemini modelini döndürür, anahtar yoksa None döner."""
     if not GEMINI_API_KEY:
         return None
-    return genai.GenerativeModel('gemini-1.5-flash')
+    return genai.GenerativeModel('gemini-2.0-flash')
 
 def generate_abstractive_summary(news_content_for_prompt):
     """
