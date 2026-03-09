@@ -161,12 +161,14 @@ def gather_all_data():
             return None
 
         print("🔄 Günlük haber özeti (önemli başlıklar) oluşturuluyor...")
+        time.sleep(5) # AI kotası için 5 saniye bekle
         summary_data = get_cached_data("ai_top_headlines.json", fetch_daily_summary, expiry_minutes=60)
         context['top_headlines'] = summary_data if summary_data else []
         if context['top_headlines']: print("✅ Günlük haber özeti başarıyla oluşturuldu.")
         else: print("⚠️ Günlük haber özeti oluşturulamadı veya veri bulunamadı.")
 
         print("🔄 Günlük brifing metni (günün özeti) oluşturuluyor...")
+        time.sleep(5) # AI kotası için 5 saniye bekle
         briefing_fetcher = lambda: generate_daily_briefing(context)
         context['daily_briefing'] = get_cached_data(
             "ai_daily_briefing.json",
