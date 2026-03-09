@@ -215,8 +215,15 @@ def gather_all_data():
             if haber_gruplari:
                 cached_haber_analizleri = []
                 
+                # --- YENİ EKLENEN KISIM: KOTA KORUMASI ---
+                haber_gruplari.sort(key=len, reverse=True) # En çok haber olan grupları öne al
+                analiz_sayaci = 0 # Kotayı korumak için sayaç
+                
                 for group in haber_gruplari:
                     if len(group) > 1:
+                        if analiz_sayaci >= 6: # Tek seferde en fazla 6 grubu analiz et
+                            break
+                            
                         group_headlines = sorted([haber['title'] for haber in group])
                         headlines_str = "".join(group_headlines)
                         cache_key = f"analysis_{hashlib.md5(headlines_str.encode()).hexdigest()}.json"
@@ -229,6 +236,9 @@ def gather_all_data():
                         
                         if analysis_result:
                             cached_haber_analizleri.extend(analysis_result)
+                            analiz_sayaci += 1
+                            time.sleep(5) # API sınırına takılmamak için 5 saniye bekle
+                
 
                 context['haber_analizleri'] = cached_haber_analizleri
             
